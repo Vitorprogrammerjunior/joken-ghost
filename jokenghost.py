@@ -79,6 +79,18 @@ class JokenGhost:
         self.vida_max_jogador = 100
         self.vida_max_inimigo = 100
         
+        # === NOVO === Dinheiro e Loja
+        self.dinheiro_jogador = 0
+        self.recompensa_vitoria = 100
+        self.recompensa_paga = False  # evita pagar duas vezes na mesma batalha
+        self.loja_aberta = False
+        self.itens_loja = [
+            {"nome": "Poção de Cura",   "preco": 30, "efeito": "cura_pequena"},
+            {"nome": "Buff Ofensivo",   "preco": 50, "efeito": "buff_ofensivo"},
+            {"nome": "Poção Grande",    "preco": 80, "efeito": "cura_grande"},
+        ]
+        self.mensagem_loja = ""  # feedback textual simples dentro da loja
+        
         # Batalha
         self.escolha_jogador = None
         self.escolha_inimigo = None
@@ -274,6 +286,13 @@ class JokenGhost:
             'ativo': True
         }
         
+        # === NOVO === Botão Loja
+        self.botoes['loja'] = {
+            'rect': pygame.Rect(520, ALTURA - 120, 140, 80),
+            'texto': 'LOJA',
+            'ativo': True
+        }
+        
         # Botão reiniciar
         self.botoes['reiniciar'] = {
             'rect': pygame.Rect(LARGURA//2 - 100, ALTURA//2 + 100, 200, 60),
@@ -321,6 +340,9 @@ class JokenGhost:
         # Botão jogar
         mouse_pos = pygame.mouse.get_pos()
         self.desenhar_botao('jogar', mouse_pos)
+
+        # === NOVO === HUD Dinheiro
+        self.desenhar_hud_dinheiro()
     
     def desenhar_transicao(self):
         self.tela.fill(PRETO)
@@ -336,6 +358,9 @@ class JokenGhost:
             texto = self.fonte_titulo.render("UM GHOST APARECEU!", True, PRETO)
             texto_rect = texto.get_rect(center=(LARGURA//2, ALTURA//2))
             self.tela.blit(texto, texto_rect)
+
+        # === NOVO === HUD Dinheiro
+        self.desenhar_hud_dinheiro()
     
     def desenhar_barra_vida(self, x, y, vida_atual, vida_maxima, cor, largura=200):
         # Fundo da barra
@@ -406,6 +431,8 @@ class JokenGhost:
         self.desenhar_botao('pedra', mouse_pos)
         self.desenhar_botao('papel', mouse_pos)
         self.desenhar_botao('tesoura', mouse_pos)
+        # === NOVO === Botão Loja
+        self.desenhar_botao('loja', mouse_pos)
         
         # Mostra as escolhas se houver
         if self.escolha_jogador and self.escolha_inimigo:
@@ -424,6 +451,13 @@ class JokenGhost:
                 texto_resultado = self.fonte_texto.render(self.resultado_batalha, True, cor_resultado)
                 resultado_rect = texto_resultado.get_rect(center=(LARGURA//2, ALTURA//2))
                 self.tela.blit(texto_resultado, resultado_rect)
+
+        # === NOVO === HUD Dinheiro
+        self.desenhar_hud_dinheiro()
+
+        # === NOVO === Overlay da Loja (sobreposto)
+        if self.loja_aberta:
+            self.desenhar_loja_overlay()
     
     def desenhar_resultado(self):
         self.tela.fill(PRETO)
@@ -442,6 +476,9 @@ class JokenGhost:
         # Botão reiniciar
         mouse_pos = pygame.mouse.get_pos()
         self.desenhar_botao('reiniciar', mouse_pos)
+
+        # === NOVO === HUD Dinheiro
+        self.desenhar_hud_dinheiro()
     
     def determinar_vencedor(self, jogador, inimigo):
         if jogador == inimigo:
@@ -461,6 +498,14 @@ class JokenGhost:
             # Ativa animação de ataque do inimigo quando ele vence
             self.iniciar_animacao_ataque_inimigo()
             return "Você perdeu a rodada!"
+    
+    # === NOVO === Aplicar recompensas de vitória ao fim da batalha
+    def pagar_recompensa_se_preciso(self):
+        """Paga a recompensa quando o inimigo é derrotado e ainda não foi pago."""
+        if not self.recompensa_paga and self.vida_inimigo <= 0 and self.vida_jogador > 0:
+            self.dinheiro_jogador += self.recompensa_vitoria
+            self.recompensa_paga = True
+            print(f"💰 Vitória! Você ganhou ${self.recompensa_vitoria}. Total: ${self.dinheiro_jogador}")
     
     def iniciar_animacao_ataque_inimigo(self):
         """Inicia a animação de ataque do inimigo"""
@@ -492,33 +537,151 @@ class JokenGhost:
         self.resultado_batalha = ""
         self.tempo_resultado = 0
         self.estado = EstadoJogo.MENU
+        # === NOVO === reset de recompensa/loja
+        self.recompensa_paga = False
+        self.loja_aberta = False
+        self.mensagem_loja = ""
     
+    # === NOVO === HUD Dinheiro
+    def desenhar_hud_dinheiro(self):
+        caixa = pygame.Rect(10, 10, 200, 36)
+        pygame.draw.rect(self.tela, PRETO, caixa, border_radius=8)
+        pygame.draw.rect(self.tela, CINZA, caixa, 2, border_radius=8)
+        txt = self.fonte_pequena.render(f"Dinheiro: ${self.dinheiro_jogador}", True, BRANCO)
+        self.tela.blit(txt, (caixa.x + 10, caixa.y + 8))
+
+    # === NOVO === Loja Overlay (sobreposta)
+    def desenhar_loja_overlay(self):
+        # Fundo semi-transparente
+        overlay = pygame.Surface((LARGURA, ALTURA), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 140))
+        self.tela.blit(overlay, (0, 0))
+
+        # Caixa da loja
+        largura_caixa = 600
+        altura_caixa = 360
+        x = (LARGURA - largura_caixa) // 2
+        y = (ALTURA - altura_caixa) // 2
+        caixa = pygame.Rect(x, y, largura_caixa, altura_caixa)
+        pygame.draw.rect(self.tela, (240, 240, 240), caixa, border_radius=16)
+        pygame.draw.rect(self.tela, PRETO, caixa, 3, border_radius=16)
+
+        # Título
+        titulo = self.fonte_titulo.render("LOJA", True, PRETO)
+        self.tela.blit(titulo, (x + (largura_caixa - titulo.get_width()) // 2, y + 12))
+
+        # Lista de itens
+        mouse_pos = pygame.mouse.get_pos()
+        item_altura = 64
+        lista_y = y + 90
+        margem = 16
+        self._botoes_itens = []  # guarda retângulos clicáveis nesta frame
+
+        for i, item in enumerate(self.itens_loja):
+            linha = pygame.Rect(x + margem, lista_y + i*(item_altura + 12), largura_caixa - 2*margem, item_altura)
+            hover = linha.collidepoint(mouse_pos)
+            pygame.draw.rect(self.tela, CINZA_CLARO if hover else CINZA, linha, border_radius=10)
+            pygame.draw.rect(self.tela, PRETO, linha, 2, border_radius=10)
+
+            nome_txt = self.fonte_texto.render(item["nome"], True, PRETO)
+            preco_txt = self.fonte_texto.render(f"${item['preco']}", True, PRETO)
+
+            self.tela.blit(nome_txt, (linha.x + 14, linha.y + 14))
+            self.tela.blit(preco_txt, (linha.right - preco_txt.get_width() - 14, linha.y + 14))
+
+            self._botoes_itens.append((linha, item))
+
+        # Mensagem de feedback
+        if self.mensagem_loja:
+            msg = self.fonte_pequena.render(self.mensagem_loja, True, PRETO)
+            self.tela.blit(msg, (x + 18, y + altura_caixa - 70))
+
+        # Botão fechar
+        self._botao_fechar = pygame.Rect(x + largura_caixa - 120, y + 16, 100, 40)
+        pygame.draw.rect(self.tela, AMARELO, self._botao_fechar, border_radius=12)
+        pygame.draw.rect(self.tela, PRETO, self._botao_fechar, 2, border_radius=12)
+        fechar_txt = self.fonte_pequena.render("FECHAR", True, PRETO)
+        self.tela.blit(fechar_txt, (self._botao_fechar.centerx - fechar_txt.get_width()//2,
+                                    self._botao_fechar.centery - fechar_txt.get_height()//2))
+
+    # === NOVO === Comprar item (efeito consumível imediato)
+    def comprar_item(self, item):
+        if self.dinheiro_jogador < item['preco']:
+            self.mensagem_loja = "Dinheiro insuficiente!"
+            print(self.mensagem_loja)
+            return
+        self.dinheiro_jogador -= item['preco']
+        efeito = item['efeito']
+        if efeito == "cura_pequena":
+            self.vida_jogador = min(self.vida_max_jogador, self.vida_jogador + 30)
+            self.mensagem_loja = "Você usou Poção de Cura (+30 HP)."
+        elif efeito == "cura_grande":
+            self.vida_jogador = min(self.vida_max_jogador, self.vida_jogador + 60)
+            self.mensagem_loja = "Você usou Poção Grande (+60 HP)."
+        elif efeito == "buff_ofensivo":
+            self.vida_inimigo = max(0, self.vida_inimigo - 10)
+            self.mensagem_loja = "Buff aplicado! -10 HP no inimigo."
+        else:
+            self.mensagem_loja = "Item usado."
+        print(f"Comprou: {item['nome']} | {self.mensagem_loja}")
+
     def processar_eventos(self):
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
                 return False
             
             elif evento.type == pygame.USEREVENT + 1:  # Timer para transição para resultado
+                # === NOVO === pagar recompensa quando entra no resultado, se for vitória
+                self.pagar_recompensa_se_preciso()
                 self.estado = EstadoJogo.RESULTADO
                 pygame.time.set_timer(pygame.USEREVENT + 1, 0)  # Cancela o timer
             
             elif evento.type == pygame.MOUSEBUTTONDOWN:
                 if evento.button == 1:  # Clique esquerdo
+                    # === NOVO === Interações quando a loja está aberta (tem prioridade)
+                    if self.loja_aberta:
+                        # Clique no botão fechar?
+                        if hasattr(self, "_botao_fechar") and self._botao_fechar.collidepoint(evento.pos):
+                            self.loja_aberta = False
+                            self.mensagem_loja = ""
+                            return True
+                        # Clique fora da caixa fecha também (UX simples)
+                        if not any(rect.collidepoint(evento.pos) for rect, _ in getattr(self, "_botoes_itens", [])):
+                            # Detecta se clicou na área central da loja (se quiser fechar apenas por botão, remova isto)
+                            caixa_x = (LARGURA - 600) // 2
+                            caixa_y = (ALTURA - 360) // 2
+                            caixa = pygame.Rect(caixa_x, caixa_y, 600, 360)
+                            if not caixa.collidepoint(evento.pos):
+                                self.loja_aberta = False
+                                self.mensagem_loja = ""
+                                return True
+                        # Clique em item?
+                        for rect, item in getattr(self, "_botoes_itens", []):
+                            if rect.collidepoint(evento.pos):
+                                self.comprar_item(item)
+                                return True
+                        # Não propaga mais eventos quando a loja está aberta
+                        return True
+
                     botao_clicado = self.verificar_clique_botao(evento.pos)
                     
                     if self.estado == EstadoJogo.MENU and botao_clicado == 'jogar':
                         self.estado = EstadoJogo.TRANSICAO
                         self.transicao_alpha = 0
                     
-                    elif self.estado == EstadoJogo.BATALHA and botao_clicado in ['pedra', 'papel', 'tesoura']:
-                        if not self.escolha_jogador:  # Só processa se ainda não escolheu
-                            escolha_map = {
-                                'pedra': Escolha.PEDRA,
-                                'papel': Escolha.PAPEL,
-                                'tesoura': Escolha.TESOURA
-                            }
-                            self.processar_turno(escolha_map[botao_clicado])
-                    
+                    elif self.estado == EstadoJogo.BATALHA:
+                        if botao_clicado in ['pedra', 'papel', 'tesoura']:
+                            if not self.escolha_jogador:  # Só processa se ainda não escolheu
+                                escolha_map = {
+                                    'pedra': Escolha.PEDRA,
+                                    'papel': Escolha.PAPEL,
+                                    'tesoura': Escolha.TESOURA
+                                }
+                                self.processar_turno(escolha_map[botao_clicado])
+                        elif botao_clicado == 'loja':
+                            # Abre/fecha overlay sobreposto
+                            self.loja_aberta = not self.loja_aberta
+
                     elif self.estado == EstadoJogo.RESULTADO and botao_clicado == 'reiniciar':
                         self.reiniciar_jogo()
         
