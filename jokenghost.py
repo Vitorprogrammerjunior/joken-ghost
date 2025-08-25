@@ -51,10 +51,11 @@ class EstadoAnimacao(Enum):
 
 class EstadoJogo(Enum):
     MENU = 1
-    TRANSICAO = 2
-    BATALHA = 3
-    RESULTADO = 4
-    MENU_SELECAO = 5  # Novo estado para menu de seleção
+    INTRO = 2
+    TRANSICAO = 3
+    BATALHA = 4
+    RESULTADO = 5
+    MENU_SELECAO = 6  # Novo estado para menu de seleção
 
 class TipoMenu(Enum):
     ATAQUES = 1
@@ -71,19 +72,45 @@ class JokenGhost:
         pygame.display.set_caption("JokenGhost - Caçada em Turnos")
         self.relogio = pygame.time.Clock()
         
-        # Configuração de fontes - tentando usar fontes pixeladas
+        # Configuração de fontes - tentando usar fonte Pokémon personalizada
         try:
-            # Tenta carregar fontes pixeladas do sistema
-            self.fonte_titulo = pygame.font.SysFont("courier", 72)      # Courier é monospace/pixelada
-            self.fonte_texto = pygame.font.SysFont("courier", 36)
-            self.fonte_pequena = pygame.font.SysFont("courier", 24)
-            print("✅ Fontes Courier (pixeladas) carregadas com sucesso!")
-        except:
-            # Fallback para fontes padrão
-            self.fonte_titulo = pygame.font.Font(None, 72)
-            self.fonte_texto = pygame.font.Font(None, 36)
-            self.fonte_pequena = pygame.font.Font(None, 24)
-            print("⚠️ Usando fontes padrão - Para fontes pixeladas personalizadas, adicione um arquivo .ttf na pasta do jogo")
+            # Tenta carregar a fonte Pokémon (arquivo .FON não é diretamente compatível com Pygame)
+            # Como alternativa, usa Dogica que tem estilo pixel art similar
+            fonte_dogica_path = os.path.join(os.path.dirname(__file__), "dogica", "TTF", "dogica.ttf")
+            fonte_dogica_bold_path = os.path.join(os.path.dirname(__file__), "dogica", "TTF", "dogicabold.ttf")
+            fonte_dogica_pixel_path = os.path.join(os.path.dirname(__file__), "dogica", "TTF", "dogicapixel.ttf")
+            
+            # Fonte do título permanece Courier (conforme solicitado)
+            self.fonte_titulo = pygame.font.SysFont("courier", 48)      # Courier mantido para o título
+            
+            # Tenta usar Dogica Pixel que é mais similar ao estilo Pokémon
+            if os.path.exists(fonte_dogica_pixel_path):
+                self.fonte_texto = pygame.font.Font(fonte_dogica_pixel_path, 18)    # Dogica Pixel
+                self.fonte_pequena = pygame.font.Font(fonte_dogica_pixel_path, 14)  # Dogica Pixel menor
+                self.fonte_bold = pygame.font.Font(fonte_dogica_bold_path, 20) if os.path.exists(fonte_dogica_bold_path) else pygame.font.Font(fonte_dogica_pixel_path, 20)
+                print("✅ Fonte Dogica Pixel (estilo Pokémon) carregada!")
+            elif os.path.exists(fonte_dogica_path):
+                # Fallback para Dogica normal
+                self.fonte_texto = pygame.font.Font(fonte_dogica_path, 18)
+                self.fonte_pequena = pygame.font.Font(fonte_dogica_path, 14)
+                self.fonte_bold = pygame.font.Font(fonte_dogica_bold_path, 20) if os.path.exists(fonte_dogica_bold_path) else pygame.font.Font(fonte_dogica_path, 20)
+                print("✅ Fonte Dogica normal carregada (estilo pixel)!")
+            else:
+                # Fallback para fontes do sistema
+                self.fonte_texto = pygame.font.SysFont("courier", 18)
+                self.fonte_pequena = pygame.font.SysFont("courier", 14)
+                self.fonte_bold = pygame.font.SysFont("courier", 20)
+                print("⚠️ Dogica não encontrada, usando Courier como fallback")
+            
+        except Exception as e:
+            # Fallback para fontes padrão em caso de erro
+            self.fonte_titulo = pygame.font.Font(None, 48)
+            self.fonte_texto = pygame.font.Font(None, 18)
+            self.fonte_pequena = pygame.font.Font(None, 14)
+            self.fonte_bold = pygame.font.Font(None, 20)
+            print(f"⚠️ Erro ao carregar fontes personalizadas: {e}")
+            print("⚠️ Usando fontes padrão")
+            print("💡 DICA: Arquivos .FON não são compatíveis com Pygame. Use arquivos .TTF para fontes personalizadas.")
         
         self.estado = EstadoJogo.MENU
         self.transicao_alpha = 0
@@ -194,6 +221,32 @@ class JokenGhost:
         self.tempo_inicio_ataque = 0
         self.duracao_ataque = 1000  # 1 segundo de animação de ataque
         
+        # === NOVO === Sistema de Intro/História
+        self.carta_imagem = None
+        self.carregar_carta()
+        self.textos_intro = [
+            "1ª Fase - A Mansão na Colina",
+            "",
+            "O caçador recebe uma carta misteriosa sobre",
+            "estranhos acontecimentos em uma antiga mansão.",
+            "",
+            "Ele segue pela floresta à noite, armado com",
+            "suas três armas espirituais:",
+            "Estaca, Aspirador e Cruz,",
+            "",
+            "determinado a investigar os relatos..."
+        ]
+        print(f"🎬 Textos da intro carregados: {len(self.textos_intro)} linhas")
+        for i, linha in enumerate(self.textos_intro):
+            print(f"   Linha {i}: '{linha}'")
+        self.pagina_intro_atual = 0
+        self.texto_intro_atual = ""
+        self.char_atual = 0
+        self.tempo_ultima_letra = 0
+        self.velocidade_texto = 50  # Velocidade do texto (menor = mais rápido)
+        self.mostrar_seta = False
+        self.tempo_seta = 0
+        
         # === NOVO === Spawn de Inimigos após todas as inicializações
         self.gerar_inimigos_aleatorios()
     
@@ -218,7 +271,7 @@ class JokenGhost:
             pos_config = self.posicoes_profundidade[pos_index]
             
             inimigo = {
-                'nome': f'GHOST {i+1}',
+                'nome': 'GHOST',  # Removido numeração
                 'pos_x': pos_config[0],
                 'pos_y': pos_config[1], 
                 'largura': pos_config[2],
@@ -383,6 +436,20 @@ class JokenGhost:
                 print("⚠️ Moldura de itens não encontrada")
         except Exception as e:
             print(f"❌ Erro ao carregar moldura de itens: {e}")
+    
+    def carregar_carta(self):
+        """Carrega a imagem da carta para a intro"""
+        try:
+            caminho_carta = os.path.join("Assests", "Sprites", "Scenes", "card_inicial.png")
+            if os.path.exists(caminho_carta):
+                self.carta_imagem = pygame.image.load(caminho_carta).convert_alpha()
+                print("✅ Carta da intro carregada com sucesso!")
+            else:
+                print(f"⚠️ Carta não encontrada em: {caminho_carta}")
+                self.carta_imagem = None
+        except Exception as e:
+            print(f"❌ Erro ao carregar carta: {e}")
+            self.carta_imagem = None
     
     def iniciar_animacao_entrada(self):
         """Inicia a animação de entrada estilo Pokémon"""
@@ -847,6 +914,44 @@ class JokenGhost:
         # === NOVO === HUD Dinheiro
         self.desenhar_hud_dinheiro()
     
+    def desenhar_intro(self):
+        """Desenha a tela de introdução com carta e história"""
+        self.tela.fill(PRETO)  # Fundo preto como o jogo original
+        
+        # Desenha a carta se disponível, mas redimensionada
+        if self.carta_imagem:
+            # Redimensiona a carta para um tamanho menor
+            carta_redimensionada = pygame.transform.scale(self.carta_imagem, (300, 200))
+            carta_rect = carta_redimensionada.get_rect()
+            carta_x = (LARGURA - carta_rect.width) // 2
+            carta_y = 30  # Um pouco mais próximo do topo
+            self.tela.blit(carta_redimensionada, (carta_x, carta_y))
+            
+            # Área de texto abaixo da carta - posição fixa segura
+            texto_y_inicio = 280  # Posição fixa para garantir que está na tela
+        else:
+            # Se não há carta, inicia o texto mais acima
+            texto_y_inicio = 200
+            
+        linha_altura = 22  # Altura entre linhas reduzida
+        
+        # Renderiza o texto da história
+        for i, linha in enumerate(self.textos_intro):
+            if linha:  # Se não é linha vazia
+                superficie_texto = self.fonte_pequena.render(linha, True, BRANCO)  # Fonte menor
+                texto_rect = superficie_texto.get_rect()
+                texto_rect.centerx = LARGURA // 2
+                texto_rect.y = texto_y_inicio + (i * linha_altura)
+                
+                # Verifica se o texto não passa da tela
+                if texto_rect.bottom < ALTURA - 60:  # Deixa espaço para a seta
+                    self.tela.blit(superficie_texto, texto_rect)
+        
+        # Seta sempre visível
+        seta_texto = self.fonte_pequena.render("▼ Pressione ESPAÇO para continuar", True, (255, 255, 0))  # Amarelo
+        seta_rect = seta_texto.get_rect(center=(LARGURA//2, ALTURA - 30))
+        self.tela.blit(seta_texto, seta_rect)
+    
     def desenhar_barra_vida(self, x, y, vida_atual, vida_maxima, cor, largura=200):
         # Fundo da barra
         pygame.draw.rect(self.tela, PRETO, (x-2, y-2, largura+4, 24))
@@ -1209,7 +1314,12 @@ class JokenGhost:
         
         # === NOVO === Texto da vida só para o jogador
         if mostrar_numeros:
-            texto_vida = self.fonte_pequena.render(f"{vida_atual:.0f}/{vida_maxima}", True, PRETO)
+            # Para o jogador, mostra apenas "VOCÊ" sem números
+            if nome == "VOCÊ":
+                texto_vida = self.fonte_pequena.render("VOCÊ", True, PRETO)
+            else:
+                # Para inimigos, mantém o formato original se necessário
+                texto_vida = self.fonte_pequena.render(f"{vida_atual:.0f}/{vida_maxima}", True, PRETO)
             self.tela.blit(texto_vida, (barra_x + barra_largura - texto_vida.get_width(), y + 5))
     
     def desenhar_resultado(self):
@@ -1493,7 +1603,15 @@ class JokenGhost:
             
             # === NOVO === Eventos de Teclado
             elif evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_r and self.estado == EstadoJogo.BATALHA:
+                if self.estado == EstadoJogo.INTRO:
+                    if evento.key == pygame.K_SPACE:
+                        # Vai direto para a batalha
+                        self.estado = EstadoJogo.TRANSICAO
+                        self.transicao_alpha = 0
+                        self.transicao_direcao = 1
+                        print("🎬 Intro finalizada, iniciando batalha...")
+                
+                elif evento.key == pygame.K_r and self.estado == EstadoJogo.BATALHA:
                     # Gera novos inimigos aleatórios
                     if not self.menu_selecao_ativo:  # Só se não tem menu ativo
                         self.gerar_inimigos_aleatorios()
@@ -1515,8 +1633,11 @@ class JokenGhost:
                     botao_clicado = self.verificar_clique_botao(evento.pos)
                     
                     if self.estado == EstadoJogo.MENU and botao_clicado == 'jogar':
-                        self.estado = EstadoJogo.TRANSICAO
-                        self.transicao_alpha = 0
+                        self.estado = EstadoJogo.INTRO
+                        self.pagina_intro_atual = 0
+                        self.texto_intro_atual = ""
+                        self.char_atual = 0
+                        print("🎬 Iniciando intro do jogo...")
                     
                     elif self.estado == EstadoJogo.BATALHA:
                         # === NOVO === Prioridade para menus ativos
@@ -1569,7 +1690,11 @@ class JokenGhost:
         return True
     
     def atualizar(self):
-        if self.estado == EstadoJogo.TRANSICAO:
+        if self.estado == EstadoJogo.INTRO:
+            # Não precisa atualizar nada por enquanto - texto aparece completo
+            pass
+        
+        elif self.estado == EstadoJogo.TRANSICAO:
             self.transicao_alpha += self.transicao_direcao * 8
             if self.transicao_alpha >= 255:
                 self.transicao_alpha = 255
@@ -1676,13 +1801,13 @@ class JokenGhost:
                         sprite_data = inimigo['sprites']['idle']
                         total_frames = sprite_data['total_frames']
                         
-                        # Velocidade baseada no número de frames
+                        # Velocidade baseada no número de frames (valores menores = animação mais rápida)
                         if total_frames <= 2:
-                            velocidade = 800
+                            velocidade = 400  # Aumentado FPS: era 800, agora 400
                         elif total_frames <= 4:
-                            velocidade = 400
+                            velocidade = 200  # Aumentado FPS: era 400, agora 200
                         else:
-                            velocidade = 200
+                            velocidade = 100  # Aumentado FPS: era 200, agora 100
                         
                         if tempo_atual - inimigo['tempo_animacao'] > velocidade:
                             inimigo['frame_atual'] = (inimigo['frame_atual'] + 1) % total_frames
@@ -1712,6 +1837,8 @@ class JokenGhost:
     def desenhar(self):
         if self.estado == EstadoJogo.MENU:
             self.desenhar_menu()
+        elif self.estado == EstadoJogo.INTRO:
+            self.desenhar_intro()
         elif self.estado == EstadoJogo.TRANSICAO:
             self.desenhar_transicao()
         elif self.estado == EstadoJogo.BATALHA:
