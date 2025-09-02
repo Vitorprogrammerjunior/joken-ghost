@@ -41,8 +41,11 @@ AZUL = (0, 100, 200)
 VERDE = (0, 200, 0)
 VERMELHO = (200, 0, 0)
 AMARELO = (255, 255, 0)
+DOURADO = (255, 215, 0)
 CINZA = (128, 128, 128)
 CINZA_CLARO = (200, 200, 200)
+MARROM_LOJA = (139, 104, 75)  # Cor marrom similar à Loja-Sheet
+MARROM_LOJA_CLARO = (160, 120, 90)  # Versão mais clara para hover
 
 class EstadoAnimacao(Enum):
     IDLE = 1
@@ -86,19 +89,19 @@ class JokenGhost:
             # Tenta usar Dogica Pixel que é mais similar ao estilo Pokémon
             if os.path.exists(fonte_dogica_pixel_path):
                 self.fonte_texto = pygame.font.Font(fonte_dogica_pixel_path, 18)    # Dogica Pixel
-                self.fonte_pequena = pygame.font.Font(fonte_dogica_pixel_path, 14)  # Dogica Pixel menor
+                self.fonte_pequena = pygame.font.Font(fonte_dogica_pixel_path, 10)  # Dogica Pixel menor
                 self.fonte_bold = pygame.font.Font(fonte_dogica_bold_path, 20) if os.path.exists(fonte_dogica_bold_path) else pygame.font.Font(fonte_dogica_pixel_path, 20)
                 print("✅ Fonte Dogica Pixel (estilo Pokémon) carregada!")
             elif os.path.exists(fonte_dogica_path):
                 # Fallback para Dogica normal
                 self.fonte_texto = pygame.font.Font(fonte_dogica_path, 18)
-                self.fonte_pequena = pygame.font.Font(fonte_dogica_path, 14)
+                self.fonte_pequena = pygame.font.Font(fonte_dogica_path, 10)
                 self.fonte_bold = pygame.font.Font(fonte_dogica_bold_path, 20) if os.path.exists(fonte_dogica_bold_path) else pygame.font.Font(fonte_dogica_path, 20)
                 print("✅ Fonte Dogica normal carregada (estilo pixel)!")
             else:
                 # Fallback para fontes do sistema
                 self.fonte_texto = pygame.font.SysFont("courier", 18)
-                self.fonte_pequena = pygame.font.SysFont("courier", 14)
+                self.fonte_pequena = pygame.font.SysFont("courier", 10)
                 self.fonte_bold = pygame.font.SysFont("courier", 20)
                 print("⚠️ Dogica não encontrada, usando Courier como fallback")
             
@@ -106,7 +109,7 @@ class JokenGhost:
             # Fallback para fontes padrão em caso de erro
             self.fonte_titulo = pygame.font.Font(None, 48)
             self.fonte_texto = pygame.font.Font(None, 18)
-            self.fonte_pequena = pygame.font.Font(None, 14)
+            self.fonte_pequena = pygame.font.Font(None, 10)
             self.fonte_bold = pygame.font.Font(None, 20)
             print(f"⚠️ Erro ao carregar fontes personalizadas: {e}")
             print("⚠️ Usando fontes padrão")
@@ -149,12 +152,41 @@ class JokenGhost:
         self.menu_altura_alvo = 300
         self.velocidade_menu = 15
         
+        # === NOVO === Sistema de Tooltip para itens da loja
+        self.tooltip_ativo = False
+        self.tooltip_texto = ""
+        self.tooltip_pos = (0, 0)
+        self.tooltip_item_rect = None
+        
+        # === NOVO === Sistema de Monstruário e Descoberta
+        self.monstruario_ativo = False
+        self.mostrar_monstruario = False  # Controla se o livro está visível
+        self.pagina_monstruario_atual = 0  # Página atual do monstruário
+        self.monstruario_descoberto = {}  # {tipo_inimigo: {"fraquezas": [], "nome": str, etc}}
+        self.sprite_monstruario = None
+        self.carregar_sprite_monstruario()
+        
+        # === NOVO === Sistema de Toast/Notificações
+        self.toast_ativo = False
+        self.toast_texto = ""
+        self.toast_tempo_inicio = 0
+        self.toast_duracao = 3000  # 3 segundos
+        self.toast_pos_y = -100  # Começa fora da tela
+        self.toast_pos_y_alvo = 20  # Posição final
+        
         # === NOVO === Sistema para Múltiplos Inimigos
         self.inimigos = []
         self.inimigo_atual_index = 0  # Para sistema de rotação
         self.aguardando_proximo_inimigo = False
         self.tempo_espera_inimigo = 0
-        self.duracao_espera = 1500  # 1.5 segundos para rotação
+        self.duracao_espera = 800  # 0.8 segundos para rotação (mais rápido)
+        
+        # === NOVO === Sistema de animação dos botões de ataque
+        self.botoes_animacao_ativa = False
+        self.botoes_pos_y_original = ALTURA - 130  # Posição original dos botões
+        self.botoes_pos_y_atual = self.botoes_pos_y_original
+        self.botoes_pos_y_escondido = ALTURA + 50  # Posição quando escondidos
+        self.velocidade_animacao_botoes = 8  # Velocidade da animação
         self.animacao_rotacao_ativa = False
         self.progresso_rotacao = 0.0  # Para interpolação suave das posições
         
@@ -221,6 +253,10 @@ class JokenGhost:
         self.tempo_inicio_ataque = 0
         self.duracao_ataque = 1000  # 1 segundo de animação de ataque
         
+        # === NOVO === Animação do Monstruário
+        self.frame_monstruario = 0
+        self.tempo_animacao_monstruario = 0
+        
         # === NOVO === Sistema de Intro/História
         self.carta_imagem = None
         self.carregar_carta()
@@ -263,6 +299,14 @@ class JokenGhost:
         else:
             num_inimigos = 3
         
+        # === PRIMEIRA FASE === Apenas fantasmas
+        # Na primeira fase, só temos fantasmas com variações de vida
+        tipos_inimigos = [
+            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 80},   # Fantasma fraco
+            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 100},  # Fantasma normal
+            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 120}   # Fantasma forte
+        ]
+        
         self.inimigos = []
         
         for i in range(num_inimigos):
@@ -270,8 +314,12 @@ class JokenGhost:
             pos_index = i % len(self.posicoes_profundidade)
             pos_config = self.posicoes_profundidade[pos_index]
             
+            # Escolhe tipo aleatório
+            tipo_escolhido = random.choice(tipos_inimigos)
+            
             inimigo = {
-                'nome': 'GHOST',  # Removido numeração
+                'nome': tipo_escolhido['nome'],
+                'tipo': tipo_escolhido['tipo'],  # Campo tipo para descoberta
                 'pos_x': pos_config[0],
                 'pos_y': pos_config[1], 
                 'largura': pos_config[2],
@@ -279,9 +327,9 @@ class JokenGhost:
                 'z_order': pos_config[4],
                 'pos_original': pos_index,  # Posição original na formação
                 'pos_atual': pos_index,     # Posição atual (muda durante rotação)
-                'vida_atual': 100,
-                'vida_max': 100,
-                'vida_visual': 100.0,
+                'vida_atual': tipo_escolhido['vida'],
+                'vida_max': tipo_escolhido['vida'],
+                'vida_visual': float(tipo_escolhido['vida']),
                 'sprites': None,
                 'ativo': True,
                 'frame_atual': 0,
@@ -359,15 +407,24 @@ class JokenGhost:
         self.animacao_rotacao_ativa = False
         self.progresso_rotacao = 0.0
         
-        # Atualiza índices de posição
-        for inimigo in self.inimigos:
-            if inimigo['ativo'] and inimigo['vida_atual'] > 0:
+        # Conta inimigos vivos
+        inimigos_vivos = [i for i in self.inimigos if i['ativo'] and i['vida_atual'] > 0]
+        
+        # Atualiza índices de posição e configurações
+        for inimigo in inimigos_vivos:
+            # Calcula nova posição
+            if len(inimigos_vivos) == 2:
+                inimigo['pos_atual'] = (inimigo['pos_atual'] + 1) % 2
+            else:
                 inimigo['pos_atual'] = (inimigo['pos_atual'] + 1) % len(self.posicoes_profundidade)
-                
-                # Se há apenas 2 inimigos, usar apenas as 2 primeiras posições
-                inimigos_vivos = len([i for i in self.inimigos if i['ativo'] and i['vida_atual'] > 0])
-                if inimigos_vivos == 2:
-                    inimigo['pos_atual'] = (inimigo['pos_atual'] + 1) % 2
+            
+            # Aplica a nova configuração
+            config = self.posicoes_profundidade[inimigo['pos_atual']]
+            inimigo['pos_x'] = config[0]
+            inimigo['pos_y'] = config[1]
+            inimigo['largura'] = config[2]
+            inimigo['altura'] = config[3]
+            inimigo['z_order'] = config[4]
         
         # Atualiza o índice do inimigo atual (o que está na frente)
         self.atualizar_inimigo_atual()
@@ -428,7 +485,7 @@ class JokenGhost:
     def carregar_moldura_itens(self):
         """Carrega a moldura de itens/botões da pasta molders"""
         try:
-            moldura_path = os.path.join("Assests", "Sprites", "molders", "molders_itens.png")
+            moldura_path = os.path.join("Assests", "Sprites", "molders", "hud_botao.png")
             if os.path.exists(moldura_path):
                 self.moldura_itens = pygame.image.load(moldura_path).convert_alpha()
                 print("✅ Moldura de itens carregada com sucesso!")
@@ -436,6 +493,18 @@ class JokenGhost:
                 print("⚠️ Moldura de itens não encontrada")
         except Exception as e:
             print(f"❌ Erro ao carregar moldura de itens: {e}")
+    
+    def carregar_sprite_monstruario(self):
+        """Carrega a sprite do monstruário"""
+        try:
+            monstruario_path = os.path.join("Assests", "Sprites", "molders", "Monstruario.png")
+            if os.path.exists(monstruario_path):
+                self.sprite_monstruario = pygame.image.load(monstruario_path).convert_alpha()
+                print("✅ Sprite do Monstruário carregada com sucesso!")
+            else:
+                print("⚠️ Sprite do Monstruário não encontrada")
+        except Exception as e:
+            print(f"❌ Erro ao carregar sprite do Monstruário: {e}")
     
     def carregar_carta(self):
         """Carrega a imagem da carta para a intro"""
@@ -550,6 +619,54 @@ class JokenGhost:
             
             # Desenha o texto
             self.tela.blit(texto, (moeda['x'], moeda['y']))
+    
+    def esconder_botoes_ataque(self):
+        """Inicia animação para esconder os botões de ataque"""
+        self.botoes_animacao_ativa = True
+        self.animacao_escondendo = True
+        print("🔽 Escondendo botões de ataque...")
+    
+    def mostrar_botoes_ataque(self):
+        """Inicia animação para mostrar os botões de ataque"""
+        self.botoes_animacao_ativa = True
+        self.animacao_escondendo = False
+        print("🔼 Mostrando botões de ataque...")
+    
+    def atualizar_animacao_botoes(self):
+        """Atualiza a animação dos botões de ataque"""
+        if not self.botoes_animacao_ativa:
+            return
+        
+        if hasattr(self, 'animacao_escondendo') and self.animacao_escondendo:
+            # Escondendo botões - movendo para baixo
+            self.botoes_pos_y_atual += self.velocidade_animacao_botoes
+            if self.botoes_pos_y_atual >= self.botoes_pos_y_escondido:
+                self.botoes_pos_y_atual = self.botoes_pos_y_escondido
+                self.botoes_animacao_ativa = False
+        else:
+            # Mostrando botões - movendo para cima
+            self.botoes_pos_y_atual -= self.velocidade_animacao_botoes
+            if self.botoes_pos_y_atual <= self.botoes_pos_y_original:
+                self.botoes_pos_y_atual = self.botoes_pos_y_original
+                self.botoes_animacao_ativa = False
+        
+        # Atualiza posições dos botões
+        self.atualizar_posicoes_botoes()
+    
+    def atualizar_posicoes_botoes(self):
+        """Atualiza as posições Y dos botões de ataque baseado na animação"""
+        botoes_principais = ['ataques', 'loja_menu', 'status']
+        for botao_key in botoes_principais:
+            if botao_key in self.botoes:
+                # Mantém X e largura/altura, apenas muda Y
+                rect_original = self.botoes[botao_key]['rect']
+                novo_y = self.botoes_pos_y_atual
+                self.botoes[botao_key]['rect'] = pygame.Rect(
+                    rect_original.x, 
+                    novo_y, 
+                    rect_original.width, 
+                    rect_original.height
+                )
     
     def desenhar_multiplos_inimigos_exemplo(self):
         """Função de demonstração para mostrar como o sistema automático funciona com múltiplos inimigos"""
@@ -808,7 +925,7 @@ class JokenGhost:
         }
         self.botoes['status'] = {
             'rect': pygame.Rect(600, ALTURA - 130, 160, 90),  # Aumentado: 120->160, 80->90
-            'texto': 'STATUS',
+            'texto': 'MONSTRUÁRIO',
             'ativo': True
         }
         
@@ -861,7 +978,7 @@ class JokenGhost:
             self.tela.blit(moldura_escalada, botao['rect'])
         else:
             # Fallback para moldura desenhada
-            cor = CINZA_CLARO if hover else CINZA
+            cor = MARROM_LOJA_CLARO if hover else MARROM_LOJA
             pygame.draw.rect(self.tela, cor, botao['rect'])
             pygame.draw.rect(self.tela, PRETO, botao['rect'], 3)
         
@@ -1068,7 +1185,8 @@ class JokenGhost:
         inimigo_frente_nome = inimigo_frente['nome'] if inimigo_frente else "Nenhum"
         texto_info = self.fonte_pequena.render(f"Inimigo da frente: {inimigo_frente_nome} | Total: {inimigos_vivos} | Pressione R para gerar novos", True, BRANCO)
         fundo_texto = pygame.Rect(10, ALTURA - 40, texto_info.get_width() + 10, 30)
-        pygame.draw.rect(self.tela, PRETO, fundo_texto, border_radius=5)
+        pygame.draw.rect(self.tela, MARROM_LOJA, fundo_texto, border_radius=5)
+        pygame.draw.rect(self.tela, PRETO, fundo_texto, 2, border_radius=5)
         self.tela.blit(texto_info, (15, ALTURA - 35))
         
         # === NOVO === Botões Principais (só aparecem se não está na animação de entrada e menu não está ativo)
@@ -1093,7 +1211,7 @@ class JokenGhost:
             
             # Caixa de texto estilo Pokémon
             caixa_texto = pygame.Rect(50, ALTURA - 200, LARGURA - 100, 80)
-            pygame.draw.rect(self.tela, BRANCO, caixa_texto, border_radius=10)
+            pygame.draw.rect(self.tela, MARROM_LOJA, caixa_texto, border_radius=10)
             pygame.draw.rect(self.tela, PRETO, caixa_texto, 3, border_radius=10)
             
             texto_jogador = self.fonte_texto.render(f"Você usou: {escolha_jogador_texto}", True, PRETO)
@@ -1111,7 +1229,7 @@ class JokenGhost:
                 # Fundo para o texto do resultado
                 fundo_resultado = pygame.Rect(resultado_rect.x - 20, resultado_rect.y - 10, 
                                             resultado_rect.width + 40, resultado_rect.height + 20)
-                pygame.draw.rect(self.tela, BRANCO, fundo_resultado, border_radius=15)
+                pygame.draw.rect(self.tela, MARROM_LOJA, fundo_resultado, border_radius=15)
                 pygame.draw.rect(self.tela, PRETO, fundo_resultado, 3, border_radius=15)
                 
                 self.tela.blit(texto_resultado, resultado_rect)
@@ -1128,8 +1246,8 @@ class JokenGhost:
         menu_y = ALTURA - self.menu_altura
         menu_rect = pygame.Rect(0, menu_y, LARGURA, self.menu_altura)
         
-        # Fundo do menu
-        pygame.draw.rect(self.tela, (240, 240, 250), menu_rect, border_radius=20)
+        # Fundo do menu com cor marrom
+        pygame.draw.rect(self.tela, MARROM_LOJA, menu_rect, border_radius=20)
         pygame.draw.rect(self.tela, PRETO, menu_rect, 3, border_radius=20)
         
         if self.menu_altura > 50:  # Só desenha conteúdo quando menu está suficientemente aberto
@@ -1144,7 +1262,7 @@ class JokenGhost:
             
             # Desenha título
             if titulo:
-                texto_titulo = self.fonte_titulo.render(titulo, True, BRANCO)  # Alterado: PRETO -> BRANCO
+                texto_titulo = self.fonte_bold.render(titulo, True, BRANCO)  # Usando fonte_bold para melhor proporção
                 titulo_x = (LARGURA - texto_titulo.get_width()) // 2
                 self.tela.blit(texto_titulo, (titulo_x, menu_y + 20))
             
@@ -1184,18 +1302,6 @@ class JokenGhost:
         for i, key in enumerate(['pedra', 'papel', 'tesoura']):
             self.botoes[key]['rect'].y = base_y + 20
             self.desenhar_botao(key, mouse_pos)
-        
-        # Informações sobre cada ataque
-        info_y = base_y + 100
-        infos = [
-            ("PEDRA: Efetivo vs Ghost (+60 moedas)", VERDE),
-            ("PAPEL: Médio vs Ghost (+25 moedas)", AMARELO),
-            ("TESOURA: Bom vs Ghost (+35 moedas)", (255, 140, 0))
-        ]
-        
-        for i, (info, cor) in enumerate(infos):
-            texto = self.fonte_pequena.render(info, True, cor)
-            self.tela.blit(texto, (50 + i * 180, info_y))
     
     def desenhar_menu_loja(self, menu_y):
         """Desenha os itens da loja dentro do menu"""
@@ -1203,6 +1309,7 @@ class JokenGhost:
         base_y = menu_y + 80
         
         self._botoes_itens_menu = []  # Lista para cliques
+        self.tooltip_ativo = False  # Reset tooltip
         
         for i, item in enumerate(self.itens_loja):
             item_rect = pygame.Rect(50 + i * 220, base_y, 200, 140)  # Aumentado: 180->200, 120->140
@@ -1210,6 +1317,20 @@ class JokenGhost:
             
             # Verifica se tem dinheiro suficiente
             pode_comprar = self.dinheiro >= item['preco']  # Corrigido: usar self.dinheiro
+            
+            # === NOVO === Sistema de Tooltip
+            if hover:
+                self.tooltip_ativo = True
+                self.tooltip_pos = (mouse_pos[0] + 15, mouse_pos[1] - 30)
+                
+                # Define texto do tooltip baseado no efeito
+                efeito_descricoes = {
+                    "cura_pequena": "Poção de Cura\nRecupera 30 HP\nUse quando precisar de vida",
+                    "cura_grande": "Poção Grande\nRecupera 60 HP\nCura maior para emergências",
+                    "buff_ofensivo": "Buff Ofensivo\nCausa 15 HP de dano\nUse para atacar inimigos"
+                }
+                self.tooltip_texto = efeito_descricoes.get(item['efeito'], "Efeito desconhecido")
+                self.tooltip_item_rect = item_rect
             
             # Usa moldura personalizada se disponível
             if self.moldura_itens:
@@ -1234,17 +1355,17 @@ class JokenGhost:
                 self.tela.blit(moldura_escalada, item_rect)
             else:
                 # Fallback para moldura desenhada
-                cor_fundo = CINZA_CLARO if hover and pode_comprar else CINZA if pode_comprar else (100, 100, 100)
+                cor_fundo = MARROM_LOJA_CLARO if hover and pode_comprar else MARROM_LOJA if pode_comprar else (80, 60, 45)
                 pygame.draw.rect(self.tela, cor_fundo, item_rect, border_radius=10)
                 pygame.draw.rect(self.tela, PRETO, item_rect, 3, border_radius=10)
             
             # Nome do item
-            nome_texto = self.fonte_texto.render(item['nome'], True, BRANCO)  # Alterado: PRETO -> BRANCO
+            nome_texto = self.fonte_bold.render(item['nome'], True, BRANCO)  # Usando fonte_bold para melhor destaque
             nome_rect = nome_texto.get_rect(center=(item_rect.centerx, item_rect.y + 25))
             self.tela.blit(nome_texto, nome_rect)
             
-            # Preço
-            preco_texto = self.fonte_titulo.render(f"${item['preco']}", True, VERDE if pode_comprar else VERMELHO)
+            # Preço - ajustando fonte para ficar mais proporcional
+            preco_texto = self.fonte_bold.render(f"${item['preco']}", True, VERDE if pode_comprar else VERMELHO)
             preco_rect = preco_texto.get_rect(center=(item_rect.centerx, item_rect.y + 60))
             self.tela.blit(preco_texto, preco_rect)
             
@@ -1259,6 +1380,332 @@ class JokenGhost:
             self.tela.blit(efeito_texto, efeito_rect)
             
             self._botoes_itens_menu.append((item_rect, item, pode_comprar))
+        
+        # === NOVO === Desenha tooltip se ativo
+        if self.tooltip_ativo:
+            self.desenhar_tooltip()
+    
+    def desenhar_tooltip(self):
+        """Desenha o tooltip com informações detalhadas do item"""
+        if not self.tooltip_ativo or not self.tooltip_texto:
+            return
+        
+        # Quebra o texto em linhas
+        linhas = self.tooltip_texto.split('\n')
+        
+        # Calcula dimensões do tooltip
+        largura_max = 0
+        altura_linha = 20
+        altura_total = len(linhas) * altura_linha + 20  # 20px de padding
+        
+        # Encontra a largura máxima necessária
+        for linha in linhas:
+            texto_surface = self.fonte_pequena.render(linha, True, BRANCO)
+            largura_max = max(largura_max, texto_surface.get_width())
+        
+        largura_total = largura_max + 20  # 20px de padding
+        
+        # Ajusta posição para não sair da tela
+        tooltip_x, tooltip_y = self.tooltip_pos
+        
+        if tooltip_x + largura_total > LARGURA:
+            tooltip_x = LARGURA - largura_total - 10
+        if tooltip_y - altura_total < 0:
+            tooltip_y = altura_total + 10
+        
+        # Desenha fundo do tooltip
+        tooltip_rect = pygame.Rect(tooltip_x - 10, tooltip_y - altura_total, largura_total, altura_total)
+        pygame.draw.rect(self.tela, (50, 40, 30), tooltip_rect, border_radius=8)  # Fundo marrom escuro
+        pygame.draw.rect(self.tela, BRANCO, tooltip_rect, 2, border_radius=8)     # Borda branca
+        
+        # Desenha sombra do tooltip
+        sombra_rect = pygame.Rect(tooltip_x - 8, tooltip_y - altura_total + 2, largura_total, altura_total)
+        pygame.draw.rect(self.tela, (0, 0, 0, 60), sombra_rect, border_radius=8)
+        
+        # Desenha cada linha do texto
+        for i, linha in enumerate(linhas):
+            texto_surface = self.fonte_pequena.render(linha, True, BRANCO)
+            texto_y = tooltip_y - altura_total + 10 + (i * altura_linha)
+            self.tela.blit(texto_surface, (tooltip_x, texto_y))
+    
+    def descobrir_fraqueza(self, tipo_inimigo, ataque_usado):
+        """Sistema de descoberta de fraquezas através do jogo"""
+        # Mapeia os ataques do jogo para as armas
+        mapa_ataques = {
+            'pedra': 'Estaca',     # Pedra = Estaca
+            'papel': 'aspirador',  # Papel = Aspirador  
+            'tesoura': 'Cruz'      # Tesoura = Cruz
+        }
+        
+        # Converte o ataque para o nome da arma
+        arma_usada = mapa_ataques.get(ataque_usado, ataque_usado)
+        
+        # Se já foi descoberto, não faz nada
+        if tipo_inimigo in self.monstruario_descoberto and arma_usada in self.monstruario_descoberto[tipo_inimigo]['fraquezas']:
+            return
+        
+        # Verifica se o ataque é efetivo E se é a descoberta inicial correta
+        fraquezas_reais = {
+            'fantasma': ['aspirador', 'Cruz', 'Estaca'],
+            'esqueleto': ['Cruz', 'Estaca'],
+            'vampiro': ['Cruz', 'aspirador'],
+            'demonio': ['Cruz'],
+            'zumbi': ['Estaca', 'aspirador']
+        }
+        
+        # SISTEMA ESPECIAL: Fantasma só é descoberto com Estaca (pedra)
+        descoberta_permitida = True
+        if tipo_inimigo == 'fantasma':
+            # Se o fantasma ainda não foi descoberto, só permite descoberta com Estaca
+            if tipo_inimigo not in self.monstruario_descoberto:
+                descoberta_permitida = (arma_usada == 'Estaca')
+                if not descoberta_permitida:
+                    print(f"⚠️ {tipo_inimigo.title()} só pode ser descoberto com Estaca (pedra)!")
+                    return
+        
+        if (tipo_inimigo in fraquezas_reais and arma_usada in fraquezas_reais[tipo_inimigo] and descoberta_permitida):
+            # Primeira descoberta deste tipo de inimigo
+            if tipo_inimigo not in self.monstruario_descoberto:
+                self.monstruario_descoberto[tipo_inimigo] = {
+                    'nome': tipo_inimigo.title(),
+                    'fraquezas': [],
+                    'vida_max': getattr(self, f'vida_max_{tipo_inimigo}', 100),
+                    'descoberto_em': pygame.time.get_ticks()
+                }
+            
+            # Adiciona a fraqueza descoberta
+            if arma_usada not in self.monstruario_descoberto[tipo_inimigo]['fraquezas']:
+                self.monstruario_descoberto[tipo_inimigo]['fraquezas'].append(arma_usada)
+                self.mostrar_toast_monstruario(tipo_inimigo, arma_usada)
+                print(f"DESCOBERTA! {tipo_inimigo.title()} é fraco contra {arma_usada}!")
+            else:
+                print(f"ℹ️ Fraqueza já conhecida: {tipo_inimigo.title()} vs {arma_usada}")
+        else:
+            print(f"❌ {arma_usada} não é efetivo contra {tipo_inimigo.title()}")
+    
+    def mostrar_toast_monstruario(self, tipo_inimigo, fraqueza_descoberta):
+        """Mostra notificação toast quando uma nova fraqueza é descoberta"""
+        self.toast_ativo = True
+        self.toast_tempo_inicio = pygame.time.get_ticks()
+        self.toast_texto = f"🔍 Nova descoberta!\nMonstruário atualizado!\n{tipo_inimigo.title()} é fraco contra {fraqueza_descoberta}!"
+        print(f"Toast ativado: {tipo_inimigo.title()} é vulnerável a {fraqueza_descoberta}!")
+    
+    def desenhar_toast(self):
+        """Desenha o toast de descoberta no canto superior direito"""
+        if not self.toast_ativo:
+            return
+        
+        tempo_atual = pygame.time.get_ticks()
+        tempo_decorrido = tempo_atual - self.toast_tempo_inicio
+        
+        # Toast dura 3 segundos
+        if tempo_decorrido > 3000:
+            self.toast_ativo = False
+            return
+        
+        # Efeito de fade
+        alpha = 255
+        if tempo_decorrido > 2500:  # Último meio segundo
+            alpha = int(255 * (1 - (tempo_decorrido - 2500) / 500))
+        
+        linhas = self.toast_texto.split('\n')
+        largura_max = 0
+        altura_linha = 22
+        
+        # Calcula dimensões
+        for linha in linhas:
+            texto_surface = self.fonte_texto.render(linha, True, BRANCO)
+            largura_max = max(largura_max, texto_surface.get_width())
+        
+        largura_toast = largura_max + 30
+        altura_toast = len(linhas) * altura_linha + 20
+        
+        # Posição no canto superior ESQUERDO
+        toast_x = 20  # Canto esquerdo
+        toast_y = 20
+        
+        # Cria surface com alpha
+        toast_surface = pygame.Surface((largura_toast, altura_toast))
+        toast_surface.set_alpha(alpha)
+        toast_surface.fill((34, 139, 34))  # Verde escuro
+        
+        # Borda
+        pygame.draw.rect(toast_surface, DOURADO, toast_surface.get_rect(), 3, border_radius=10)
+        
+        # Texto
+        for i, linha in enumerate(linhas):
+            texto_surface = self.fonte_texto.render(linha, True, BRANCO)
+            texto_y = 10 + (i * altura_linha)
+            toast_surface.blit(texto_surface, (15, texto_y))
+        
+        self.tela.blit(toast_surface, (toast_x, toast_y))
+    
+    def desenhar_monstruario(self):
+        """Desenha a interface do Monstruário em tela cheia"""
+        if not self.mostrar_monstruario:
+            return
+        
+        # Fundo semi-transparente
+        overlay = pygame.Surface((LARGURA, ALTURA))
+        overlay.set_alpha(230)
+        overlay.fill((20, 15, 10))  # Marrom muito escuro
+        self.tela.blit(overlay, (0, 0))
+        
+        # Livro central
+        livro_largura = 700
+        livro_altura = 500
+        livro_x = (LARGURA - livro_largura) // 2
+        livro_y = (ALTURA - livro_altura) // 2
+        
+        # Sprite do monstruário como fundo do livro
+        if self.sprite_monstruario:
+            sprite_redimensionada = pygame.transform.scale(self.sprite_monstruario, (livro_largura, livro_altura))
+            self.tela.blit(sprite_redimensionada, (livro_x, livro_y))
+        else:
+            # Fallback se não houver sprite
+            pygame.draw.rect(self.tela, (101, 67, 33), (livro_x, livro_y, livro_largura, livro_altura), border_radius=15)
+            pygame.draw.rect(self.tela, DOURADO, (livro_x, livro_y, livro_largura, livro_altura), 5, border_radius=15)
+        
+        # Sistema de paginação - adiciona variáveis se não existem
+        if not hasattr(self, 'pagina_monstruario_atual'):
+            self.pagina_monstruario_atual = 0
+        
+        # Lista de monstros descobertos
+        tipos_descobertos = list(self.monstruario_descoberto.keys())
+        total_paginas = max(1, len(tipos_descobertos))
+        
+        # Garante que a página atual está dentro dos limites
+        if self.pagina_monstruario_atual >= total_paginas:
+            self.pagina_monstruario_atual = 0
+        
+        # Título (posicionado acima do livro)
+        titulo = self.fonte_titulo.render("MONSTRUÁRIO", True, DOURADO)
+        titulo_x = livro_x + (livro_largura - titulo.get_width()) // 2
+        self.tela.blit(titulo, (titulo_x, livro_y - 50))  # 50px acima do livro
+        
+        # Contador de páginas (abaixo do título)
+        if tipos_descobertos:
+            contador = self.fonte_pequena.render(f"Página {self.pagina_monstruario_atual + 1} de {total_paginas}", True, CINZA_CLARO)
+            contador_x = livro_x + (livro_largura - contador.get_width()) // 2
+            self.tela.blit(contador, (contador_x, livro_y + 25))  # 25px abaixo do topo do livro
+        
+        # Conteúdo da página
+        if not tipos_descobertos:
+            # Nenhum monstro descoberto
+            texto_vazio = self.fonte_texto.render("Derrote inimigos para descobrir suas fraquezas!", True, BRANCO)
+            texto_x = livro_x + (livro_largura - texto_vazio.get_width()) // 2
+            self.tela.blit(texto_vazio, (texto_x, livro_y + 200))
+        else:
+            # Mostra o monstro da página atual
+            tipo_atual = tipos_descobertos[self.pagina_monstruario_atual]
+            info = self.monstruario_descoberto[tipo_atual]
+            
+            # === LAYOUT DA PÁGINA OTIMIZADO PARA PRIMEIRA PÁGINA ===
+            # Sprite posicionado à esquerda na primeira página
+            sprite_x = livro_x + 200  # À esquerda (60px da margem)
+            sprite_y = livro_y + 100  # Um pouco mais acima (100px do topo)
+            
+            # Desenha sprite do fantasma (cortando um frame da sprite sheet)
+            try:
+                # Carrega o sprite sheet do fantasma
+                caminho_fantasma = os.path.join("Assests", "Sprites", "Ghost", "Sprite_fantasma.idle (1).png")
+                if os.path.exists(caminho_fantasma):
+                    sprite_sheet = pygame.image.load(caminho_fantasma).convert_alpha()
+                    
+                    # Sprite sheet tem 12 frames horizontais de 640x640
+                    # Cada frame tem largura de: 640 / 12 = ~53px
+                    largura_frame = sprite_sheet.get_width() // 12
+                    altura_frame = sprite_sheet.get_height()
+                    
+                    # Corta o primeiro frame (x=0, y=0, largura=53px, altura=640px)
+                    frame_rect = pygame.Rect(0, 0, largura_frame, altura_frame)
+                    sprite_fantasma = sprite_sheet.subsurface(frame_rect)
+                    
+                    # Redimensiona para tamanho adequado no livro
+                    sprite_scaled = pygame.transform.scale(sprite_fantasma, (80, 80))
+                    self.tela.blit(sprite_scaled, (sprite_x, sprite_y))
+                else:
+                    print(f"❌ Arquivo não encontrado: {caminho_fantasma}")
+                    self.desenhar_sprite_fallback(sprite_x, sprite_y)
+            except Exception as e:
+                print(f"❌ Erro ao carregar sprite do fantasma: {e}")
+                self.desenhar_sprite_fallback(sprite_x, sprite_y)
+            
+            # POSIÇÕES DOS TEXTOS DO MONSTRUÁRIO - MENORES E À ESQUERDA NA PRIMEIRA PÁGINA:
+            
+            # Nome do monstro (menor e à esquerda)
+            nome_y = sprite_y + 85  # Logo abaixo do sprite
+            nome_surface = self.fonte_texto.render(info['nome'], True, CINZA)  # Fonte menor (texto ao invés de bold)
+            nome_x = livro_x + 185  # Posicionado à esquerda (50px da margem)
+            self.tela.blit(nome_surface, (nome_x, nome_y))
+            
+            # Descrição do monstro (menor e à esquerda, quebrada em linhas se necessário)
+            desc_y = nome_y + 25  # Mais próximo do nome
+            if tipo_atual == 'fantasma':
+                # Descrição mais curta para caber melhor
+                descricao1 = "Espírito inquieto que"
+                descricao2 = "assombra a mansão."
+            else:
+                descricao1 = "Criatura misteriosa"
+                descricao2 = "das trevas."
+            
+            # Primeira linha da descrição
+            desc_surface1 = self.fonte_pequena.render(descricao1, True, BRANCO)  # Fonte ainda menor
+            desc_x = livro_x + 165  # À esquerda
+            self.tela.blit(desc_surface1, (desc_x, desc_y))
+            
+            # Segunda linha da descrição
+            desc_surface2 = self.fonte_pequena.render(descricao2, True, BRANCO)
+            self.tela.blit(desc_surface2, (desc_x, desc_y + 15))  # 15px abaixo da primeira linha
+            
+            # Fraquezas descobertas (menores e à esquerda)
+            fraq_y = desc_y + 40  # Abaixo da descrição
+            if info['fraquezas']:
+                fraq_titulo = self.fonte_pequena.render("Fraquezas:", True, VERMELHO)  # Título menor
+                fraq_titulo_x = livro_x + 208  # À esquerda
+                self.tela.blit(fraq_titulo, (fraq_titulo_x, fraq_y))
+                
+                # Lista as fraquezas (menores e à esquerda)
+                y_fraqueza = fraq_y + 20  # Mais próximo do título
+                for i, fraqueza in enumerate(info['fraquezas']):
+                    fraq_text = f"• {fraqueza}"
+                    fraq_surface = self.fonte_pequena.render(fraq_text, True, VERDE)  # Fonte menor
+                    fraq_x = livro_x + 208  # Levemente mais à direita que o título (indentação)
+                    self.tela.blit(fraq_surface, (fraq_x, y_fraqueza))
+                    y_fraqueza += 18  # Espaçamento menor entre fraquezas
+            else:
+                # Mensagem quando não há fraquezas descobertas (menor e à esquerda)
+                sem_fraq = self.fonte_pequena.render("Ainda não descobertas", True, CINZA_CLARO)  # Texto menor
+                sem_fraq_x = livro_x + 50  # À esquerda
+                self.tela.blit(sem_fraq, (sem_fraq_x, fraq_y))
+        
+        # Navegação entre páginas (se houver mais de uma página)
+        if total_paginas > 1:
+            nav_y = livro_y + livro_altura - 60
+            
+            # Seta esquerda
+            if self.pagina_monstruario_atual > 0:
+                seta_esq = self.fonte_bold.render("◀ Anterior", True, DOURADO)
+                self.tela.blit(seta_esq, (livro_x + 20, nav_y))
+            
+            # Seta direita
+            if self.pagina_monstruario_atual < total_paginas - 1:
+                seta_dir = self.fonte_bold.render("Próximo ▶", True, DOURADO)
+                seta_dir_x = livro_x + livro_largura - seta_dir.get_width() - 20
+                self.tela.blit(seta_dir, (seta_dir_x, nav_y))
+        
+        # Instruções de fechamento
+        instrucao = self.fonte_pequena.render("Pressione ESC ou clique fora do livro para fechar", True, CINZA_CLARO)
+        instrucao_x = livro_x + (livro_largura - instrucao.get_width()) // 2
+        self.tela.blit(instrucao, (instrucao_x, livro_y + livro_altura - 30))
+    
+    def desenhar_sprite_fallback(self, x, y):
+        """Desenha um sprite de fallback quando não há sprite disponível"""
+        pygame.draw.rect(self.tela, CINZA, (x, y, 128, 128), border_radius=10)
+        ghost_text = self.fonte_titulo.render("GHOST", True, BRANCO)
+        ghost_x = x + (128 - ghost_text.get_width()) // 2
+        ghost_y = y + (128 - ghost_text.get_height()) // 2
+        self.tela.blit(ghost_text, (ghost_x, ghost_y))
     
     def desenhar_barra_vida_automatica(self, sprite_x, sprite_y, sprite_largura, sprite_altura, vida_atual, vida_maxima, nome, largura_barra=150, mostrar_numeros=True):
         """Desenha barra de vida automaticamente posicionada 40px acima da sprite e centralizada"""
@@ -1401,6 +1848,9 @@ class JokenGhost:
         # Bloqueia outras ações durante o turno
         self.turno_em_andamento = True
         
+        # === NOVO === Esconde os botões quando o turno começa
+        self.esconder_botoes_ataque()
+        
         self.escolha_jogador = escolha_jogador
         
         # Verifica se há inimigos vivos
@@ -1440,8 +1890,16 @@ class JokenGhost:
             dano = 25
             inimigo_atual['vida_atual'] -= dano
             
-            # Adiciona dinheiro por acerto
-            recompensa_acerto = 15
+            # Sistema de descoberta de fraquezas
+            tipo_inimigo = inimigo_atual['tipo']
+            ataque_usado = self.escolha_jogador.name.lower()
+            self.descobrir_fraqueza(tipo_inimigo, ataque_usado)
+            
+            # Adiciona dinheiro por acerto - PEDRA (Aspirador) dá mais moedas vs fantasmas
+            if self.escolha_jogador == Escolha.PEDRA:
+                recompensa_acerto = 25  # Aspirador é efetivo contra fantasmas
+            else:
+                recompensa_acerto = 15  # Recompensa padrão para outras armas
             self.dinheiro += recompensa_acerto
             
             # Cria moeda flutuante na posição do inimigo
@@ -1521,16 +1979,33 @@ class JokenGhost:
         
         # Reset shake effects
         self.shake_jogador = {'ativo': False, 'x': 0, 'y': 0, 'tempo': 0}
+        self.shake_inimigo = {'ativo': False, 'x': 0, 'y': 0, 'tempo': 0}
+        
+        # === NOVO === Reset sistema de botões e animações
+        self.botoes_animacao_ativa = False
+        self.botoes_pos_y_atual = self.botoes_pos_y_original
+        self.turno_em_andamento = False
+        self.atualizar_posicoes_botoes()  # Reposiciona botões na posição original
+        
+        # Reset sistema de menu
+        self.menu_selecao_ativo = False
+        self.menu_altura = 0
+        
+        # Reset toast e monstruário
+        self.toast_ativo = False
+        self.mostrar_monstruario = False
         
         inimigos_count = len([i for i in self.inimigos if i['ativo']])
         print(f"🔄 Jogo reiniciado! Novos inimigos: {inimigos_count}")
-        self.tempo_resultado = 0
-        self.estado = EstadoJogo.MENU
+        
+        # Vai direto para batalha (pula intro)
+        self.estado = EstadoJogo.BATALHA
+        self.iniciar_animacao_entrada()
+        
         # === NOVO === reset de recompensa/loja e animações
         self.recompensa_paga = False
         self.loja_aberta = False
         self.mensagem_loja = ""
-        self.animacao_entrada_ativa = False
         self.jogador_pos_x = self.jogador_pos_final
         self.inimigo_pos_x = self.inimigo_pos_final
         # === NOVO === reset do sistema de menu e animações visuais
@@ -1554,8 +2029,8 @@ class JokenGhost:
         else:
             # Fallback para moldura desenhada
             caixa = pygame.Rect(x, y, 120, 40)
-            pygame.draw.rect(self.tela, PRETO, caixa, border_radius=8)
-            pygame.draw.rect(self.tela, CINZA, caixa, 2, border_radius=8)
+            pygame.draw.rect(self.tela, MARROM_LOJA, caixa, border_radius=8)
+            pygame.draw.rect(self.tela, PRETO, caixa, 2, border_radius=8)
         
         # Texto apenas com o valor (sem "Dinheiro:")
         txt = self.fonte_pequena.render(f"${self.dinheiro}", True, BRANCO)
@@ -1603,6 +2078,27 @@ class JokenGhost:
             
             # === NOVO === Eventos de Teclado
             elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_ESCAPE:
+                    # Fecha o monstruário se estiver aberto
+                    if self.mostrar_monstruario:
+                        self.mostrar_monstruario = False
+                        print("📖 Monstruário fechado")
+                        continue  # Não processa outros eventos de ESC
+                
+                # Navegação no monstruário com setas
+                elif self.mostrar_monstruario:
+                    tipos_descobertos = list(self.monstruario_descoberto.keys())
+                    if tipos_descobertos:
+                        if evento.key == pygame.K_LEFT:
+                            if self.pagina_monstruario_atual > 0:
+                                self.pagina_monstruario_atual -= 1
+                                print(f"📖 Página anterior: {self.pagina_monstruario_atual + 1}")
+                        elif evento.key == pygame.K_RIGHT:
+                            if self.pagina_monstruario_atual < len(tipos_descobertos) - 1:
+                                self.pagina_monstruario_atual += 1
+                                print(f"📖 Próxima página: {self.pagina_monstruario_atual + 1}")
+                    continue  # Não processa outros eventos quando monstruário está aberto
+                
                 if self.estado == EstadoJogo.INTRO:
                     if evento.key == pygame.K_SPACE:
                         # Vai direto para a batalha
@@ -1630,6 +2126,30 @@ class JokenGhost:
             
             elif evento.type == pygame.MOUSEBUTTONDOWN:
                 if evento.button == 1:  # Clique esquerdo
+                    # Verifica se o monstruário está aberto - BLOQUEIA TUDO SE ESTIVER ABERTO
+                    if self.mostrar_monstruario:
+                        livro_largura = 700
+                        livro_altura = 500
+                        livro_x = (LARGURA - livro_largura) // 2
+                        livro_y = (ALTURA - livro_altura) // 2
+                        
+                        # Área expandida para facilitar fechar o monstruário
+                        margem_clique = 100  # 100 pixels de margem ao redor do livro
+                        area_livro = pygame.Rect(
+                            livro_x - margem_clique, 
+                            livro_y - margem_clique, 
+                            livro_largura + (margem_clique * 2), 
+                            livro_altura + (margem_clique * 2)
+                        )
+                        
+                        # Se clicou FORA da área expandida, fecha o monstruário
+                        if not area_livro.collidepoint(evento.pos):
+                            self.mostrar_monstruario = False
+                            print("📖 Monstruário fechado")
+                        # IMPORTANTE: sempre retorna True quando monstruário está aberto
+                        # Isso impede qualquer outra interação
+                        return True
+                    
                     botao_clicado = self.verificar_clique_botao(evento.pos)
                     
                     if self.estado == EstadoJogo.MENU and botao_clicado == 'jogar':
@@ -1676,11 +2196,9 @@ class JokenGhost:
                             elif botao_clicado == 'loja_menu':
                                 self.abrir_menu_selecao(TipoMenu.LOJA)
                             elif botao_clicado == 'status':
-                                # Mostra informações de status (pode implementar depois)
-                                print(f"📊 Status - Vida: {self.vida_jogador}/{self.vida_max_jogador} | Dinheiro: ${self.dinheiro}")
-                                # Por enquanto, só fecha qualquer menu aberto
-                                if self.menu_selecao_ativo:
-                                    self.fechar_menu_selecao()
+                                # Abre/fecha o Monstruário
+                                self.mostrar_monstruario = not self.mostrar_monstruario
+                                print(f"📖 Monstruário {'aberto' if self.mostrar_monstruario else 'fechado'}")
                         elif self.turno_em_andamento:
                             print("⏳ Aguarde o turno terminar antes de realizar outra ação!")
 
@@ -1746,12 +2264,15 @@ class JokenGhost:
             # === NOVO === Atualiza moedas flutuantes
             self.atualizar_moedas_flutuantes()
             
+            # === NOVO === Atualiza animação dos botões
+            self.atualizar_animacao_botoes()
+            
             # === NOVO === Atualiza sistema de rotação de inimigos
             self.atualizar_rotacao_inimigo()
             
             # === NOVO === Gerencia espera para próximo inimigo
             if self.aguardando_proximo_inimigo:
-                if tempo_atual - self.tempo_espera_inimigo > 1000:  # 1 segundo de delay
+                if tempo_atual - self.tempo_espera_inimigo > 600:  # 0.6 segundos de delay (mais rápido)
                     self.aguardando_proximo_inimigo = False
                     self.iniciar_rotacao_inimigo()
             
@@ -1833,6 +2354,9 @@ class JokenGhost:
                     
                     # Desbloqueia ações após o turno terminar
                     self.turno_em_andamento = False
+                    
+                    # === NOVO === Mostra os botões novamente quando o turno termina
+                    self.mostrar_botoes_ataque()
     
     def desenhar(self):
         if self.estado == EstadoJogo.MENU:
@@ -1845,6 +2369,10 @@ class JokenGhost:
             self.desenhar_batalha()
         elif self.estado == EstadoJogo.RESULTADO:
             self.desenhar_resultado()
+        
+        # Elementos sempre visíveis (toast e monstruário)
+        self.desenhar_toast()
+        self.desenhar_monstruario()
         
         pygame.display.flip()
     
