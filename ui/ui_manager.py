@@ -232,33 +232,27 @@ class UIManager:
         tela.blit(texto_nome, (nome_x, barra_y - 20))
         
     def desenhar_hud_dinheiro(self, tela, dinheiro):
-        """Desenha o HUD de dinheiro."""
-        moldura_dinheiro = self.resource_manager.obter_moldura('dinheiro')
+        """Desenha o HUD de dinheiro (IDÊNTICO AO ORIGINAL)."""
+        # Posição da moldura/dinheiro (canto superior direito)
+        x = LARGURA - 130
+        y = 10
         
+        # Desenha a moldura se disponível
+        moldura_dinheiro = self.resource_manager.obter_moldura('dinheiro')
         if moldura_dinheiro:
-            # Posição no canto superior direito
-            pos_x = LARGURA - 140
-            pos_y = 20
-            
-            # Desenha a moldura
-            tela.blit(moldura_dinheiro, (pos_x, pos_y))
-            
-            # Desenha o texto do dinheiro centralizado na moldura
-            fonte_pequena = self.resource_manager.obter_fonte('pequena')
-            texto_dinheiro = fonte_pequena.render(f"${dinheiro}", True, DOURADO)
-            texto_rect = texto_dinheiro.get_rect(center=(pos_x + 60, pos_y + 20))
-            tela.blit(texto_dinheiro, texto_rect)
+            tela.blit(moldura_dinheiro, (x, y))
         else:
-            # Fallback sem moldura
-            pos_x = LARGURA - 120
-            pos_y = 20
-            pygame.draw.rect(tela, MARROM_LOJA, (pos_x, pos_y, 100, 30), border_radius=5)
-            pygame.draw.rect(tela, PRETO, (pos_x, pos_y, 100, 30), 2, border_radius=5)
-            
-            fonte_pequena = self.resource_manager.obter_fonte('pequena')
-            texto_dinheiro = fonte_pequena.render(f"${dinheiro}", True, DOURADO)
-            texto_rect = texto_dinheiro.get_rect(center=(pos_x + 50, pos_y + 15))
-            tela.blit(texto_dinheiro, texto_rect)
+            # Fallback para moldura desenhada
+            caixa = pygame.Rect(x, y, 120, 40)
+            pygame.draw.rect(tela, MARROM_LOJA, caixa, border_radius=8)
+            pygame.draw.rect(tela, PRETO, caixa, 2, border_radius=8)
+        
+        # Texto apenas com o valor (sem "Dinheiro:")
+        fonte_pequena = self.resource_manager.obter_fonte('pequena')
+        txt = fonte_pequena.render(f"${dinheiro}", True, BRANCO)
+        # Centraliza o texto na moldura
+        text_rect = txt.get_rect(center=(x + 60, y + 20))
+        tela.blit(txt, text_rect)
             
     def abrir_menu_selecao(self, tipo_menu):
         """Abre o menu de seleção com animação."""

@@ -73,6 +73,12 @@ class ResourceManager:
                 self.imagens['carta_intro'] = pygame.image.load(carta_path).convert_alpha()
                 print("✅ Carta da intro carregada!")
                 
+            # Monstruário (NOVO)
+            monstruario_path = os.path.join("Assests", "Sprites", "molders", "Monstruario.png")
+            if os.path.exists(monstruario_path):
+                self.imagens['monstruario'] = pygame.image.load(monstruario_path).convert_alpha()
+                print("✅ Sprite do monstruário carregada!")
+                
         except Exception as e:
             print(f"⚠️ Erro ao carregar imagens: {e}")
             
@@ -91,8 +97,17 @@ class ResourceManager:
                 self.molduras['loja'] = pygame.image.load(loja_path).convert_alpha()
                 print("✅ Moldura da loja carregada!")
                 
-            # Moldura de dinheiro (usar a mesma dos itens por enquanto)
-            self.molduras['dinheiro'] = self.molduras.get('itens')
+            # Moldura de dinheiro (coin molder específica)
+            moldura_dinheiro_path = os.path.join("Assests", "Sprites", "molders", "coin_molder.png")
+            if os.path.exists(moldura_dinheiro_path):
+                self.molduras['dinheiro'] = pygame.image.load(moldura_dinheiro_path).convert_alpha()
+                # Escala para um tamanho adequado (aproximadamente 120x40 pixels)
+                self.molduras['dinheiro'] = pygame.transform.scale(self.molduras['dinheiro'], (120, 40))
+                print("✅ Moldura de dinheiro (coin molder) carregada!")
+            else:
+                # Fallback para moldura de itens
+                self.molduras['dinheiro'] = self.molduras.get('itens')
+                print("⚠️ Moldura de dinheiro não encontrada, usando fallback")
             
         except Exception as e:
             print(f"⚠️ Erro ao carregar molduras: {e}")

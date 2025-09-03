@@ -56,11 +56,15 @@ class EnemyManager:
         else:
             num_inimigos = 3
         
-        # === PRIMEIRA FASE === Apenas fantasmas
+        # === PRIMEIRA FASE === Fantasmas, Castelos e Balões
         tipos_inimigos = [
-            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 80},   # Fantasma fraco
-            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 100},  # Fantasma normal
-            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 120}   # Fantasma forte
+            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 80},     # Fantasma fraco
+            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 100},    # Fantasma normal
+            {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 120},    # Fantasma forte
+            {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 150},    # Castelo resistente
+            {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 120},    # Castelo normal
+            {'nome': 'BALLOON_RED', 'tipo': 'balao', 'vida': 60},  # Balão fraco
+            {'nome': 'BALLOON_BLUE', 'tipo': 'balao', 'vida': 80}, # Balão normal
         ]
         
         self.inimigos = []
@@ -73,9 +77,21 @@ class EnemyManager:
             # Escolhe tipo aleatório
             tipo_escolhido = random.choice(tipos_inimigos)
             
+            # === NOVO: Sistema de sprites específicos por tipo ===
+            sprites_inimigo_tipo = None
+            if tipo_escolhido['nome'] == 'GHOST':
+                sprites_inimigo_tipo = 'ghost'  # Nome da pasta de sprites
+            elif tipo_escolhido['nome'] == 'KASTLE':
+                sprites_inimigo_tipo = 'kastle'
+            elif tipo_escolhido['nome'].startswith('BALLOON'):
+                sprites_inimigo_tipo = 'ballons'
+            else:
+                sprites_inimigo_tipo = 'ghost'  # Default
+            
             inimigo = {
                 'nome': tipo_escolhido['nome'],
                 'tipo': tipo_escolhido['tipo'],
+                'sprite_tipo': sprites_inimigo_tipo,  # Novo campo
                 'pos_x': pos_config[0],
                 'pos_y': pos_config[1], 
                 'largura': pos_config[2],
@@ -86,7 +102,7 @@ class EnemyManager:
                 'vida_atual': tipo_escolhido['vida'],
                 'vida_max': tipo_escolhido['vida'],
                 'vida_visual': float(tipo_escolhido['vida']),
-                'sprites': sprites_inimigo,
+                'sprites': None,  # Será carregado dinamicamente
                 'ativo': True,
                 'frame_atual': 0,
                 'tempo_animacao': 0,

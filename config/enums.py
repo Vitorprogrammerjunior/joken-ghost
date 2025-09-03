@@ -9,15 +9,16 @@ class EstadoAnimacao(Enum):
     """Estados de animação dos personagens."""
     IDLE = 1
     ATAQUE = 2
+    DEFENDENDO = 3
 
 class EstadoJogo(Enum):
     """Estados principais do jogo."""
-    MENU_PRINCIPAL = 1
-    INTRODUCAO = 2
+    MENU = 1
+    INTRO = 2
     TRANSICAO = 3
-    JOGANDO = 4
-    GAME_OVER = 5
-    VITORIA = 6
+    BATALHA = 4
+    RESULTADO = 5
+    MENU_SELECAO = 6  # Novo estado para menu de seleção
 
 class TipoMenu(Enum):
     """Tipos de menu de seleção."""
@@ -27,6 +28,6 @@ class TipoMenu(Enum):
 
 class Escolha(Enum):
     """Escolhas de ataque disponíveis no jogo."""
-    PEDRA = 1    # Aspirador Espiritual
-    PAPEL = 2    # Cruz Sagrada
-    TESOURA = 3  # Estaca de Madeira
+    PEDRA = 1    # Estaca de Madeira
+    PAPEL = 2    # Aspirador Espiritual  
+    TESOURA = 3  # Cruz Sagrada
