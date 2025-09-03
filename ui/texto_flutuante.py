@@ -76,11 +76,22 @@ class SistemaTextoFlutuante:
         
     def atualizar(self, delta_time):
         """Atualiza todos os textos."""
+        # Contar textos antes da limpeza
+        textos_antes = len(self.textos)
+        
         # Atualiza textos ativos
         for texto in self.textos[:]:
             texto.atualizar(delta_time)
             if not texto.ativo:
                 self.textos.remove(texto)
+        
+        # Contar textos depois da limpeza
+        textos_depois = len(self.textos)
+        
+        # Debug: mostrar limpeza se houve mudança
+        if textos_antes != textos_depois:
+            removidos = textos_antes - textos_depois
+            print(f"🧹 SistemaTextoFlutuante: {removidos} textos removidos ({textos_antes}→{textos_depois})")
                 
     def desenhar(self, tela):
         """Desenha todos os textos ativos."""
@@ -89,4 +100,7 @@ class SistemaTextoFlutuante:
             
     def limpar(self):
         """Remove todos os textos."""
+        textos_removidos = len(self.textos)
         self.textos.clear()
+        if textos_removidos > 0:
+            print(f"🧹 SistemaTextoFlutuante: LIMPEZA TOTAL - {textos_removidos} textos removidos")

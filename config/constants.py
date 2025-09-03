@@ -72,6 +72,28 @@ SPRITE_JOGADOR_ALTURA = 140
 SPRITE_INIMIGO_LARGURA_BASE = 120
 SPRITE_INIMIGO_ALTURA_BASE = 140
 
+# ===== CONFIGURAÇÃO GLOBAL DE SPRITES (SEMPRE FUNCIONARÁ) =====
+# Configuração garantida para sprite do Ghost - primeira fase
+GHOST_SPRITE_PATH = "Assests/Sprites/Ghost/Sprite_fantasma.idle (1).png"
+GHOST_SPRITE_CONFIG = {
+    'arquivo': 'Sprite_fantasma.idle (1).png',
+    'pasta': 'Ghost',
+    'tipo': 'horizontal',  # sprite sheet horizontal
+    'frames': 12,  # 12 frames detectados automaticamente
+    'frame_width': 640,  # largura detectada automaticamente
+    'frame_height': 640,  # altura detectada automaticamente
+    'velocidade_animacao': 150,  # ms entre frames
+    'loop': True  # animação em loop contínuo
+}
+
+# Configuração de fallback caso sprite não seja encontrada
+SPRITE_FALLBACK_CONFIG = {
+    'cor': VERMELHO,
+    'largura': 80,
+    'altura': 100,
+    'forma': 'retangulo'
+}
+
 # ===== CONFIGURAÇÕES DE AUDIO =====
 # (Preparado para futuras implementações de som)
 VOLUME_MASTER = 0.7

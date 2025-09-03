@@ -14,13 +14,20 @@ from config.constants import *
 from config.enums import *
 from core.resource_manager import ResourceManager
 from core.enemy_manager import EnemyManager
+from core.combat_system import CombatSystem
 from ui.ui_manager import UIManager
 from ui.menu_renderer import MenuRenderer
 from ui.toast_system import ToastManager, NotificationSystem
+from ui.target_selector import TargetSelector
+from ui.simple_damage_display import SimpleDamageDisplay
+from ui.result_display import ResultDisplay
+from ui.visual_effects import VisualEffectsManager, EnemyAttackAnimationManager
+from ui.ui_animations import UIAnimationManager, AnimatedWidget
+from core.economy_manager import EconomyManager
 from graphics.sprite_manager import SpriteManager, AnimationController
 from game.loja_manager import LojaManager
 from ui.monstruario_original import MonstruarioOriginal
-from ui.texto_flutuante import SistemaTextoFlutuante
+# REMOVIDO: from ui.texto_flutuante import SistemaTextoFlutuante
 
 class JokenGhostGame:
     """Classe principal do jogo JokenGhost."""
@@ -58,6 +65,18 @@ class JokenGhostGame:
         self.loja_manager = LojaManager(self.resource_manager)
         self.monstruario_manager = MonstruarioOriginal(self.resource_manager)
         
+        # === NOVOS SISTEMAS DE COMBATE RPG ===
+        self.combat_system = CombatSystem()
+        self.target_selector = TargetSelector()
+        self.simple_damage = SimpleDamageDisplay(self.resource_manager)
+        self.result_display = ResultDisplay()
+        
+        # === NOVOS SISTEMAS VISUAIS ===
+        self.visual_effects = VisualEffectsManager()
+        self.enemy_attack_animations = EnemyAttackAnimationManager()
+        self.ui_animations = UIAnimationManager()
+        self.economy_manager = EconomyManager()
+        
         # Carregar recursos
         self.carregar_recursos()
         
@@ -88,7 +107,11 @@ class JokenGhostGame:
             'multiplicador_recompensa': 1.0
         }
         # Sistema de texto flutuante
-        self.sistema_texto_flutuante = SistemaTextoFlutuante(self.resource_manager)
+        # REMOVIDO: sistema_texto_flutuante - usando SimpleDamageDisplay
+        
+        # === LIMPEZA PARA EVITAR NÚMEROS PERSISTENTES ===
+        # Limpar todos os sistemas de dano
+        self.simple_damage.limpar_todos()
         
         # Sistema de dinheiro (IDÊNTICO AO ORIGINAL)
         self.dinheiro = 0  # Começa sem dinheiro, ganha através de batalhas
@@ -149,7 +172,7 @@ class JokenGhostGame:
         # === NOVO: Sistema de animação do personagem ===
         self.frame_personagem = 0
         self.tempo_ultima_animacao = 0
-        self.velocidade_animacao = 150  # ms entre frames
+        self.velocidade_animacao = 80  # ms entre frames (mais rápido = mais fluido)
         
         # === NOVO: Sistema de alternância de inimigos ===
         self.alternancia_ativa = False
@@ -193,6 +216,16 @@ class JokenGhostGame:
         num_inimigos = self.enemy_manager.gerar_inimigos_aleatorios(sprites_inimigo)
         self.inimigos = self.enemy_manager.inimigos
         self.inimigo_atual_index = self.enemy_manager.inimigo_atual_index
+        
+        # CORREÇÃO: Garante que todos os inimigos tenham propriedades de animação inicializadas
+        for inimigo in self.inimigos:
+            if 'frame_atual' not in inimigo:
+                inimigo['frame_atual'] = 0
+            if 'tempo_animacao' not in inimigo:
+                inimigo['tempo_animacao'] = 0.0
+            if 'sprites' not in inimigo or inimigo['sprites'] is None:
+                inimigo['sprites'] = sprites_inimigo
+                
         print(f"🎲 Spawned {num_inimigos} inimigo(s) no modo múltiplos inimigos!")
         
     def obter_inimigo_atual(self):
@@ -418,12 +451,19 @@ class JokenGhostGame:
                 self.transicao_alpha = 0
                 
         elif self.estado_jogo == EstadoJogo.BATALHA:
+            # NOVA LÓGICA: ESC para cancelar seleção de alvo
+            if tecla == pygame.K_ESCAPE and self.target_selector.modo_selecao_ativo:
+                self.target_selector.desativar_modo_selecao()
+                print("❌ Seleção de alvo cancelada")
+                return
+                
             # Tecla R para gerar novos inimigos
             if tecla == pygame.K_r and not self.ui_manager.menu_selecao_ativo:
                 self.gerar_inimigos_aleatorios()
                 self.escolha_jogador = None
                 self.escolha_inimigo = None
                 self.resultado_combate = ""
+                self.combat_system.limpar_selecao()  # Limpa seleção de combate
                 print("🔄 Novos inimigos gerados!")
                 
             # Teclas de atalho para ataques (1, 2, 3)
@@ -455,11 +495,67 @@ class JokenGhostGame:
             
     def processar_clique_jogo(self, pos):
         """Processa cliques durante o jogo."""
+        # NOVA LÓGICA: Primeiro verifica se estamos no modo de seleção de alvo
+        if self.target_selector.modo_selecao_ativo:
+            alvo_selecionado = self.target_selector.processar_clique(pos, self.inimigos)
+            if alvo_selecionado is not None:
+                print(f"🎯 Alvo selecionado: {self.inimigos[alvo_selecionado]['nome']}")
+            return
+            
         # Verifica se há menu aberto
         if self.ui_manager.menu_selecao_ativo:
             self.processar_clique_menu_aberto(pos)
         else:
-            self.processar_clique_botoes_principais(pos)
+            # NOVO: Primeiro tenta detectar clique em inimigo
+            inimigo_clicado = self.detectar_clique_inimigo(pos)
+            if inimigo_clicado is not None:
+                self.processar_clique_inimigo(inimigo_clicado)
+            else:
+                # Se não clicou em inimigo, processa botões principais
+                self.processar_clique_botoes_principais(pos)
+                
+    def detectar_clique_inimigo(self, pos):
+        """
+        Detecta se o clique foi em um inimigo.
+        
+        Args:
+            pos: Posição do clique (x, y)
+            
+        Returns:
+            int ou None: Índice do inimigo clicado ou None se não clicou em nenhum
+        """
+        mouse_x, mouse_y = pos
+        
+        for i, inimigo in enumerate(self.inimigos):
+            if not inimigo['ativo'] or inimigo['vida_atual'] <= 0:
+                continue
+                
+            # Usar posição visual se disponível, senão posição normal
+            if 'pos_visual' in inimigo:
+                inimigo_x, inimigo_y = inimigo['pos_visual']
+            else:
+                inimigo_x = inimigo.get('pos_x', 400)
+                inimigo_y = inimigo.get('pos_y', 200)
+                
+            # Área clicável do inimigo (baseada no tamanho)
+            largura = inimigo.get('largura', 80)
+            altura = inimigo.get('altura', 100)
+            
+            # Criar retângulo de detecção (um pouco maior para facilitar o clique)
+            margem = 10
+            inimigo_rect = pygame.Rect(
+                inimigo_x - margem, 
+                inimigo_y - margem,
+                largura + 2 * margem,
+                altura + 2 * margem
+            )
+            
+            # Verificar se o clique está dentro do retângulo
+            if inimigo_rect.collidepoint(mouse_x, mouse_y):
+                print(f"🎯 Clique detectado no inimigo {i}: {inimigo['nome']} em ({inimigo_x}, {inimigo_y})")
+                return i
+                
+        return None
             
     def processar_clique_menu_aberto(self, pos):
         """Processa cliques quando há um menu aberto."""
@@ -477,10 +573,15 @@ class JokenGhostGame:
                     'papel': Escolha.PAPEL,
                     'tesoura': Escolha.TESOURA
                 }
-                self.processar_escolha_ataque(escolha_map[botao_clicado])
+                # NOVO: Usar o novo fluxo se há alvo selecionado
+                if hasattr(self, 'alvo_selecionado') and self.alvo_selecionado is not None:
+                    self.processar_escolha_ataque_com_alvo(escolha_map[botao_clicado])
+                else:
+                    # Fluxo antigo (escolha ataque, depois alvo)
+                    self.processar_escolha_ataque(escolha_map[botao_clicado])
                 
         elif self.ui_manager.tipo_menu_atual == TipoMenu.LOJA:
-            item_clicado = self.loja_manager.verificar_clique_item(pos)
+            item_clicado = self.loja_manager.verificar_clique_item(pos, self.ui_manager)
             if item_clicado:
                 self.processar_compra_item(item_clicado)
                 
@@ -559,26 +660,276 @@ class JokenGhostGame:
         """Registra derrota de inimigo."""
         self.monstruario_manager.registrar_derrota(tipo_inimigo.lower())
         
-    def processar_escolha_ataque(self, escolha):
-        """Processa a escolha de ataque do jogador."""
+    def processar_clique_inimigo(self, indice_inimigo):
+        """
+        NOVO FLUXO: Processa clique em um inimigo para selecioná-lo como alvo.
+        """
         if self.esperando_rotacao:
+            print("⏳ Aguardando rotação, ignorando seleção...")
             return
             
-        self.escolha_jogador = escolha
+        print(f"🎯 Inimigo {indice_inimigo} selecionado como alvo!")
+        
+        # Guardar o alvo selecionado
+        self.alvo_selecionado = indice_inimigo
+        
+        # Verificar se o inimigo é válido
+        if indice_inimigo >= len(self.inimigos) or not self.inimigos[indice_inimigo]['ativo'] or self.inimigos[indice_inimigo]['vida_atual'] <= 0:
+            print("❌ Inimigo inválido!")
+            return
+            
+        nome_inimigo = self.inimigos[indice_inimigo]['nome']
+        print(f"✅ Alvo confirmado: {nome_inimigo}")
+        
+        # Mostrar menu de ataques
+        print("📋 Abrindo menu de ataques para alvo selecionado...")
+        self.ui_manager.abrir_menu_selecao(TipoMenu.ATAQUES)
+        
+    def processar_escolha_ataque_com_alvo(self, escolha):
+        """
+        NOVO FLUXO: Processa escolha de ataque quando já há um alvo selecionado.
+        """
+        if not hasattr(self, 'alvo_selecionado') or self.alvo_selecionado is None:
+            print("❌ Nenhum alvo selecionado!")
+            return
+            
+        if self.esperando_rotacao:
+            print("⏳ Aguardando rotação, ignorando ataque...")
+            return
+            
+        print(f"⚔️ Atacando com {escolha} → Inimigo {self.alvo_selecionado}")
+        
+        # Fechar menu de ataques
         self.ui_manager.fechar_menu_selecao()
         
-        # Gerar escolha do inimigo
-        self.escolha_inimigo = random.choice([Escolha.PEDRA, Escolha.PAPEL, Escolha.TESOURA])
+        # Guardar escolha do jogador
+        self.escolha_jogador = escolha
         
-        # Iniciar animações de ataque
+        # Selecionar o alvo no sistema de combate
+        if self.combat_system.selecionar_alvo(self.inimigos, self.alvo_selecionado):
+            print("✅ Alvo confirmado no sistema de combate, executando...")
+            self.executar_combate_rpg()
+            
+            # Limpar alvo após combate
+            self.alvo_selecionado = None
+        else:
+            print("❌ Erro ao selecionar alvo no sistema de combate!")
+            self.alvo_selecionado = None
+        
+    def processar_escolha_ataque(self, escolha):
+        """
+        SISTEMA ANTIGO: Processa escolha de ataque com seleção de alvo depois.
+        Mantido para compatibilidade, mas agora usa o novo fluxo.
+        """
+        # Se já há um alvo selecionado, usar o novo fluxo
+        if hasattr(self, 'alvo_selecionado') and self.alvo_selecionado is not None:
+            self.processar_escolha_ataque_com_alvo(escolha)
+            return
+            
+        if self.esperando_rotacao:
+            print("⏳ Aguardando rotação, ignorando ataque...")
+            return
+            
+        print(f"⚔️ Processando ataque: {escolha}")
+        
+        # Fechar menu de ataques
+        self.ui_manager.fechar_menu_selecao()
+        
+        # Guardar escolha do jogador
+        self.escolha_jogador = escolha
+        
+        # Ativar modo de seleção de alvo
+        def callback_alvo_selecionado(indice_alvo):
+            """Callback chamado quando alvo é selecionado."""
+            print(f"🎯 Callback alvo selecionado: {indice_alvo}")
+            if self.combat_system.selecionar_alvo(self.inimigos, indice_alvo):
+                print("✅ Alvo válido, executando combate...")
+                self.executar_combate_rpg()
+            else:
+                print("❌ Alvo inválido!")
+                
+        # Verificar se há inimigos vivos
+        inimigos_vivos = self.combat_system.obter_inimigos_vivos(self.inimigos)
+        print(f"👹 Inimigos vivos encontrados: {inimigos_vivos}")
+        
+        if not inimigos_vivos:
+            print("❌ Não há inimigos para atacar!")
+            return
+            
+        # Se há apenas um inimigo, ataca diretamente
+        if len(inimigos_vivos) == 1:
+            print(f"🎯 Apenas um inimigo, atacando diretamente: {inimigos_vivos[0]}")
+            callback_alvo_selecionado(inimigos_vivos[0])
+        else:
+            print(f"🎯 Múltiplos inimigos ({len(inimigos_vivos)}), ativando seleção...")
+            # Múltiplos inimigos - ativar seleção
+            self.target_selector.ativar_modo_selecao(callback_alvo_selecionado)
+    
+    def executar_combate_rpg(self):
+        """Executa o combate com o novo sistema RPG."""
+        print("🔥 EXECUTANDO COMBATE RPG!")
+        print(f"⚔️ Escolha do jogador: {self.escolha_jogador}")
+        
+        # Processar combate completo
+        resultado_combate = self.combat_system.processar_combate_completo(
+            self.inimigos, self.escolha_jogador
+        )
+        
+        print(f"📊 Resultado do combate: {resultado_combate.get('resultado_principal', 'ERRO')}")
+        
+        if "erro" in resultado_combate:
+            print(f"❌ Erro no combate: {resultado_combate['erro']}")
+            return
+            
+        # Aplicar resultados
+        print("🎬 Aplicando resultados do combate...")
+        self.aplicar_resultados_combate_rpg(resultado_combate)
+        
+        # Iniciar animações
+        print("🎭 Iniciando animações do jogador...")
         self.sprite_manager.iniciar_ataque_jogador()
-        self.sprite_manager.iniciar_ataque_inimigo()
-        
-        # Calcular resultado
-        self.calcular_resultado_combate()
         
         # Iniciar espera para próxima rodada
+        print("⏳ Iniciando espera para próxima rodada...")
         self.iniciar_espera_rotacao()
+    
+    def aplicar_resultados_combate_rpg(self, resultado):
+        """Aplica os resultados do novo sistema de combate."""
+        from core.combat_system import ResultadoCombate
+        
+        # === NOVO: Mostrar resultado visual ===
+        escolha_inimigo = resultado.get('escolha_inimigo', None)
+        detalhes_combate = {}
+        
+        if resultado['resultado_principal'] == ResultadoCombate.VITORIA:
+            # === Calcular recompensa baseada em efetividade ===
+            recompensa_data = self.economy_manager.calcular_recompensa_vitoria(
+                self.escolha_jogador, 'fantasma', 25
+            )
+            
+            # Vitória - aplicar dano aos inimigos
+            alvo_principal = resultado['alvo_principal']
+            total_recompensa = 0
+            
+            if alvo_principal:
+                total_recompensa += recompensa_data['recompensa']
+                
+                print(f"💰 {recompensa_data['descricao']}! +${recompensa_data['recompensa']} moedas.")
+                print(f"👹 Inimigo {alvo_principal['nome']} - Vida antes: {alvo_principal['vida_antes']}, depois: {alvo_principal['vida_depois']}")
+                print(f"👹 Inimigo recebeu {alvo_principal['dano_real']} de dano! Vida: {alvo_principal['vida_depois']}")
+                
+                # === ADICIONAR NÚMERO DE DANO VISUAL ===
+                inimigo_dict = alvo_principal.get('inimigo_ref')
+                if inimigo_dict:
+                    # Calcular posição do inimigo
+                    indice_inimigo = next((i for i, inimigo in enumerate(self.inimigos) if inimigo == inimigo_dict), 0)
+                    inimigo_x = 480 + (indice_inimigo % 3) * 100
+                    inimigo_y = 200 + (indice_inimigo // 3) * 100
+                    # Adicionar número de dano vermelho
+                    self.simple_damage.adicionar_dano(alvo_principal['dano_real'], inimigo_x, inimigo_y, (255, 100, 100))
+                
+                # === NOVO: Shake no inimigo principal ===
+                inimigo_dict = alvo_principal.get('inimigo_ref')
+                if inimigo_dict:
+                    # Encontrar índice do inimigo
+                    for i, inimigo in enumerate(self.inimigos):
+                        if inimigo is inimigo_dict:
+                            # Shake mais suave: intensidade 6, duração 0.3s
+                            self.visual_effects.iniciar_shake_inimigo(i, 6, 0.3)
+                            break
+                    
+                    # REMOVIDO: damage_display antigo - usando SimpleDamageDisplay
+                
+                # Verificar se morreu
+                if alvo_principal['morreu']:
+                    print(f"💀 {alvo_principal['nome']} foi derrotado!")
+                    
+            # Dano em inimigos secundários + bonus
+            bonus_area = self.economy_manager.calcular_recompensa_area_effect(
+                self.escolha_jogador, resultado['inimigos_secundarios']
+            )
+            total_recompensa += bonus_area
+            
+            for inimigo_sec in resultado['inimigos_secundarios']:
+                print(f"💥 {inimigo_sec['nome']} foi atingido por dano secundário: {inimigo_sec['dano_real']}")
+                
+                # === ADICIONAR NÚMERO DE DANO VISUAL SECUNDÁRIO ===
+                inimigo_dict = inimigo_sec.get('inimigo_ref')
+                if inimigo_dict:
+                    # Encontrar índice do inimigo
+                    indice_inimigo = next((i for i, inimigo in enumerate(self.inimigos) if inimigo == inimigo_dict), 0)
+                    inimigo_x = 480 + (indice_inimigo % 3) * 100
+                    inimigo_y = 200 + (indice_inimigo // 3) * 100
+                    # Adicionar número de dano laranja para secundário
+                    self.simple_damage.adicionar_dano(inimigo_sec['dano_real'], inimigo_x, inimigo_y, (255, 150, 50))
+                    
+                    # Shake nos inimigos secundários
+                    self.visual_effects.iniciar_shake_inimigo(indice_inimigo, 4, 0.25)
+                
+                if inimigo_sec['morreu']:
+                    print(f"💀 {inimigo_sec['nome']} foi derrotado por dano em área!")
+                    
+            # Aplicar recompensa total
+            self.dinheiro += total_recompensa
+            print(f"💰 Total ganho: ${total_recompensa}. Saldo: ${self.dinheiro}")
+            
+            # Preparar detalhes para o resultado visual
+            detalhes_combate = {
+                'alvo_principal': alvo_principal,
+                'inimigos_secundarios': resultado['inimigos_secundarios'],
+                'recompensa_dinheiro': total_recompensa,
+                'efetividade_texto': f"({recompensa_data['descricao']})"
+            }
+            
+            # === Mostrar resultado de vitória ===
+            self.result_display.mostrar_resultado(
+                self.escolha_jogador, escolha_inimigo, "vitoria", detalhes_combate
+            )
+                    
+        elif resultado['resultado_principal'] == ResultadoCombate.DERROTA:
+            # === Mostrar resultado de derrota ===
+            
+            # Derrota - jogador toma dano
+            dano = resultado['dano_ao_jogador']
+            self.stats_jogador['vida_atual'] = max(0, self.stats_jogador['vida_atual'] - dano)
+            print(f"💔 Jogador recebeu {dano} de dano! Vida: {self.stats_jogador['vida_atual']}")
+            
+            # === ADICIONAR NÚMERO DE DANO VISUAL NO JOGADOR ===
+            self.simple_damage.adicionar_dano(dano, 200, 400, (255, 100, 150))  # Rosa para dano do jogador
+            
+            # === NOVO: Shake no jogador ===
+            # Shake mais suave: intensidade 8, duração 0.4s
+            self.visual_effects.iniciar_shake_jogador(8, 0.4)
+            
+            # === NOVO: Animação de ataque dos inimigos ===
+            for i, inimigo in enumerate(self.inimigos):
+                if inimigo['ativo'] and inimigo['vida_atual'] > 0:
+                    self.enemy_attack_animations.iniciar_animacao_ataque(i, inimigo)
+            
+            # === Mostrar dano visual no jogador ===
+            # REMOVIDO: damage_display antigo - usando SimpleDamageDisplay
+            
+            # Preparar detalhes
+            detalhes_combate = {
+                'dano_ao_jogador': dano
+            }
+            
+            self.result_display.mostrar_resultado(
+                self.escolha_jogador, escolha_inimigo, "derrota", detalhes_combate
+            )
+            
+            # === NOVO: Contra-ataque de outros inimigos ===
+            self._processar_contra_ataques_inimigos()
+            
+        elif resultado['resultado_principal'] == ResultadoCombate.EMPATE:
+            # === Mostrar resultado de empate ===
+            self.result_display.mostrar_resultado(
+                self.escolha_jogador, escolha_inimigo, "empate", detalhes_combate
+            )
+            print("🤝 Empate! Ninguém sofreu dano.")
+            
+            # === NOVO: Contra-ataque de outros inimigos no empate também ===
+            self._processar_contra_ataques_inimigos()
         
     def processar_compra_item(self, item):
         """Processa a compra de um item da loja."""
@@ -586,10 +937,13 @@ class JokenGhostGame:
         
         if sucesso:
             self.dinheiro -= preco
-            self.loja_manager.aplicar_buff_item(item, self.stats_jogador)
+            # Corrigido: usar aplicar_efeito_item em vez de aplicar_buff_item
+            resultado = self.loja_manager.aplicar_efeito_item(item, self.stats_jogador)
             self.notification_system.notificar_compra(item.nome, preco)
+            print(f"✅ {resultado}")
         else:
             self.notification_system.notificar_dinheiro_insuficiente()
+            print("❌ Dinheiro insuficiente!")
             
     def calcular_resultado_combate(self):
         """Calcula o resultado do combate."""
@@ -653,10 +1007,8 @@ class JokenGhostGame:
         dano = DANO_JOGADOR  # 25 de dano fixo
         inimigo_atual['vida_atual'] -= dano
         
-        # Mostrar dano em cima do inimigo
-        inimigo_centro_x = inimigo_atual['pos_x'] + inimigo_atual['largura'] // 2
-        inimigo_centro_y = inimigo_atual['pos_y'] + 40  # Um pouco acima do inimigo
-        self.sistema_texto_flutuante.adicionar_dano(inimigo_centro_x, inimigo_centro_y, dano)
+        # === REMOVIDO: sistema_texto_flutuante para evitar números duplicados ===
+        # O damage_display já está mostrando os números adequadamente
         
         # Sistema de recompensa por acerto (idêntico ao original)
         if self.escolha_jogador == Escolha.PEDRA:
@@ -670,10 +1022,9 @@ class JokenGhostGame:
         # Mostrar "+$X" em cima do inimigo (COMO NO ORIGINAL)
         inimigo_centro_x = inimigo_atual['pos_x'] + inimigo_atual['largura'] // 2
         inimigo_centro_y = inimigo_atual['pos_y'] + 20  # Um pouco acima do inimigo
-        self.sistema_texto_flutuante.adicionar_dinheiro(inimigo_centro_x, inimigo_centro_y, recompensa_acerto)
+        self.simple_damage.adicionar_dinheiro(recompensa_acerto, inimigo_centro_x, inimigo_centro_y)
         
-        # Efeito visual
-        self.sprite_manager.iniciar_shake(15, 0.5)
+        # === REMOVIDO: shake duplicado, agora usa apenas o visual_effects ===
         
         # Verificar se inimigo morreu
         print(f"👹 Inimigo {inimigo_atual['nome']} - Vida antes: {inimigo_atual['vida_atual'] + dano}, depois: {inimigo_atual['vida_atual']}")
@@ -696,15 +1047,23 @@ class JokenGhostGame:
         # === SISTEMA DE TREMOR PARA JOGADOR ===
         self.aplicar_shake_jogador(intensidade=8, duracao=500)
         
-        # === TEXTO FLUTUANTE DE DANO ===
-        self.sistema_texto_flutuante.adicionar_dano(300, 400, dano)  # Posição próxima ao jogador
+        # === REMOVIDO: sistema_texto_flutuante para evitar números duplicados ===
+        # O damage_display já está mostrando os números adequadamente
         
         print(f"💔 Jogador recebeu {dano} de dano! Vida: {self.stats_jogador['vida_atual']}")
         
         # Verificar game over
         if self.stats_jogador['vida_atual'] <= 0:
+            print("💀 GAME OVER DETECTADO! Mudando estado para RESULTADO")
             self.estado_jogo = EstadoJogo.RESULTADO
             self.notification_system.notificar_derrota()
+            # === LIMPEZA AGRESSIVA DE TODOS OS SISTEMAS VISUAIS ===
+            self.simple_damage.limpar_todos()
+            self.result_display.limpar_resultado()
+            self.visual_effects.limpar_todos_shakes()
+            print(f"🏴 Estado atual do jogo: {self.estado_jogo}")
+            print(f"💔 Vida do jogador: {self.stats_jogador['vida_atual']}")
+            print("🧹 Todos os sistemas visuais foram limpos para Game Over")
             
     def processar_morte_inimigo(self):
         """Processa a morte de um inimigo."""
@@ -761,7 +1120,12 @@ class JokenGhostGame:
         if not sprite_data:
             return None
             
-        sprite_sheet = sprite_data['sheet']
+        # CORREÇÃO: Verifica ambas as chaves possíveis
+        sprite_sheet = sprite_data.get('sheet') or sprite_data.get('sprite_sheet')
+        if not sprite_sheet:
+            print(f"❌ Erro: sprite_sheet não encontrado nas chaves: {list(sprite_data.keys())}")
+            return None
+            
         frame_width = sprite_data['frame_width']
         frame_height = sprite_data['frame_height']
         total_frames = sprite_data['total_frames']
@@ -797,10 +1161,19 @@ class JokenGhostGame:
             final_x += shake_data['offset_x']
             final_y += shake_data['offset_y']
         
-        if sprites_personagem and isinstance(sprites_personagem, dict) and animacao in sprites_personagem:
-            # Usa a animação específica
-            sprite_data = sprites_personagem[animacao]
-            sprite_frame = self.extrair_sprite(sprite_data, frame)
+        if sprites_personagem and isinstance(sprites_personagem, dict):
+            # CORREÇÃO: Verifica se é estrutura de animação ou sprite direta
+            sprite_data = None
+            sprite_frame = None
+            
+            if animacao in sprites_personagem:
+                # Estrutura com animações (ex: sprites_personagem['idle'])
+                sprite_data = sprites_personagem[animacao]
+                sprite_frame = self.extrair_sprite(sprite_data, frame)
+            elif 'sheet' in sprites_personagem or 'sprite_sheet' in sprites_personagem:
+                # Sprite direta (ex: sprites_personagem já é a sprite)
+                sprite_data = sprites_personagem
+                sprite_frame = self.extrair_sprite(sprite_data, frame)
             
             if sprite_frame:
                 # Escala o sprite para o tamanho desejado
@@ -924,14 +1297,40 @@ class JokenGhostGame:
         self.animation_controller.atualizar_animacoes(delta_time_seconds)
         self.ui_manager.atualizar_animacao_menu()
         self.ui_manager.atualizar_animacao_botoes()
-        self.toast_manager.atualizar_toasts(delta_time)
-        self.sistema_texto_flutuante.atualizar(delta_time_seconds)
+        self.toast_manager.atualizar_toasts(delta_time)  # Mantém milissegundos para toast_manager
+        # REMOVIDO: sistema antigo texto flutuante
+        
+        # === NOVOS SISTEMAS RPG ===
+        self.simple_damage.atualizar(delta_time_seconds)
+        self.result_display.atualizar(delta_time_seconds)
+        
+        # === NOVO: Verificar se resultado terminou para parar shake ===
+        if hasattr(self.result_display, 'resultado_concluido') and self.result_display.resultado_concluido:
+            # Parar todos os shakes quando resultado termina
+            self.visual_effects.limpar_todos_shakes()
+            self.result_display.limpar_resultado()  # Limpa completamente
+            print("🛑 Resultado terminou - todos os shakes foram parados")
+        
+        # === NOVOS SISTEMAS VISUAIS ===
+        self.visual_effects.atualizar(delta_time_seconds)
+        self.enemy_attack_animations.atualizar(delta_time_seconds)
+        self.ui_animations.atualizar(delta_time_seconds)
+        
+        # === NOVO: Atualizar posições com shake e animações ===
+        self._atualizar_posicoes_com_shake()
         
         # === NOVO: Atualizar sistemas de turno ===
         self.atualizar_shake()
         self.atualizar_animacao_personagem()
         self.atualizar_alternancia_inimigos()
         self.atualizar_rotacao_inimigos()
+        
+        # === NOVO: Atualizar sistema de seleção de alvos ===
+        if self.target_selector.modo_selecao_ativo:
+            mouse_pos = pygame.mouse.get_pos()
+            # Passar inimigos atuais para o target_selector
+            self.target_selector.definir_inimigos_referencia(self.inimigos)
+            self.target_selector.atualizar_highlight(mouse_pos, self.inimigos)
         
         # Atualizar animação dos inimigos
         self.atualizar_animacao_inimigos(delta_time_seconds)
@@ -942,21 +1341,154 @@ class JokenGhostGame:
         elif self.estado_jogo == EstadoJogo.BATALHA:
             self.atualizar_jogo(delta_time)
             
+    def _atualizar_posicoes_com_shake(self):
+        """Aplica os efeitos de shake nas posições dos elementos."""
+        # Aplicar shake no jogador
+        shake_jogador = self.visual_effects.obter_offset_shake_jogador()
+        if hasattr(self, 'jogador_pos_x') and hasattr(self, 'jogador_pos_y'):
+            self.jogador_pos_visual = (
+                self.jogador_pos_x + shake_jogador[0],
+                self.jogador_pos_y + shake_jogador[1]
+            )
+        
+        # Aplicar shake nos inimigos e animações de ataque
+        for i, inimigo in enumerate(self.inimigos):
+            # Shake individual do inimigo
+            shake_inimigo = self.visual_effects.obter_offset_shake_inimigo(i)
+            
+            # Offset de animação de ataque
+            offset_ataque = self.enemy_attack_animations.obter_offset_animacao(i)
+            
+            # Posição base - usar sempre pos_x e pos_y do inimigo
+            pos_base_x = inimigo.get('pos_x', 400)
+            pos_base_y = inimigo.get('pos_y', 200)
+            
+            # Aplicar todos os offsets e salvar em pos_visual
+            inimigo['pos_visual'] = (
+                pos_base_x + shake_inimigo[0] + offset_ataque[0],
+                pos_base_y + shake_inimigo[1] + offset_ataque[1]
+            )
+            
+            # Garantir que a posição original esteja salva
+            if 'pos_original' not in inimigo:
+                inimigo['pos_original'] = (pos_base_x, pos_base_y)
+                
+    def _processar_contra_ataques_inimigos(self):
+        """
+        Processa contra-ataques de outros inimigos baseado no ataque do jogador.
+        """
+        if not hasattr(self, 'escolha_jogador') or not self.escolha_jogador:
+            return
+            
+        print(f"🎯 Processando contra-ataques baseados na escolha do jogador: {self.escolha_jogador}")
+        
+        # Obter inimigos vivos (exceto o alvo principal se ainda existir)
+        inimigos_para_contra_ataque = []
+        for i, inimigo in enumerate(self.inimigos):
+            if inimigo['ativo'] and inimigo['vida_atual'] > 0:
+                # Se não é o alvo selecionado, pode contra-atacar
+                if not hasattr(self, 'alvo_selecionado') or i != self.alvo_selecionado:
+                    inimigos_para_contra_ataque.append((i, inimigo))
+        
+        if not inimigos_para_contra_ataque:
+            print("👻 Nenhum inimigo disponível para contra-ataque")
+            return
+            
+        # Simular ataque dos inimigos contra o jogador
+        for i, inimigo in inimigos_para_contra_ataque:
+            # Inimigos fantasmas sempre usam uma escolha aleatória
+            escolhas_inimigo = [Escolha.PEDRA, Escolha.PAPEL, Escolha.TESOURA]
+            escolha_inimigo = random.choice(escolhas_inimigo)
+            
+            print(f"👻 {inimigo['nome']} contra-ataca com {escolha_inimigo}")
+            
+            # Determinar resultado do contra-ataque
+            resultado_contra_ataque = self._determinar_resultado_contra_ataque(
+                self.escolha_jogador, escolha_inimigo
+            )
+            
+            if resultado_contra_ataque == "inimigo_vence":
+                # Inimigo acerta o jogador
+                dano_contra_ataque = random.randint(8, 15)
+                self.stats_jogador['vida_atual'] = max(0, self.stats_jogador['vida_atual'] - dano_contra_ataque)
+                
+                print(f"💔 {inimigo['nome']} acertou! Jogador recebeu {dano_contra_ataque} de dano! Vida: {self.stats_jogador['vida_atual']}")
+                
+                # === ADICIONAR NÚMERO DE DANO VISUAL NO JOGADOR (contra-ataque) ===
+                self.simple_damage.adicionar_dano(dano_contra_ataque, 200, 400, (255, 50, 50))  # Vermelho intenso para contra-ataque
+                
+                # Efeitos visuais do contra-ataque
+                self.visual_effects.iniciar_shake_jogador(6, 0.3)
+                self.enemy_attack_animations.iniciar_animacao_ataque(i, inimigo)
+                # REMOVIDO: damage_display antigo - usando SimpleDamageDisplay
+                
+            elif resultado_contra_ataque == "jogador_vence":
+                # Jogador "defende" o contra-ataque
+                print(f"🛡️ Você defendeu o contra-ataque de {inimigo['nome']}!")
+                
+            else:
+                # Empate no contra-ataque
+                print(f"🤝 Contra-ataque de {inimigo['nome']} foi neutro")
+    
+    def _determinar_resultado_contra_ataque(self, escolha_jogador, escolha_inimigo):
+        """
+        Determina o resultado de um contra-ataque.
+        
+        Args:
+            escolha_jogador: Escolha que o jogador fez
+            escolha_inimigo: Escolha do inimigo no contra-ataque
+            
+        Returns:
+            str: "jogador_vence", "inimigo_vence", ou "empate"
+        """
+        if escolha_jogador == escolha_inimigo:
+            return "empate"
+        elif (
+            (escolha_jogador == Escolha.PEDRA and escolha_inimigo == Escolha.TESOURA) or
+            (escolha_jogador == Escolha.PAPEL and escolha_inimigo == Escolha.PEDRA) or
+            (escolha_jogador == Escolha.TESOURA and escolha_inimigo == Escolha.PAPEL)
+        ):
+            return "jogador_vence"
+        else:
+            return "inimigo_vence"
+                
+            # DEBUG: Imprimir informações de shake quando ativo
+            if shake_inimigo != (0, 0):
+                print(f"💥 Inimigo {i} com shake: {shake_inimigo} | Pos final: {inimigo['pos_visual']}")
+            if offset_ataque != (0, 0):
+                print(f"⚔️ Inimigo {i} com animação ataque: {offset_ataque}")
+            
     def atualizar_animacao_inimigos(self, delta_time):
         """Atualiza animação dos sprites dos inimigos."""
         for inimigo in self.inimigos:
-            if inimigo['ativo'] and inimigo['sprites']:
-                # Atualiza tempo de animação
-                inimigo['tempo_animacao'] += delta_time
+            if not inimigo.get('ativo', True):
+                continue
                 
-                # Troca frame a cada 0.2 segundos (5 FPS)
-                if inimigo['tempo_animacao'] >= 0.2:
-                    inimigo['tempo_animacao'] = 0
-                    
-                    # Obtém total de frames do sprite do inimigo
+            # CORREÇÃO: Garante que as propriedades de animação existam
+            if 'tempo_animacao' not in inimigo:
+                inimigo['tempo_animacao'] = 0.0
+            if 'frame_atual' not in inimigo:
+                inimigo['frame_atual'] = 0
+                
+            # Atualiza tempo de animação
+            inimigo['tempo_animacao'] += delta_time
+            
+            # Troca frame a cada 0.1 segundos (10 FPS - mais fluido)
+            if inimigo['tempo_animacao'] >= 0.1:
+                inimigo['tempo_animacao'] = 0
+                
+                # CORREÇÃO: Usa sprite específico do inimigo baseado no tipo
+                total_frames = 12  # Default para Ghost
+                
+                if inimigo.get('sprite_tipo') == 'ghost':
+                    total_frames = 12  # Ghost tem 12 frames
+                elif inimigo.get('sprite_tipo') == 'kastle':
                     total_frames = self.resource_manager.obter_total_frames_inimigo()
-                    if total_frames > 1:
-                        inimigo['frame_atual'] = (inimigo['frame_atual'] + 1) % total_frames
+                elif inimigo.get('sprite_tipo') == 'ballons':
+                    total_frames = 1  # Balloons são estáticos
+                
+                if total_frames > 1:
+                    inimigo['frame_atual'] = (inimigo['frame_atual'] + 1) % total_frames
                     
     def atualizar_transicao(self, delta_time):
         """Atualiza a tela de transição (IDÊNTICO AO ORIGINAL)."""
@@ -1026,8 +1558,14 @@ class JokenGhostGame:
         self.monstruario_manager.resetar_monstruario()
         self.toast_manager.limpar_toasts()
         self.animation_controller.parar_todas_animacoes()
+        
+        # Limpar sistemas de dano e texto flutuante
+        self.simple_damage.limpar_todos()
+        self.visual_effects_manager.limpar_todos_shakes()
+        
         self.estado_jogo = EstadoJogo.MENU
         print("🔄 Jogo reiniciado!")
+        print("🧹 Todos os sistemas de dano e efeitos visuais foram limpos")
         
     def renderizar(self):
         """Renderiza todos os elementos na tela."""
@@ -1052,6 +1590,13 @@ class JokenGhostGame:
         if self.monstruario_manager.ativo:
             mouse_pos = pygame.mouse.get_pos()
             self.monstruario_manager.desenhar_monstruario(self.tela)
+        
+        # Renderizar target selector se ativo (sempre por último)
+        if hasattr(self, 'target_selector') and self.target_selector.modo_selecao_ativo:
+            mouse_pos = pygame.mouse.get_pos()
+            # Garante que os inimigos estão atualizados no target_selector
+            self.target_selector.definir_inimigos_referencia(self.inimigos)
+            self.target_selector.desenhar_indicadores(self.tela, mouse_pos)
         
         pygame.display.flip()
         
@@ -1086,6 +1631,13 @@ class JokenGhostGame:
         jogador_pos_x = self.jogador_pos_x if self.animacao_entrada_ativa else 80
         jogador_pos_y = ALTURA - 280
         
+        # === NOVO: Aplicar shake no jogador ===
+        if hasattr(self, 'jogador_pos_visual'):
+            jogador_pos_x, jogador_pos_y = self.jogador_pos_visual
+        else:
+            # Posição padrão se não houver shake
+            pass
+        
         # === NOVO === Personagem Jogador (idêntico ao original)
         animacao_jogador = "idle"  # Por enquanto sempre idle
         shake_jogador = {'ativo': False, 'offset_x': 0, 'offset_y': 0}  # Shake system placeholder
@@ -1108,26 +1660,31 @@ class JokenGhostGame:
                 # === NOVO: Carregar sprites dinamicamente baseado no tipo ===
                 sprites_inimigo = None
                 if 'sprite_tipo' in inimigo:
-                    sprites_inimigo = self.gerenciador_recursos.sprites.get(inimigo['sprite_tipo'])
+                    sprites_inimigo = self.resource_manager.sprites.get(inimigo['sprite_tipo'])
                 else:
                     # Fallback para determinar sprite baseado no nome
                     nome_sprite = inimigo['nome'].lower()
                     if nome_sprite == 'ghost':
-                        sprites_inimigo = self.gerenciador_recursos.sprites.get('ghost')
+                        sprites_inimigo = self.resource_manager.sprites.get('ghost')
                     elif nome_sprite == 'kastle':
-                        sprites_inimigo = self.gerenciador_recursos.sprites.get('kastle')
+                        sprites_inimigo = self.resource_manager.sprites.get('kastle')
                     elif nome_sprite.startswith('balloon'):
-                        sprites_inimigo = self.gerenciador_recursos.sprites.get('ballons')
+                        sprites_inimigo = self.resource_manager.sprites.get('ballons')
                     else:
-                        sprites_inimigo = self.gerenciador_recursos.sprites.get('ghost')
+                        sprites_inimigo = self.resource_manager.sprites.get('ghost')
                 
                 # Durante animação de entrada, use posição animada para o inimigo principal
                 pos_x_inimigo = inimigo['pos_x']
-                if self.animacao_entrada_ativa and inimigos_ativos.index(inimigo) == 0:
+                pos_y_inimigo = inimigo['pos_y']
+                
+                # === NOVO: Usar posição visual com shake e animação de ataque ===
+                if 'pos_visual' in inimigo:
+                    pos_x_inimigo, pos_y_inimigo = inimigo['pos_visual']
+                elif self.animacao_entrada_ativa and inimigos_ativos.index(inimigo) == 0:
                     pos_x_inimigo = self.inimigo_pos_x
                 
                 coordenadas_inimigo = self.desenhar_personagem(
-                    pos_x_inimigo, inimigo['pos_y'], inimigo['largura'], inimigo['altura'], 
+                    pos_x_inimigo, pos_y_inimigo, inimigo['largura'], inimigo['altura'], 
                     VERMELHO, "", sprites_personagem=sprites_inimigo, 
                     animacao=animacao_inimigo, frame=inimigo['frame_atual'], shake_data=inimigo['shake']
                 )
@@ -1174,12 +1731,25 @@ class JokenGhostGame:
         # HUD Dinheiro
         self.ui_manager.desenhar_hud_dinheiro(self.tela, self.dinheiro)
         
-        # Sistema de texto flutuante ("+15", dano, etc.)
-        self.sistema_texto_flutuante.desenhar(self.tela)
+        # REMOVIDO: Sistema antigo de texto flutuante
+        # Usando apenas SimpleDamageDisplay para tudo
+        
+        # === NOVOS SISTEMAS RPG ===
+        # Sistema de dano visual (números flutuantes)
+        self.simple_damage.desenhar(self.tela)
+        
+        # Sistema de resultados de combate
+        self.result_display.desenhar(self.tela)
+        
+        # === NOVO: Feedback visual do alvo selecionado ===
+        self.desenhar_feedback_alvo_selecionado()
         
         # Menu de seleção se ativo
         if self.ui_manager.menu_selecao_ativo:
             if self.ui_manager.tipo_menu_atual == TipoMenu.ATAQUES:
+                # NOVO: Mostrar informações do alvo se selecionado
+                if hasattr(self, 'alvo_selecionado') and self.alvo_selecionado is not None:
+                    self.desenhar_info_alvo_selecionado()
                 self.menu_renderer.desenhar_menu_ataques(self.tela, self.ui_manager, mouse_pos)
             elif self.ui_manager.tipo_menu_atual == TipoMenu.LOJA:
                 self.menu_renderer.desenhar_menu_loja(self.tela, self.ui_manager, mouse_pos, self.loja_manager, self.dinheiro)
@@ -1208,9 +1778,115 @@ class JokenGhostGame:
                     resultado_surface = self.resource_manager.obter_fonte('normal').render(self.mensagem_resultado, True, getattr(self, 'cor_resultado', BRANCO))
                     resultado_rect = resultado_surface.get_rect(center=(LARGURA//2, 180))
                     self.tela.blit(resultado_surface, resultado_rect)
-            else:
-                self.mostrar_resultado_turno = False
+                else:
+                    self.mostrar_resultado_turno = False
+                    
+    def desenhar_feedback_alvo_selecionado(self):
+        """Desenha feedback visual para o alvo selecionado."""
+        if not hasattr(self, 'alvo_selecionado') or self.alvo_selecionado is None:
+            return
             
+        if self.alvo_selecionado >= len(self.inimigos):
+            return
+            
+        inimigo = self.inimigos[self.alvo_selecionado]
+        if not inimigo['ativo'] or inimigo['vida_atual'] <= 0:
+            return
+            
+        # Obter posição do inimigo
+        if 'pos_visual' in inimigo:
+            inimigo_x, inimigo_y = inimigo['pos_visual']
+        else:
+            inimigo_x = inimigo.get('pos_x', 400)
+            inimigo_y = inimigo.get('pos_y', 200)
+            
+        largura = inimigo.get('largura', 80)
+        altura = inimigo.get('altura', 100)
+        
+        # Desenhar contorno animado pulsante
+        tempo_atual = pygame.time.get_ticks()
+        pulso = abs(math.sin(tempo_atual * 0.01)) * 0.5 + 0.5  # 0.5 a 1.0
+        
+        # Cor do contorno (amarelo brilhante)
+        cor_contorno = (255, 255, 0, int(255 * pulso))
+        
+        # Desenhar múltiplos contornos para efeito de brilho
+        for i in range(3):
+            espessura = 3 + i
+            margem = 5 + i * 2
+            
+            contorno_rect = pygame.Rect(
+                inimigo_x - margem,
+                inimigo_y - margem,
+                largura + 2 * margem,
+                altura + 2 * margem
+            )
+            
+            pygame.draw.rect(self.tela, cor_contorno[:3], contorno_rect, espessura)
+            
+        # Desenhar seta apontando para o alvo
+        seta_x = inimigo_x + largura // 2
+        seta_y = inimigo_y - 30
+        
+        pontos_seta = [
+            (seta_x, seta_y),
+            (seta_x - 10, seta_y - 15),
+            (seta_x + 10, seta_y - 15)
+        ]
+        
+        pygame.draw.polygon(self.tela, (255, 255, 0), pontos_seta)
+        
+        # Texto "ALVO SELECIONADO"
+        fonte_pequena = self.resource_manager.obter_fonte('pequena')
+        texto_alvo = fonte_pequena.render("ALVO SELECIONADO", True, (255, 255, 0))
+        texto_rect = texto_alvo.get_rect(center=(seta_x, seta_y - 25))
+        self.tela.blit(texto_alvo, texto_rect)
+        
+    def desenhar_info_alvo_selecionado(self):
+        """Desenha informações do alvo selecionado no menu de ataques."""
+        if not hasattr(self, 'alvo_selecionado') or self.alvo_selecionado is None:
+            return
+            
+        if self.alvo_selecionado >= len(self.inimigos):
+            return
+            
+        inimigo = self.inimigos[self.alvo_selecionado]
+        if not inimigo['ativo'] or inimigo['vida_atual'] <= 0:
+            return
+            
+        # Posição do texto (acima do menu de ataques)
+        texto_x = LARGURA // 2
+        texto_y = 50
+        
+        # Informações do alvo
+        nome = inimigo['nome']
+        vida_atual = inimigo['vida_atual']
+        vida_max = inimigo['vida_max']
+        
+        fonte_normal = self.resource_manager.obter_fonte('normal')
+        
+        # Texto principal
+        texto_principal = f"Atacando: {nome} ({vida_atual}/{vida_max} HP)"
+        surface_principal = fonte_normal.render(texto_principal, True, (255, 255, 0))
+        rect_principal = surface_principal.get_rect(center=(texto_x, texto_y))
+        
+        # Fundo semi-transparente
+        fundo_rect = rect_principal.inflate(20, 10)
+        fundo_surface = pygame.Surface((fundo_rect.width, fundo_rect.height))
+        fundo_surface.set_alpha(180)
+        fundo_surface.fill((0, 0, 0))
+        self.tela.blit(fundo_surface, fundo_rect.topleft)
+        
+        # Texto
+        self.tela.blit(surface_principal, rect_principal)
+        
+        # Dica
+        fonte_pequena = self.resource_manager.obter_fonte('pequena')
+        texto_dica = "Escolha seu ataque para este inimigo"
+        surface_dica = fonte_pequena.render(texto_dica, True, (200, 200, 200))
+        rect_dica = surface_dica.get_rect(center=(texto_x, texto_y + 25))
+        self.tela.blit(surface_dica, rect_dica)
+        
     def renderizar_resultado(self):
         """Renderiza a tela de resultado (game over ou vitória)."""
         mouse_pos = pygame.mouse.get_pos()

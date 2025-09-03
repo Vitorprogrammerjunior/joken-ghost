@@ -123,12 +123,23 @@ class MenuRenderer:
                 itens_y = menu_y + 80
                 itens_loja = loja_manager.obter_itens_disponiveis()
                 
+                # Limpar retângulos anteriores
+                ui_manager._itens_loja_rects = []
+                
                 for i, item in enumerate(itens_loja[:4]):  # Máximo 4 itens por linha
                     item_x = menu_x + 50 + (i * 150)
                     item_rect = pygame.Rect(item_x, itens_y, 140, 120)
                     
                     # Verifica se tem dinheiro suficiente para o item
                     pode_comprar = dinheiro_jogador >= item.preco
+                    
+                    # Salvar retângulo do item para detecção de clique
+                    ui_manager._itens_loja_rects.append({
+                        'rect': item_rect,
+                        'item': item,
+                        'pode_comprar': pode_comprar,
+                        'indice': i
+                    })
                     
                     # Usar a mesma moldura dos botões de ataque (hud_botao.png)
                     moldura_item = self.resource_manager.obter_moldura('itens')
@@ -140,6 +151,21 @@ class MenuRenderer:
                         # Fallback: desenhar retângulo similar aos botões de ataque
                         pygame.draw.rect(tela, VERMELHO, item_rect, border_radius=10)
                         pygame.draw.rect(tela, BRANCO, item_rect, 3, border_radius=10)
+                    
+                    # Efeito visual de hover/clique
+                    hover = item_rect.collidepoint(mouse_pos)
+                    if hover and pode_comprar:
+                        # Sobreposição verde quando pode comprar e está hovering
+                        overlay = pygame.Surface((140, 120))
+                        overlay.set_alpha(30)
+                        overlay.fill(VERDE)
+                        tela.blit(overlay, (item_x, itens_y))
+                    elif not pode_comprar:
+                        # Sobreposição vermelha quando não pode comprar
+                        overlay = pygame.Surface((140, 120))
+                        overlay.set_alpha(60)
+                        overlay.fill(VERMELHO)
+                        tela.blit(overlay, (item_x, itens_y))
                     
                     # Nome do item (centralizado)
                     nome_texto = fonte_pequena.render(item.nome, True, BRANCO)

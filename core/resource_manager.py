@@ -115,6 +115,10 @@ class ResourceManager:
     def carregar_sprites(self):
         """Carrega sprites organizadas por personagem - sistema baseado no original"""
         try:
+            # PRIMEIRO: Configuração garantida para Ghost
+            print("👻 Iniciando configuração garantida do Ghost...")
+            self.carregar_ghost_sprite_garantido()
+            
             # Nova estrutura: Assests/Sprites/[PERSONAGEM]/[sprites]
             sprites_path = os.path.join("Assests", "Sprites")
             
@@ -287,6 +291,18 @@ class ResourceManager:
                 }
                 self.sprites['kastle'] = sprite_compatibilidade
                 self.sprites['fantasma'] = sprite_compatibilidade
+                self.sprites['ghost'] = sprite_compatibilidade  # Adiciona ghost
+                
+        # Adiciona sprites para ballons se existir
+        if 'ballons' in self.sprites_personagens:
+            ballons_data = self.sprites_personagens['ballons'].get('idle', {})
+            if ballons_data:
+                self.sprites['ballons'] = {
+                    'sprite_sheet': ballons_data.get('sheet'),
+                    'frame_width': ballons_data.get('frame_width', 64),
+                    'frame_height': ballons_data.get('frame_height', 64),
+                    'total_frames': ballons_data.get('total_frames', 1)
+                }
                 
     def _processar_sprite_sheet(self, sprite_sheet, nome):
         """Processa uma sprite sheet e determina frames."""
@@ -375,9 +391,22 @@ class ResourceManager:
         return None
         
     def obter_sprite_fantasma(self):
-        """Retorna sprite do fantasma."""
+        """Retorna sprite do fantasma - CONFIGURAÇÃO GARANTIDA."""
+        # Primeira tentativa: chave 'fantasma' (compatibilidade)
         if 'fantasma' in self.sprites:
             return self.extrair_sprite(self.sprites['fantasma'], 0)
+        
+        # Segunda tentativa: chave 'ghost' (nova configuração)
+        if 'ghost' in self.sprites:
+            return self.extrair_sprite(self.sprites['ghost'], 0)
+        
+        # Terceira tentativa: recarregar Ghost se necessário
+        print("⚠️ Ghost sprite não encontrada, recarregando...")
+        if self.carregar_ghost_sprite_garantido():
+            if 'ghost' in self.sprites:
+                return self.extrair_sprite(self.sprites['ghost'], 0)
+        
+        print("❌ ERRO: Não foi possível carregar sprite do Ghost!")
         return None
         
     def obter_total_frames_jogador(self):
@@ -391,3 +420,83 @@ class ResourceManager:
         if 'kastle' in self.sprites:
             return self.sprites['kastle']['total_frames']
         return 1
+    
+    def carregar_ghost_sprite_garantido(self):
+        """
+        CONFIGURAÇÃO GLOBAL: Sempre carrega a sprite do Ghost corretamente
+        Esta função garante que a sprite do Ghost sempre funcione em qualquer dispositivo
+        """
+        print("👻 Carregando sprite do Ghost (configuração garantida)...")
+        
+        # Usa configuração global definida em constants.py
+        ghost_path = os.path.join("Assests", "Sprites", "Ghost", GHOST_SPRITE_CONFIG['arquivo'])
+        
+        try:
+            if os.path.exists(ghost_path):
+                # Carrega a sprite sheet
+                sprite_sheet = pygame.image.load(ghost_path).convert_alpha()
+                print(f"✅ Ghost sprite carregada: {ghost_path}")
+                
+                # Usa configuração pré-definida para garantir funcionamento
+                ghost_config = GHOST_SPRITE_CONFIG.copy()
+                ghost_config['sheet'] = sprite_sheet
+                
+                # Detecta automaticamente se a configuração está correta
+                sheet_width = sprite_sheet.get_width()
+                sheet_height = sprite_sheet.get_height()
+                
+                # Calcula frame automaticamente baseado na largura total
+                if sheet_width > sheet_height:
+                    frame_width = sheet_width // ghost_config['frames']
+                    frame_height = sheet_height
+                    print(f"👻 Ghost detectado: {ghost_config['frames']} frames de {frame_width}x{frame_height}")
+                else:
+                    # Fallback para sprite única
+                    frame_width = sheet_width
+                    frame_height = sheet_height
+                    ghost_config['frames'] = 1
+                    print(f"👻 Ghost detectado: sprite única {frame_width}x{frame_height}")
+                
+                # Atualiza configuração com valores detectados
+                ghost_config['frame_width'] = frame_width
+                ghost_config['frame_height'] = frame_height
+                
+                # Garante que sempre haverá uma sprite do Ghost disponível
+                self.sprites['ghost'] = ghost_config
+                self.sprites['fantasma'] = ghost_config  # Compatibilidade
+                
+                print("✅ Ghost sprite configurada globalmente com sucesso!")
+                return True
+                
+            else:
+                print(f"⚠️ Ghost sprite não encontrada: {ghost_path}")
+                return self._criar_ghost_fallback()
+                
+        except Exception as e:
+            print(f"❌ Erro ao carregar Ghost sprite: {e}")
+            return self._criar_ghost_fallback()
+    
+    def _criar_ghost_fallback(self):
+        """Cria sprite de fallback para o Ghost caso não encontre a original"""
+        print("🔄 Criando Ghost fallback...")
+        
+        # Cria uma sprite simples de fallback
+        fallback_surface = pygame.Surface((SPRITE_FALLBACK_CONFIG['largura'], 
+                                         SPRITE_FALLBACK_CONFIG['altura']), 
+                                        pygame.SRCALPHA)
+        fallback_surface.fill(SPRITE_FALLBACK_CONFIG['cor'])
+        
+        # Configuração mínima de fallback
+        fallback_config = {
+            'sheet': fallback_surface,
+            'frame_width': SPRITE_FALLBACK_CONFIG['largura'],
+            'frame_height': SPRITE_FALLBACK_CONFIG['altura'],
+            'total_frames': 1,
+            'frames': 1
+        }
+        
+        self.sprites['ghost'] = fallback_config
+        self.sprites['fantasma'] = fallback_config
+        
+        print("✅ Ghost fallback criado com sucesso!")
+        return True

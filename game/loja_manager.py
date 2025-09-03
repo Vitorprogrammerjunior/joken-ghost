@@ -37,10 +37,22 @@ class LojaManager:
             itens.append(item)
         return itens
         
-    def verificar_clique_item(self, pos):
+    def verificar_clique_item(self, pos, ui_manager):
         """Verifica se algum item foi clicado."""
-        # Esta função é necessária para compatibilidade mas não faz nada no sistema refatorado
-        # Os cliques são tratados pelo menu_renderer
+        if not hasattr(ui_manager, '_itens_loja_rects'):
+            return None
+            
+        mouse_x, mouse_y = pos
+        
+        for item_info in ui_manager._itens_loja_rects:
+            if item_info['rect'].collidepoint(mouse_x, mouse_y):
+                if item_info['pode_comprar']:
+                    print(f"🛒 Item clicado: {item_info['item'].nome} - Preço: ${item_info['item'].preco}")
+                    return item_info['item']
+                else:
+                    print(f"💰 Dinheiro insuficiente para: {item_info['item'].nome}")
+                    return None
+                    
         return None
         
     def comprar_item(self, item, dinheiro_jogador):
@@ -53,11 +65,15 @@ class LojaManager:
     def aplicar_efeito_item(self, item, jogador_stats):
         """Aplica o efeito do item no jogador."""
         if item.efeito == "cura_pequena":
-            jogador_stats['vida'] = min(100, jogador_stats['vida'] + 30)
-            return "Você recuperou 30 HP!"
+            vida_antes = jogador_stats['vida_atual']
+            jogador_stats['vida_atual'] = min(100, jogador_stats['vida_atual'] + 30)
+            vida_curada = jogador_stats['vida_atual'] - vida_antes
+            return f"Você recuperou {vida_curada} HP!"
         elif item.efeito == "cura_grande":
-            jogador_stats['vida'] = min(100, jogador_stats['vida'] + 60)
-            return "Você recuperou 60 HP!"
+            vida_antes = jogador_stats['vida_atual']
+            jogador_stats['vida_atual'] = min(100, jogador_stats['vida_atual'] + 60)
+            vida_curada = jogador_stats['vida_atual'] - vida_antes
+            return f"Você recuperou {vida_curada} HP!"
         elif item.efeito == "buff_ofensivo":
             return "Você causou 15 de dano no inimigo!"
         else:

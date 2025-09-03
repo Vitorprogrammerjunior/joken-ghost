@@ -40,9 +40,9 @@ class EnemyManager:
         # Posições em profundidade para múltiplos inimigos
         self.posicoes_profundidade = [
             # [x, y, largura, altura, z_order] - z_order maior = mais na frente
-            [580, ALTURA - 400, 120, 140, 3],  # Posição principal (frente)
-            [480, ALTURA - 350, 80, 100, 2],   # Posição secundária (meio)
-            [680, ALTURA - 350, 80, 100, 1],   # Posição terciária (atrás)
+            [580, 200, 120, 140, 3],  # Posição principal (frente)
+            [480, 250, 80, 100, 2],   # Posição secundária (meio)
+            [680, 250, 80, 100, 1],   # Posição terciária (atrás)
         ]
         
     def gerar_inimigos_aleatorios(self, sprites_inimigo=None):
@@ -56,16 +56,18 @@ class EnemyManager:
         else:
             num_inimigos = 3
         
-        # === PRIMEIRA FASE === Fantasmas, Castelos e Balões
+        # === PRIMEIRA FASE === Apenas GHOST para teste (configuração garantida)
         tipos_inimigos = [
             {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 80},     # Fantasma fraco
             {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 100},    # Fantasma normal
             {'nome': 'GHOST', 'tipo': 'fantasma', 'vida': 120},    # Fantasma forte
-            {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 150},    # Castelo resistente
-            {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 120},    # Castelo normal
-            {'nome': 'BALLOON_RED', 'tipo': 'balao', 'vida': 60},  # Balão fraco
-            {'nome': 'BALLOON_BLUE', 'tipo': 'balao', 'vida': 80}, # Balão normal
         ]
+        
+        # REMOVIDO temporariamente para testar apenas Ghost:
+        # {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 150},    # Castelo resistente
+        # {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 120},    # Castelo normal
+        # {'nome': 'BALLOON_RED', 'tipo': 'balao', 'vida': 60},  # Balão fraco
+        # {'nome': 'BALLOON_BLUE', 'tipo': 'balao', 'vida': 80}, # Balão normal
         
         self.inimigos = []
         
