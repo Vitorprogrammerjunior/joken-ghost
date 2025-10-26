@@ -32,55 +32,121 @@ class UIManager:
         self.criar_botoes()
         
     def criar_botoes(self):
-        """Cria todos os botões do jogo."""
-        # Botão jogar no menu
-        self.botoes['jogar'] = {
-            'rect': pygame.Rect(LARGURA//2 - 100, ALTURA//2 + 50, 200, 60),
-            'texto': 'JOGAR',
-            'ativo': True
-        }
+        print("--- ESTOU EXECUTANDO O CÓDIGO NOVO! ---")
+        """Cria todos os botões do jogo de forma responsiva e centralizada."""
         
-        # Botões de Menu Principal - Molduras maiores
+        # === 1. BOTÕES DO MENU PRINCIPAL (Ataques, Loja, Monstruário) ===
+        # Vistos em: image_238265.jpg
+        
+        # --- Definição de Tamanho Padrão (Baseado na Resolução) ---
+        # Você pode ajustar essas porcentagens para deixar os botões maiores ou menores
+        BOTAO_LARGURA_MAIN = int(LARGURA * 0.28)  # 28% da largura da tela
+        BOTAO_ALTURA_MAIN = int(ALTURA * 0.11)   # 11% da altura da tela
+        
+        # --- Cálculo de Espaçamento e Posição Inicial ---
+        NUM_BOTOES_MAIN = 3
+        # Espaçamento de 4% da largura da tela entre os botões
+        ESPACO_ENTRE_BOTOES_MAIN = int(LARGURA * 0.04)
+        
+        # Largura total que o *bloco* de botões vai ocupar
+        LARGURA_TOTAL_BOTOES_MAIN = (BOTAO_LARGURA_MAIN * NUM_BOTOES_MAIN) + (ESPACO_ENTRE_BOTOES_MAIN * (NUM_BOTOES_MAIN - 1))
+        
+        # Posição X do PRIMEIRO botão para centralizar o bloco
+        X_INICIAL_MAIN = (LARGURA - LARGURA_TOTAL_BOTOES_MAIN) // 2
+        
+        # Posição Y (usando a constante que você já tem no __init__)
+        Y_BOTOES_MAIN = self.botoes_pos_y_original 
+        
+        # --- Criação dos Botões ---
+        
+        x_atual = X_INICIAL_MAIN
+        
         self.botoes['ataques'] = {
-            'rect': pygame.Rect(80, ALTURA - 130, 240, 90),
+            'rect': pygame.Rect(x_atual, Y_BOTOES_MAIN, BOTAO_LARGURA_MAIN, BOTAO_ALTURA_MAIN),
             'texto': 'ATAQUES',
             'ativo': True
         }
+        
+        x_atual += BOTAO_LARGURA_MAIN + ESPACO_ENTRE_BOTOES_MAIN
+        
         self.botoes['loja_menu'] = {
-            'rect': pygame.Rect(340, ALTURA - 130, 240, 90),
+            'rect': pygame.Rect(x_atual, Y_BOTOES_MAIN, BOTAO_LARGURA_MAIN, BOTAO_ALTURA_MAIN),
             'texto': 'LOJA',
             'ativo': True
         }
+        
+        x_atual += BOTAO_LARGURA_MAIN + ESPACO_ENTRE_BOTOES_MAIN
+        
         self.botoes['status'] = {
-            'rect': pygame.Rect(600, ALTURA - 130, 160, 90),
+            'rect': pygame.Rect(x_atual, Y_BOTOES_MAIN, BOTAO_LARGURA_MAIN, BOTAO_ALTURA_MAIN),
             'texto': 'MONSTRUÁRIO',
             'ativo': True
         }
         
-        # Botões de escolha de ataque
+        # === 2. BOTÕES DE ATAQUE (Pedra, Papel, Tesoura) ===
+        # Vistos em: image_238283.jpg
+        
+        # Mesma lógica, mas com tamanhos um pouco menores para o menu
+        BOTAO_LARGURA_ATK = int(LARGURA * 0.22)  # 22% da largura da tela
+        BOTAO_ALTURA_ATK = int(ALTURA * 0.10)   # 10% da altura da tela
+        
+        NUM_BOTOES_ATK = 3
+        ESPACO_ENTRE_BOTOES_ATK = int(LARGURA * 0.03)
+        
+        LARGURA_TOTAL_BOTOES_ATK = (BOTAO_LARGURA_ATK * NUM_BOTOES_ATK) + (ESPACO_ENTRE_BOTOES_ATK * (NUM_BOTOES_ATK - 1))
+        
+        # X inicial para centralizar o bloco
+        X_INICIAL_ATK = (LARGURA - LARGURA_TOTAL_BOTOES_ATK) // 2
+        
+        # O Y é 0 porque ele será definido dinamicamente pelo menu que sobe
+        # (no seu arquivo menu_renderer.py)
+        Y_BOTOES_ATK = 0 
+        
+        x_atual_atk = X_INICIAL_ATK
+        
         self.botoes['pedra'] = {
-            'rect': pygame.Rect(50, 0, 180, 70),
+            'rect': pygame.Rect(x_atual_atk, Y_BOTOES_ATK, BOTAO_LARGURA_ATK, BOTAO_ALTURA_ATK),
             'texto': 'PEDRA',
             'ativo': True
         }
+        
+        x_atual_atk += BOTAO_LARGURA_ATK + ESPACO_ENTRE_BOTOES_ATK
+        
         self.botoes['papel'] = {
-            'rect': pygame.Rect(250, 0, 180, 70),
+            'rect': pygame.Rect(x_atual_atk, Y_BOTOES_ATK, BOTAO_LARGURA_ATK, BOTAO_ALTURA_ATK),
             'texto': 'PAPEL',
             'ativo': True
         }
+        
+        x_atual_atk += BOTAO_LARGURA_ATK + ESPACO_ENTRE_BOTOES_ATK
+        
         self.botoes['tesoura'] = {
-            'rect': pygame.Rect(450, 0, 180, 70),
+            'rect': pygame.Rect(x_atual_atk, Y_BOTOES_ATK, BOTAO_LARGURA_ATK, BOTAO_ALTURA_ATK),
             'texto': 'TESOURA',
             'ativo': True
         }
         
-        # Botão reiniciar
-        self.botoes['reiniciar'] = {
-            'rect': pygame.Rect(LARGURA//2 - 100, ALTURA//2 + 100, 200, 60),
-            'texto': 'NOVO JOGO',
+        # === 3. OUTROS BOTÕES (Jogar, Reiniciar) ===
+        # Vamos padronizar e centralizar eles também
+        
+        BOTAO_MENU_LARGURA = int(LARGURA * 0.25) # 25% da tela
+        BOTAO_MENU_ALTURA = int(ALTURA * 0.08)  # 8% da tela
+        
+        # Posição Y relativa (ex: 55% e 65% da altura da tela)
+        Y_JOGAR = int(ALTURA * 0.55)
+        Y_REINICIAR = int(ALTURA * 0.65)
+        
+        self.botoes['jogar'] = {
+            'rect': pygame.Rect((LARGURA - BOTAO_MENU_LARGURA) // 2, Y_JOGAR, BOTAO_MENU_LARGURA, BOTAO_MENU_ALTURA),
+            'texto': 'JOGAR',
             'ativo': True
         }
         
+        self.botoes['reiniciar'] = {
+            'rect': pygame.Rect((LARGURA - BOTAO_MENU_LARGURA) // 2, Y_REINICIAR, BOTAO_MENU_LARGURA, BOTAO_MENU_ALTURA),
+            'texto': 'NOVO JOGO',
+            'ativo': True
+        }
     def desenhar_botao(self, tela, botao_key, mouse_pos):
         """Desenha um botão específico."""
         botao = self.botoes[botao_key]
@@ -126,7 +192,14 @@ class UIManager:
         
     def desenhar_menu_principal(self, tela):
         """Desenha o menu principal."""
-        tela.fill(AZUL)
+        fundo_menu = self.resource_manager.obter_imagem('menu_background')
+        if fundo_menu:
+                       # Redimensiona a imagem para preencher a tela
+            fundo_redimensionado = pygame.transform.scale(fundo_menu, (LARGURA, ALTURA))
+            tela.blit(fundo_redimensionado, (0, 0))
+        else:
+                       # Fallback se a imagem não carregar (volta para o azul)
+            tela.fill(AZUL)
         
         # Título
         fonte_titulo = self.resource_manager.obter_fonte('titulo')

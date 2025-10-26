@@ -72,7 +72,13 @@ class ResourceManager:
             if os.path.exists(carta_path):
                 self.imagens['carta_intro'] = pygame.image.load(carta_path).convert_alpha()
                 print("✅ Carta da intro carregada!")
-                
+            menu_bg_path = os.path.join("Assests", "Sprites", "Scenes", "menu_background.png") # <<< ADICIONADO (Verifique o nome do arquivo)
+            if os.path.exists(menu_bg_path): # <<< ADICIONADO
+                          self.imagens['menu_background'] = pygame.image.load(menu_bg_path).convert_alpha() # <<< ADICIONADO
+                          print("✅ Fundo do menu principal carregado!") # <<< ADICIONADO
+            else: # <<< ADICIONADO
+                          print("⚠️ Fundo do menu (menu_background.png) não encontrado na pasta Scenes") # <<< ADICIONADO
+                 # --- FIM DO NOVO CÓDIGO --- # <<< ADICIONADO
             # Monstruário (NOVO)
             monstruario_path = os.path.join("Assests", "Sprites", "molders", "Monstruario.png")
             if os.path.exists(monstruario_path):

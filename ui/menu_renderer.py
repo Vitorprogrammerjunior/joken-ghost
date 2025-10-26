@@ -56,28 +56,20 @@ class MenuRenderer:
             # Salvar área do botão para cliques
             ui_manager._botao_fechar_rect = pygame.Rect(botao_x, botao_y, botao_size, botao_size)
             
-            # Botões de ataque - posicionados à esquerda (começando do lado esquerdo)
+            # Botões de ataque - AGORA CENTRALIZADOS
             if menu_altura >= 150:
                 botoes_y = menu_y + 90  # Posição Y dos botões
-                espacamento = 180  # Espaço entre botões
-                inicio_x = 50  # Começar do lado esquerdo da tela
                 
-                # Posiciona os botões à esquerda
-                ui_manager.botoes['pedra']['rect'].x = inicio_x
+                # ATUALIZA APENAS A POSIÇÃO Y
+                # O X já foi calculado corretamente no ui_manager.py
                 ui_manager.botoes['pedra']['rect'].y = botoes_y
-                
-                ui_manager.botoes['papel']['rect'].x = inicio_x + espacamento  
                 ui_manager.botoes['papel']['rect'].y = botoes_y
-                
-                ui_manager.botoes['tesoura']['rect'].x = inicio_x + (espacamento * 2)
                 ui_manager.botoes['tesoura']['rect'].y = botoes_y
                 
-                # Desenha os botões
+                # Desenha os botões (eles usarão o X e Largura corretos)
                 ui_manager.desenhar_botao(tela, 'pedra', mouse_pos)
                 ui_manager.desenhar_botao(tela, 'papel', mouse_pos)
                 ui_manager.desenhar_botao(tela, 'tesoura', mouse_pos)
-                
-                # Sem descrições - apenas os botões limpos como solicitado
                         
     def desenhar_menu_loja(self, tela, ui_manager, mouse_pos, loja_manager, dinheiro_jogador=100):
         """Desenha o menu da loja (IDÊNTICO AO ORIGINAL)."""
@@ -167,17 +159,34 @@ class MenuRenderer:
                         overlay.fill(VERMELHO)
                         tela.blit(overlay, (item_x, itens_y))
                     
-                    # Nome do item (centralizado)
+                    # === NOVO: Adiciona fundo escuro para contraste do texto ===
+                    text_bg_height = 60 # Altura da área de texto (ajuste conforme necessário)
+                    text_bg_y = itens_y + 40 # Posição Y da área de texto (ajuste)
+                    
+                    # Cria a superfície semi-transparente
+                    text_bg_surface = pygame.Surface((120, text_bg_height)) # Largura um pouco menor que o cartão
+                    text_bg_surface.set_alpha(150) # Ajuste a transparência (0-255)
+                    text_bg_surface.fill(PRETO) # Cor preta
+                    
+                    # Calcula a posição X para centralizar o fundo do texto
+                    text_bg_x = item_x + (item_rect.width - 120) // 2 
+                    
+                    # Desenha o fundo do texto na tela
+                    tela.blit(text_bg_surface, (text_bg_x, text_bg_y))
+                    # === FIM DO NOVO CÓDIGO ===
+
+                    # Nome do item (centralizado) 
+                    # (O código para desenhar nome, preço e descrição continua aqui)
                     nome_texto = fonte_pequena.render(item.nome, True, BRANCO)
-                    nome_rect = nome_texto.get_rect(center=(item_x + 70, itens_y + 30))
+                    nome_rect = nome_texto.get_rect(center=(item_x + 70, text_bg_y + 15)) # Ajuste Y para ficar sobre o fundo
                     tela.blit(nome_texto, nome_rect)
                     
                     # Preço com cor baseada no dinheiro disponível
                     cor_preco = VERDE if pode_comprar else VERMELHO
                     preco_texto = fonte_texto.render(f"${item.preco}", True, cor_preco)
-                    preco_rect = preco_texto.get_rect(center=(item_x + 70, itens_y + 90))
+                    preco_rect = preco_texto.get_rect(center=(item_x + 70, text_bg_y + 45)) # Ajuste Y
                     tela.blit(preco_texto, preco_rect)
-                    
+
                     # Efeito do item (se houver)
                     if hasattr(item, 'descricao') and item.descricao:
                         desc_texto = fonte_pequena.render(item.descricao[:15] + "...", True, CINZA_CLARO)

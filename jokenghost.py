@@ -30,8 +30,8 @@ from enum import Enum
 pygame.init()
 
 # Configurações da tela
-LARGURA = 800
-ALTURA = 600
+LARGURA = 1000
+ALTURA = 800
 FPS = 60
 
 # Cores

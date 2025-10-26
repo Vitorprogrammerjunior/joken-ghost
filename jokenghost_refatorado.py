@@ -1503,40 +1503,51 @@ class JokenGhostGame:
             self.iniciar_animacao_entrada()
             
     def iniciar_animacao_entrada(self):
-        """Inicia a animação de entrada estilo Pokémon (IDÊNTICO AO ORIGINAL)"""
-        self.animacao_entrada_ativa = True
-        self.jogador_pos_x = -200
-        self.inimigo_pos_x = LARGURA + 200
+              """Inicia a animação de entrada estilo Pokémon (USA CONSTANTES)."""
+              self.animacao_entrada_ativa = True
+    
+              # Posição inicial fora da tela
+              self.jogador_pos_x = - (JOGADOR_LARGURA + 50) # Começa fora, à esquerda
+              self.inimigo_pos_x = LARGURA + 50 # Começa fora, à direita
+    
+              # Posição final vem das constantes
+              self.jogador_pos_final = JOGADOR_POS_X # Usa a constante
+    
+              # A posição final X do inimigo é a do slot da frente
+              self.inimigo_pos_final = INIMIGO_FRENTE_X # Usa a constante
+    
+              self.velocidade_entrada = 15 # Aumentei a velocidade um pouco
+              print("🎬 Iniciando animação de entrada com posições responsivas!")
                 
     def atualizar_jogo(self, delta_time):
-        """Atualiza o estado do jogo principal."""
-        # === NOVO === Processa animação de entrada (IDÊNTICO AO ORIGINAL)
-        if self.animacao_entrada_ativa:
-            # Move jogador da esquerda para posição final
-            if self.jogador_pos_x < self.jogador_pos_final:
-                self.jogador_pos_x += self.velocidade_entrada
-                if self.jogador_pos_x > self.jogador_pos_final:
-                    self.jogador_pos_x = self.jogador_pos_final
-            
-            # Move inimigo da direita para posição final
-            if self.inimigo_pos_x > self.inimigo_pos_final:
-                self.inimigo_pos_x -= self.velocidade_entrada
-                if self.inimigo_pos_x < self.inimigo_pos_final:
-                    self.inimigo_pos_x = self.inimigo_pos_final
-            
-            # Termina animação quando ambos chegaram
-            if (self.jogador_pos_x >= self.jogador_pos_final and 
-                self.inimigo_pos_x <= self.inimigo_pos_final):
-                self.animacao_entrada_ativa = False
-                print("🎬 Animação de entrada finalizada!")
-        
-        # Atualizar espera de rotação
-        if self.esperando_rotacao:
-            self.tempo_espera_rotacao += delta_time
-            if self.tempo_espera_rotacao >= DURACAO_ESPERA_ROTACAO:
-                self.esperando_rotacao = False
-                self.ui_manager.mostrar_botoes_ataque()
+              """Atualiza o estado do jogo principal."""
+              # === NOVO === Processa animação de entrada (USA CONSTANTES)
+              if self.animacao_entrada_ativa:
+                       # Move jogador da esquerda para posição final
+                       if self.jogador_pos_x < self.jogador_pos_final: # Usa self.jogador_pos_final
+                            self.jogador_pos_x += self.velocidade_entrada
+                            if self.jogador_pos_x > self.jogador_pos_final: # Usa self.jogador_pos_final
+                                     self.jogador_pos_x = self.jogador_pos_final # Usa self.jogador_pos_final
                 
+                       # Move inimigo da direita para posição final
+                       if self.inimigo_pos_x > self.inimigo_pos_final: # Usa self.inimigo_pos_final
+                            self.inimigo_pos_x -= self.velocidade_entrada
+                            if self.inimigo_pos_x < self.inimigo_pos_final: # Usa self.inimigo_pos_final
+                                     self.inimigo_pos_x = self.inimigo_pos_final # Usa self.inimigo_pos_final
+                
+                       # Termina animação quando ambos chegaram
+                       if (self.jogador_pos_x >= self.jogador_pos_final and # Usa self.jogador_pos_final
+                            self.inimigo_pos_x <= self.inimigo_pos_final): # Usa self.inimigo_pos_final
+                            self.animacao_entrada_ativa = False
+                            print("🎬 Animação de entrada finalizada!")
+    
+              # Atualizar espera de rotação (Seu código aqui estava bom)
+              if self.esperando_rotacao:
+                       self.tempo_espera_rotacao += delta_time
+                       if self.tempo_espera_rotacao >= DURACAO_ESPERA_ROTACAO:
+                            self.esperando_rotacao = False
+                            self.ui_manager.mostrar_botoes_ataque()
+
     def iniciar_jogo(self):
         """Inicia o jogo principal."""
         self.estado_jogo = EstadoJogo.BATALHA
@@ -1614,172 +1625,147 @@ class JokenGhostGame:
         self.ui_manager.desenhar_transicao(self.tela, self.transicao_alpha)
         
     def renderizar_jogo(self, shake_offset):
-        """Renderiza o jogo principal (IDÊNTICO AO ORIGINAL)."""
-        mouse_pos = pygame.mouse.get_pos()
-        
-        # Fundo de Batalha da pasta Scenes
-        fundo_batalha = self.resource_manager.obter_imagem('cenario')
-        if fundo_batalha:
-            self.tela.blit(fundo_batalha, (0, 0))
-        else:
-            # Fallback para fundo padrão
-            self.tela.fill(VERDE)
-            # Desenha o chão com perspectiva
-            pygame.draw.rect(self.tela, (34, 139, 34), (0, ALTURA - 150, LARGURA, 150))
-        
-        # Posição do jogador (animada durante entrada)
-        jogador_pos_x = self.jogador_pos_x if self.animacao_entrada_ativa else 80
-        jogador_pos_y = ALTURA - 280
-        
-        # === NOVO: Aplicar shake no jogador ===
-        if hasattr(self, 'jogador_pos_visual'):
-            jogador_pos_x, jogador_pos_y = self.jogador_pos_visual
-        else:
-            # Posição padrão se não houver shake
-            pass
-        
-        # === NOVO === Personagem Jogador (idêntico ao original)
-        animacao_jogador = "idle"  # Por enquanto sempre idle
-        shake_jogador = {'ativo': False, 'offset_x': 0, 'offset_y': 0}  # Shake system placeholder
-        
-        coordenadas_jogador = self.desenhar_personagem(jogador_pos_x, jogador_pos_y, 120, 140, AZUL, "", 
-                                                      sprites_personagem=self.sprites_jogador, animacao="idle", 
-                                                      frame=self.frame_personagem, espelhar=False, shake_data=self.shake_jogador)
-        
-        # === NOVO === Todos os inimigos visíveis (ordenados por profundidade) - IDÊNTICO AO ORIGINAL
-        inimigos_ativos = [inimigo for inimigo in self.inimigos if inimigo['ativo']]
-        
-        # Ordena por z_order (menor primeiro = mais atrás)
-        inimigos_ativos.sort(key=lambda x: x['z_order'])
-        
-        coordenadas_inimigos = []
-        for inimigo in inimigos_ativos:
-            if inimigo['vida_atual'] > 0:  # Só desenha se estiver vivo
-                animacao_inimigo = "idle"
-                
-                # === NOVO: Carregar sprites dinamicamente baseado no tipo ===
-                sprites_inimigo = None
-                if 'sprite_tipo' in inimigo:
-                    sprites_inimigo = self.resource_manager.sprites.get(inimigo['sprite_tipo'])
-                else:
-                    # Fallback para determinar sprite baseado no nome
-                    nome_sprite = inimigo['nome'].lower()
-                    if nome_sprite == 'ghost':
-                        sprites_inimigo = self.resource_manager.sprites.get('ghost')
-                    elif nome_sprite == 'kastle':
-                        sprites_inimigo = self.resource_manager.sprites.get('kastle')
-                    elif nome_sprite.startswith('balloon'):
-                        sprites_inimigo = self.resource_manager.sprites.get('ballons')
-                    else:
-                        sprites_inimigo = self.resource_manager.sprites.get('ghost')
-                
-                # Durante animação de entrada, use posição animada para o inimigo principal
-                pos_x_inimigo = inimigo['pos_x']
-                pos_y_inimigo = inimigo['pos_y']
-                
-                # === NOVO: Usar posição visual com shake e animação de ataque ===
-                if 'pos_visual' in inimigo:
-                    pos_x_inimigo, pos_y_inimigo = inimigo['pos_visual']
-                elif self.animacao_entrada_ativa and inimigos_ativos.index(inimigo) == 0:
-                    pos_x_inimigo = self.inimigo_pos_x
-                
-                coordenadas_inimigo = self.desenhar_personagem(
-                    pos_x_inimigo, pos_y_inimigo, inimigo['largura'], inimigo['altura'], 
-                    VERMELHO, "", sprites_personagem=sprites_inimigo, 
-                    animacao=animacao_inimigo, frame=inimigo['frame_atual'], shake_data=inimigo['shake']
-                )
-                
-                # Adiciona barra de vida automática
-                if coordenadas_inimigo:
-                    coordenadas_inimigos.append((inimigo, coordenadas_inimigo))
-        
-        # Desenha barras de vida para todos os inimigos visíveis
-        for inimigo, coords in coordenadas_inimigos:
-            sprite_x, sprite_y, sprite_largura, sprite_altura = coords
-            
-            # Tamanho da barra baseado no tamanho do inimigo
-            largura_barra = max(80, int(sprite_largura * 0.8))
-            
-            # === NOVO === Apenas nome para inimigos (sem números de vida)
-            self.desenhar_barra_vida_automatica(sprite_x, sprite_y, sprite_largura, sprite_altura, 
-                                               inimigo['vida_atual'], inimigo['vida_max'], 
-                                               inimigo['nome'], largura_barra, 
-                                               mostrar_numeros=False)  # Novo parâmetro
-        
-        # === Barra de Vida do Jogador ===
-        if coordenadas_jogador:
-            sprite_x, sprite_y, sprite_largura, sprite_altura = coordenadas_jogador
-            self.desenhar_barra_vida_automatica(sprite_x, sprite_y, sprite_largura, sprite_altura, 
-                                               self.stats_jogador['vida_atual'], self.stats_jogador['vida_maxima'], "VOCÊ")
-        
-        # Texto de informação sobre inimigos ativos (idêntico ao original)
-        inimigos_vivos = sum(1 for inimigo in self.inimigos if inimigo['ativo'] and inimigo['vida_atual'] > 0)
-        inimigo_frente = self.get_inimigo_na_frente()
-        inimigo_frente_nome = inimigo_frente['nome'] if inimigo_frente else "Nenhum"
-        texto_info = self.resource_manager.obter_fonte('pequena').render(f"Inimigo da frente: {inimigo_frente_nome} | Total: {inimigos_vivos} | Pressione R para gerar novos", True, BRANCO)
-        fundo_texto = pygame.Rect(10, ALTURA - 40, texto_info.get_width() + 10, 30)
-        pygame.draw.rect(self.tela, MARROM_LOJA, fundo_texto, border_radius=5)
-        pygame.draw.rect(self.tela, PRETO, fundo_texto, 2, border_radius=5)
-        self.tela.blit(texto_info, (15, ALTURA - 35))
-        
-        # Botões Principais (sempre aparecem exceto quando animacao_entrada_ativa ou menu ativo)
-        if not self.animacao_entrada_ativa and not self.ui_manager.menu_selecao_ativo:
-            self.ui_manager.desenhar_botao(self.tela, 'ataques', mouse_pos)
-            self.ui_manager.desenhar_botao(self.tela, 'loja_menu', mouse_pos)
-            self.ui_manager.desenhar_botao(self.tela, 'status', mouse_pos)
-        
-        # HUD Dinheiro
-        self.ui_manager.desenhar_hud_dinheiro(self.tela, self.dinheiro)
-        
-        # REMOVIDO: Sistema antigo de texto flutuante
-        # Usando apenas SimpleDamageDisplay para tudo
-        
-        # === NOVOS SISTEMAS RPG ===
-        # Sistema de dano visual (números flutuantes)
-        self.simple_damage.desenhar(self.tela)
-        
-        # Sistema de resultados de combate
-        self.result_display.desenhar(self.tela)
-        
-        # === NOVO: Feedback visual do alvo selecionado ===
-        self.desenhar_feedback_alvo_selecionado()
-        
-        # Menu de seleção se ativo
-        if self.ui_manager.menu_selecao_ativo:
-            if self.ui_manager.tipo_menu_atual == TipoMenu.ATAQUES:
-                # NOVO: Mostrar informações do alvo se selecionado
-                if hasattr(self, 'alvo_selecionado') and self.alvo_selecionado is not None:
-                    self.desenhar_info_alvo_selecionado()
-                self.menu_renderer.desenhar_menu_ataques(self.tela, self.ui_manager, mouse_pos)
-            elif self.ui_manager.tipo_menu_atual == TipoMenu.LOJA:
-                self.menu_renderer.desenhar_menu_loja(self.tela, self.ui_manager, mouse_pos, self.loja_manager, self.dinheiro)
-            elif self.ui_manager.tipo_menu_atual == TipoMenu.MONSTRUARIO:
-                self.menu_renderer.desenhar_menu_monstruario(self.tela, self.ui_manager, mouse_pos, self.monstruario_manager)
-        
-        # Resultado do combate
-        if hasattr(self, 'resultado_combate') and self.resultado_combate:
-            resultado_surface = self.resource_manager.obter_fonte('titulo').render(self.resultado_combate, True, getattr(self, 'cor_resultado', BRANCO))
-            resultado_rect = resultado_surface.get_rect(center=(LARGURA//2, 100))
-            self.tela.blit(resultado_surface, resultado_rect)
-        
-        # === NOVO: Desenhar mensagens de turno estilo original ===
-        if hasattr(self, 'mostrar_resultado_turno') and self.mostrar_resultado_turno:
-            tempo_atual = pygame.time.get_ticks()
-            # Mostrar por 4 segundos
-            if tempo_atual - self.tempo_resultado_turno < 4000:
-                # Mensagem das escolhas
-                if hasattr(self, 'mensagem_turno') and self.mensagem_turno:
-                    turno_surface = self.resource_manager.obter_fonte('normal').render(self.mensagem_turno, True, BRANCO)
-                    turno_rect = turno_surface.get_rect(center=(LARGURA//2, 150))
-                    self.tela.blit(turno_surface, turno_rect)
-                
-                # Mensagem do resultado
-                if hasattr(self, 'mensagem_resultado') and self.mensagem_resultado:
-                    resultado_surface = self.resource_manager.obter_fonte('normal').render(self.mensagem_resultado, True, getattr(self, 'cor_resultado', BRANCO))
-                    resultado_rect = resultado_surface.get_rect(center=(LARGURA//2, 180))
-                    self.tela.blit(resultado_surface, resultado_rect)
-                else:
-                    self.mostrar_resultado_turno = False
+              """Renderiza o jogo principal usando constantes responsivas."""
+              mouse_pos = pygame.mouse.get_pos()
+    
+              # Fundo de Batalha da pasta Scenes
+              fundo_batalha = self.resource_manager.obter_imagem('cenario')
+              if fundo_batalha:
+                       self.tela.blit(fundo_batalha, (0, 0))
+              else:
+                       # Fallback para fundo padrão
+                       self.tela.fill(VERDE)
+                       pygame.draw.rect(self.tela, (34, 139, 34), (0, ALTURA - 150, LARGURA, 150))
+    
+              # --- POSIÇÃO E TAMANHO DO JOGADOR (CORRIGIDO) ---
+              # Posição final vem das constantes
+              jogador_pos_final_x = JOGADOR_POS_X 
+              jogador_pos_final_y = JOGADOR_POS_Y
+    
+              # Usa a posição animada se a entrada estiver ativa
+              pos_x_atual_jogador = self.jogador_pos_x if self.animacao_entrada_ativa else jogador_pos_final_x
+              pos_y_atual_jogador = jogador_pos_final_y # Y não muda na animação de entrada
+    
+              # Aplica o shake (se houver)
+              if hasattr(self, 'jogador_pos_visual'):
+                       # O _atualizar_posicoes_com_shake já calculou a posição com shake
+                       pos_x_atual_jogador, pos_y_atual_jogador = self.jogador_pos_visual 
+    
+              # Tamanho vem das constantes
+              jogador_largura_atual = JOGADOR_LARGURA
+              jogador_altura_atual = JOGADOR_ALTURA
+    
+              # Desenha o jogador
+              animacao_jogador = "idle"    
+              coordenadas_jogador = self.desenhar_personagem(
+                       pos_x_atual_jogador, pos_y_atual_jogador, 
+                       jogador_largura_atual, jogador_altura_atual, # <-- TAMANHO CORRIGIDO
+                       AZUL, "",  
+                       sprites_personagem=self.sprites_jogador, animacao=animacao_jogador,   
+                       frame=self.frame_personagem, espelhar=False, 
+                       shake_data=self.shake_jogador # Usa o shake_jogador do __init__
+              )
+    
+              # --- DESENHO DOS INIMIGOS (Seu código aqui estava bom) ---
+              inimigos_ativos = [inimigo for inimigo in self.inimigos if inimigo['ativo']]
+              inimigos_ativos.sort(key=lambda x: x['z_order'])
+    
+              coordenadas_inimigos = []
+              for inimigo in inimigos_ativos:
+                       if inimigo['vida_atual'] > 0:  
+                            animacao_inimigo = "idle"
+                            sprites_inimigo = None
+                            if 'sprite_tipo' in inimigo:
+                                     sprites_inimigo = self.resource_manager.sprites.get(inimigo['sprite_tipo'])
+                            else: # Fallback
+                                     nome_sprite = inimigo['nome'].lower()
+                                     if nome_sprite == 'ghost': sprites_inimigo = self.resource_manager.sprites.get('ghost')
+                                     elif nome_sprite == 'kastle': sprites_inimigo = self.resource_manager.sprites.get('kastle')
+                                     elif nome_sprite.startswith('balloon'): sprites_inimigo = self.resource_manager.sprites.get('ballons')
+                                     else: sprites_inimigo = self.resource_manager.sprites.get('ghost')
+                          
+                            # Usa posição visual (com shake e animação de ataque) se disponível
+                            pos_x_inimigo, pos_y_inimigo = inimigo.get('pos_visual', (inimigo['pos_x'], inimigo['pos_y']))
+
+                            # Durante animação de entrada, usa posição animada APENAS para o inimigo da frente
+                            if self.animacao_entrada_ativa and inimigo.get('z_order') == 3: # Apenas o da frente
+                                     pos_x_inimigo = self.inimigo_pos_x # Usa a posição X animada
+                                     pos_y_inimigo = inimigo['pos_y'] # Mantém o Y original
+                          
+                            coordenadas_inimigo = self.desenhar_personagem(
+                                     pos_x_inimigo, pos_y_inimigo, inimigo['largura'], inimigo['altura'],  
+                                     VERMELHO, "", sprites_personagem=sprites_inimigo, 
+                                     animacao=animacao_inimigo, frame=inimigo['frame_atual'], 
+                                     shake_data=inimigo.get('shake', {'ativo': False, 'offset_x': 0, 'offset_y': 0}) # Usa shake do inimigo
+                            )
+                          
+                            if coordenadas_inimigo:
+                                     coordenadas_inimigos.append((inimigo, coordenadas_inimigo))
+    
+              # --- DESENHO DAS BARRAS DE VIDA (Seu código aqui estava bom) ---
+              for inimigo, coords in coordenadas_inimigos:
+                       sprite_x, sprite_y, sprite_largura, sprite_altura = coords
+                       largura_barra = max(80, int(sprite_largura * 0.8))
+                       self.desenhar_barra_vida_automatica(sprite_x, sprite_y, sprite_largura, sprite_altura,    
+                                                                                  inimigo['vida_atual'], inimigo['vida_max'], 
+                                                                                  inimigo['nome'], largura_barra, mostrar_numeros=False)
+    
+              # Barra de vida do Jogador
+              if coordenadas_jogador:
+                       sprite_x, sprite_y, sprite_largura, sprite_altura = coordenadas_jogador
+                       self.desenhar_barra_vida_automatica(sprite_x, sprite_y, sprite_largura, sprite_altura,    
+                                                                                  self.stats_jogador['vida_atual'], self.stats_jogador['vida_maxima'], "VOCÊ")
+    
+              # --- RESTO DO RENDERIZAR_JOGO (Seu código aqui estava bom) ---
+              inimigos_vivos = sum(1 for inimigo in self.inimigos if inimigo['ativo'] and inimigo['vida_atual'] > 0)
+              inimigo_frente = self.get_inimigo_na_frente()
+              inimigo_frente_nome = inimigo_frente['nome'] if inimigo_frente else "Nenhum"
+              texto_info = self.resource_manager.obter_fonte('pequena').render(f"Inimigo da frente: {inimigo_frente_nome} | Total: {inimigos_vivos} | Pressione R para gerar novos", True, BRANCO)
+              fundo_texto = pygame.Rect(10, ALTURA - 40, texto_info.get_width() + 10, 30)
+              pygame.draw.rect(self.tela, MARROM_LOJA, fundo_texto, border_radius=5)
+              pygame.draw.rect(self.tela, PRETO, fundo_texto, 2, border_radius=5)
+              self.tela.blit(texto_info, (15, ALTURA - 35))
+    
+              if not self.animacao_entrada_ativa and not self.ui_manager.menu_selecao_ativo:
+                       self.ui_manager.desenhar_botao(self.tela, 'ataques', mouse_pos)
+                       self.ui_manager.desenhar_botao(self.tela, 'loja_menu', mouse_pos)
+                       self.ui_manager.desenhar_botao(self.tela, 'status', mouse_pos)
+    
+              self.ui_manager.desenhar_hud_dinheiro(self.tela, self.dinheiro)
+    
+              self.simple_damage.desenhar(self.tela)
+              self.result_display.desenhar(self.tela)
+    
+              self.desenhar_feedback_alvo_selecionado()
+    
+              if self.ui_manager.menu_selecao_ativo:
+                       if self.ui_manager.tipo_menu_atual == TipoMenu.ATAQUES:
+                            if hasattr(self, 'alvo_selecionado') and self.alvo_selecionado is not None:
+                                     self.desenhar_info_alvo_selecionado()
+                            self.menu_renderer.desenhar_menu_ataques(self.tela, self.ui_manager, mouse_pos)
+                       elif self.ui_manager.tipo_menu_atual == TipoMenu.LOJA:
+                            self.menu_renderer.desenhar_menu_loja(self.tela, self.ui_manager, mouse_pos, self.loja_manager, self.dinheiro)
+                       elif self.ui_manager.tipo_menu_atual == TipoMenu.MONSTRUARIO:
+                            self.menu_renderer.desenhar_menu_monstruario(self.tela, self.ui_manager, mouse_pos, self.monstruario_manager)
+    
+              if hasattr(self, 'resultado_combate') and self.resultado_combate:
+                       resultado_surface = self.resource_manager.obter_fonte('titulo').render(self.resultado_combate, True, getattr(self, 'cor_resultado', BRANCO))
+                       resultado_rect = resultado_surface.get_rect(center=(LARGURA//2, 100))
+                       self.tela.blit(resultado_surface, resultado_rect)
+    
+              if hasattr(self, 'mostrar_resultado_turno') and self.mostrar_resultado_turno:
+                       tempo_atual = pygame.time.get_ticks()
+                       if tempo_atual - self.tempo_resultado_turno < 4000:
+                            if hasattr(self, 'mensagem_turno') and self.mensagem_turno:
+                                     turno_surface = self.resource_manager.obter_fonte('normal').render(self.mensagem_turno, True, BRANCO)
+                                     turno_rect = turno_surface.get_rect(center=(LARGURA//2, 150))
+                                     self.tela.blit(turno_surface, turno_rect)
+                            if hasattr(self, 'mensagem_resultado') and self.mensagem_resultado:
+                                     resultado_surface = self.resource_manager.obter_fonte('normal').render(self.mensagem_resultado, True, getattr(self, 'cor_resultado', BRANCO))
+                                     resultado_rect = resultado_surface.get_rect(center=(LARGURA//2, 180))
+                                     self.tela.blit(resultado_surface, resultado_rect)
+                       else:
+                            self.mostrar_resultado_turno = False
                     
     def desenhar_feedback_alvo_selecionado(self):
         """Desenha feedback visual para o alvo selecionado."""

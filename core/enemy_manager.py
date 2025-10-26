@@ -4,11 +4,12 @@ Responsável por criar, posicionar e controlar múltiplos inimigos.
 """
 
 import random
-from config.constants import *
+from config.constants import * # <--- 1. IMPORTAÇÃO ADICIONADA
 
 class Enemy:
     """Classe simples de inimigo para compatibilidade."""
     
+    # --- 2. CLASSE ENEMY CORRIGIDA ---
     def __init__(self, data_dict):
         """Inicializa um inimigo a partir de um dicionário."""
         self.nome = data_dict.get('nome', 'Unknown')
@@ -29,6 +30,7 @@ class Enemy:
 class EnemyManager:
     """Gerenciador de inimigos do jogo."""
     
+    # --- 3. __INIT__ CORRIGIDO PARA USAR CONSTANTES ---
     def __init__(self):
         """Inicializa o gerenciador de inimigos."""
         self.inimigos = []
@@ -38,12 +40,15 @@ class EnemyManager:
         self.tempo_espera_inimigo = 0
         
         # Posições em profundidade para múltiplos inimigos
+        # Agora lendo as constantes de constants.py
         self.posicoes_profundidade = [
-            # [x, y, largura, altura, z_order] - z_order maior = mais na frente
-            [580, 200, 120, 140, 3],  # Posição principal (frente)
-            [480, 250, 80, 100, 2],   # Posição secundária (meio)
-            [680, 250, 80, 100, 1],   # Posição terciária (atrás)
+                # [x, y, largura, altura, z_order] - z_order maior = mais na frente
+                [INIMIGO_FRENTE_X, INIMIGO_FRENTE_Y, INIMIGO_FRENTE_LARGURA, INIMIGO_FRENTE_ALTURA, 3], # Posição principal (frente)
+                [INIMIGO_MEIO_X, INIMIGO_MEIO_Y, INIMIGO_MEIO_LARGURA, INIMIGO_MEIO_ALTURA, 2],     # Posição secundária (meio)
+                [INIMIGO_ATRAS_X, INIMIGO_ATRAS_Y, INIMIGO_ATRAS_LARGURA, INIMIGO_ATRAS_ALTURA, 1],   # Posição terciária (atrás)
         ]
+        
+    # --- O RESTO DO SEU CÓDIGO (ESTAVA CORRETO) ---
         
     def gerar_inimigos_aleatorios(self, sprites_inimigo=None):
         """Gera de 1 a 3 inimigos aleatoriamente."""
@@ -64,8 +69,8 @@ class EnemyManager:
         ]
         
         # REMOVIDO temporariamente para testar apenas Ghost:
-        # {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 150},    # Castelo resistente
-        # {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 120},    # Castelo normal
+        # {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 150},     # Castelo resistente
+        # {'nome': 'KASTLE', 'tipo': 'castelo', 'vida': 120},     # Castelo normal
         # {'nome': 'BALLOON_RED', 'tipo': 'balao', 'vida': 60},  # Balão fraco
         # {'nome': 'BALLOON_BLUE', 'tipo': 'balao', 'vida': 80}, # Balão normal
         
