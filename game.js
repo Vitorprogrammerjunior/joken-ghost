@@ -1589,23 +1589,32 @@ class JokenGhost {
     const isMobile = window.matchMedia('(pointer: coarse)').matches;
     let scale;
     if (scaleOpt === 'fit') {
-      // Mobile landscape: fill (sem barras pretas)
-      // Mobile portrait / desktop: fit (jogo inteiro visível)
-      scale = (isMobile && isLandscape)
-        ? Math.max(vw / GW, vh / GH)
-        : Math.min(vw / GW, vh / GH);
+      if (isMobile && isLandscape) {
+        // Landscape mobile: fill (sem barras pretas)
+        scale = Math.max(vw / GW, vh / GH);
+      } else if (isMobile && !isLandscape) {
+        // Portrait mobile: 1.5× fit-width para ser legível,
+        // limitado por fill-height. Conteúdo central fica visível;
+        // bordas esquerda/direita são cortadas (overflow-x: hidden).
+        scale = Math.min((vw / GW) * 1.5, vh / GH);
+      } else {
+        scale = Math.min(vw / GW, vh / GH);
+      }
     } else {
       scale = parseFloat(scaleOpt);
     }
 
-    const offX = Math.floor((vw - GW * scale) / 2);
-    const offY = Math.floor((vh - GH * scale) / 2);
+    const offX = Math.floor((vw - GW * scale) / 2); // negativo em portrait = clipar bordas
+    const offY = isMobile && !isLandscape ? 0 : Math.floor((vh - GH * scale) / 2);
 
     this.$root.style.transform       = `scale(${scale})`;
     this.$root.style.transformOrigin = 'top left';
     this.$root.style.left            = offX + 'px';
     this.$root.style.top             = offY + 'px';
-    this.$root.style.position        = 'fixed';
+    this.$root.style.position        = isMobile && !isLandscape ? 'absolute' : 'fixed';
+    document.body.style.overflowY    = isMobile && !isLandscape ? 'auto'   : '';
+    document.body.style.overflowX    = isMobile && !isLandscape ? 'hidden' : '';
+    document.body.style.touchAction  = isMobile && !isLandscape ? 'pan-y'  : '';
   }
 }
 
