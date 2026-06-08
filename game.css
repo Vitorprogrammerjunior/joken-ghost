@@ -57,9 +57,293 @@ html, body {
 .screen.hidden { display: none !important; }
 .hidden        { display: none !important; }
 
+/* Fade-in ao mostrar qualquer screen */
+.screen:not(.hidden) {
+  animation: screenFadeIn 0.4s ease both;
+}
+@keyframes screenFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Overlay de fade-preto para transições entre telas */
+#screen-fade-overlay {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 99;
+  pointer-events: none;
+  opacity: 0;
+}
+#screen-fade-overlay.fade-out {
+  animation: blackFadeOut 0.5s ease forwards;
+}
+#screen-fade-overlay.fade-in {
+  animation: blackFadeIn 0.35s ease forwards;
+}
+@keyframes blackFadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes blackFadeOut { from{opacity:1} to{opacity:0} }
+
 /* ─── Menu Screen ──────────────────────────────────────────  */
 #screen-menu {
   background: rgba(0,0,0,0.55);
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-btn {
+  width: 220px;
+  text-align: center;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── SAVES MODAL ─────────────────────────────────────────── */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.hidden { display: none !important; }
+
+#saves-panel {
+  background: #1a0f07;
+  border: 3px solid #8b6849;
+  border-radius: 14px;
+  padding: 28px 32px 24px;
+  width: 680px;
+  max-width: 95%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+  animation: savesPanelIn 0.35s cubic-bezier(0.22,0.61,0.36,1) both;
+}
+.modal-overlay.hidden #saves-panel { animation: none; }
+@keyframes savesPanelIn {
+  from { opacity: 0; transform: translateY(36px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.saves-title {
+  font-size: 16px;
+  color: #f5c842;
+  text-align: center;
+  letter-spacing: 3px;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   OPTIONS MODAL
+   ═══════════════════════════════════════════════════════════ */
+#options-panel {
+  background: #1a0f07;
+  border: 3px solid #8b6849;
+  border-radius: 14px;
+  padding: 28px 36px 24px;
+  width: 560px;
+  max-width: 95%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+  animation: savesPanelIn 0.35s cubic-bezier(0.22,0.61,0.36,1) both;
+}
+.modal-overlay.hidden #options-panel { animation: none; }
+
+.options-title {
+  font-size: 16px;
+  color: #f5c842;
+  text-align: center;
+  letter-spacing: 4px;
+  margin: 0;
+}
+
+.opt-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.opt-section-label {
+  font-size: 9px;
+  color: #8b6849;
+  letter-spacing: 3px;
+  border-bottom: 1px solid rgba(139,104,73,0.3);
+  padding-bottom: 4px;
+}
+
+.opt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.opt-label {
+  font-size: 10px;
+  color: #d4b896;
+  letter-spacing: 1px;
+  flex: 1;
+  cursor: default;
+}
+
+/* Slider */
+.opt-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 160px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(139,104,73,0.35);
+  outline: none;
+  cursor: pointer;
+}
+.opt-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f5c842;
+  border: 2px solid #a07830;
+  cursor: pointer;
+}
+.opt-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #f5c842;
+  border: 2px solid #a07830;
+  cursor: pointer;
+}
+.opt-slider:focus::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(245,200,66,0.3); }
+
+.opt-val {
+  font-size: 10px;
+  color: #f5c842;
+  width: 28px;
+  text-align: right;
+  letter-spacing: 1px;
+}
+
+/* Toggle button */
+.opt-toggle {
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 2px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid rgba(139,104,73,0.6);
+  background: rgba(139,104,73,0.12);
+  color: #aaa;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  min-width: 72px;
+}
+.opt-toggle[data-on="true"] {
+  background: rgba(74,124,58,0.25);
+  border-color: #6aaa50;
+  color: #a0e080;
+}
+
+/* Scale buttons */
+.opt-scale-btns {
+  display: flex;
+  gap: 6px;
+}
+.opt-scale-btn {
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 1px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 2px solid rgba(139,104,73,0.5);
+  background: rgba(139,104,73,0.1);
+  color: #aaa;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.opt-scale-btn.active {
+  background: rgba(74,124,58,0.25);
+  border-color: #6aaa50;
+  color: #a0e080;
+}
+
+#saves-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.save-slot {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  background: rgba(139,104,73,0.12);
+  border: 2px solid rgba(139,104,73,0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  transition: border-color 0.2s;
+}
+.save-slot:hover { border-color: rgba(245,200,66,0.5); }
+.save-slot.empty { opacity: 0.55; }
+
+.save-slot-num {
+  font-size: 20px;
+  color: #8b6849;
+  text-align: center;
+  font-family: 'DogicaPixel', monospace;
+}
+
+.save-slot-info { display: flex; flex-direction: column; gap: 3px; }
+.save-slot-name { font-size: 13px; color: #f5c842; letter-spacing: 1px; }
+.save-slot-meta { font-size: 9px; color: rgba(255,255,255,0.45); letter-spacing: 1px; }
+
+.save-slot-actions { display: flex; gap: 8px; }
+
+.btn-save-play {
+  font-family: 'DogicaPixel', monospace;
+  font-size: 9px;
+  background: #4a7c3a;
+  color: #fff;
+  border: 2px solid #6aaa50;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+.btn-save-play:hover { background: #5a9c48; }
+
+.btn-save-del {
+  font-family: 'DogicaPixel', monospace;
+  font-size: 9px;
+  background: rgba(180,40,40,0.2);
+  color: #ff8080;
+  border: 2px solid rgba(180,40,40,0.5);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-save-del:hover { background: rgba(180,40,40,0.4); }
+
+.saves-close {
+  align-self: center;
+  margin-top: 4px;
 }
 
 .game-title {
@@ -183,7 +467,7 @@ html, body {
 }
 
 /* Nó 1 — Floresta (primeiro à esquerda) */
-#lvl-node-1 { left: 12.5%; top: 54%; }
+#lvl-node-1 { left: 14%; top: 38%; }
 /* Nó 2 — Pátio */
 #lvl-node-2 { left: 37%;   top: 46%; }
 /* Nó 3 — Interior */
@@ -433,7 +717,16 @@ html, body {
 }
 #btn-mute:hover { transform: scale(1.2); }
 
-.coin-icon { font-size: 20px; }
+.coin-icon-img {
+  image-rendering: pixelated;
+  display: block;
+  pointer-events: none;
+}
+
+#btn-mute img {
+  image-rendering: pixelated;
+  display: block;
+}
 
 /* ─── Battle message box ───────────────────────────────── */
 #battle-msg-box {
@@ -656,6 +949,13 @@ html, body {
   width: 100%; height: 100%;
   object-fit: contain;
 }
+/* Pocao Grande tem icone maior para representar tamanho */
+.btn-shop-item[data-effect="heal_big"] .shop-item-icon {
+  width: 68px; height: 68px;
+}
+.btn-shop-item[data-effect="heal_big"] .shop-item-icon img {
+  width: 100%; height: 100%;
+}
 
 .shop-item-name  { font-size: 13px; letter-spacing: 1px; text-align: center; }
 .shop-item-price { font-size: 16px; color: #ffd700; }
@@ -674,6 +974,10 @@ html, body {
   justify-content: center;
   background: rgba(0,0,0,0.90);
 }
+#bestiary-modal.bst-open  { animation: bstOverlayIn  0.3s ease both; }
+#bestiary-modal.bst-close { animation: bstOverlayOut 0.25s ease both; }
+@keyframes bstOverlayIn  { from{opacity:0} to{opacity:1} }
+@keyframes bstOverlayOut { from{opacity:1} to{opacity:0} }
 
 .bestiary-book {
   position: relative;
@@ -684,6 +988,10 @@ html, body {
   border: none;
   box-shadow: 0 24px 80px rgba(0,0,0,0.85), 0 0 0 2px rgba(60,30,5,0.5);
 }
+#bestiary-modal.bst-open  .bestiary-book { animation: bstBookIn  0.38s cubic-bezier(0.22,0.61,0.36,1) both; }
+#bestiary-modal.bst-close .bestiary-book { animation: bstBookOut 0.25s cubic-bezier(0.55,0,0.78,0) both; }
+@keyframes bstBookIn  { from{opacity:0;transform:scale(0.88) translateY(28px)} to{opacity:1;transform:scale(1) translateY(0)} }
+@keyframes bstBookOut { from{opacity:1;transform:scale(1) translateY(0)} to{opacity:0;transform:scale(0.9) translateY(20px)} }
 
 .bestiary-bg-img {
   position: absolute;
@@ -697,7 +1005,7 @@ html, body {
   position: relative;
   z-index: 2;
   /* padding alinhado com as páginas reais do livro */
-  padding: 22px 178px 112px 72px;
+  padding: 10px 178px 112px 72px;
   height: 100%;
   box-sizing: border-box;
   display: flex;
@@ -712,9 +1020,11 @@ html, body {
   text-shadow: 1px 1px 0 rgba(255,240,200,0.6);
   text-align: center;
   flex-shrink: 0;
-  letter-spacing: 2px;
-  /* compensa padding assimétrico para centralizar no livro */
-  margin-left: 50px;
+  letter-spacing: 4px;
+  padding-top: 6px;
+  padding-bottom: 8px;
+  /* compensa padding assimétrico (72px esq, 178px dir) para centralizar no livro */
+  margin-left: 106px;
 }
 
 #bestiary-content {
@@ -872,7 +1182,8 @@ html, body {
   font-size: 12px;
   line-height: 2.2;
   grid-column: 1 / -1;
-  margin: auto;
+  max-width: 180px;
+  margin: 40px auto auto 160px;
 }
 
 .bestiary-nav {
@@ -881,8 +1192,8 @@ html, body {
   justify-content: center;
   gap: 28px;
   flex-shrink: 0;
-  /* compensa padding assimétrico para centralizar no livro */
-  margin-left: 50px;
+  /* compensa padding assimétrico (72px esq, 178px dir) para centralizar no livro */
+  margin-left: 106px;
 }
 
 .bestiary-nav button {
@@ -912,6 +1223,7 @@ html, body {
   font-size: 9px;
   color: rgba(80,40,10,0.45);
   text-align: center;
+  margin-left: 106px;
 }
 
 .bestiary-close-btn {
@@ -926,7 +1238,7 @@ html, body {
    ═══════════════════════════════════════════════════════════ */
 #toast {
   position: absolute;
-  top: 20px;
+  top: 70px;
   left: 20px;
   max-width: 320px;
   background: rgba(10,80,20,0.95);

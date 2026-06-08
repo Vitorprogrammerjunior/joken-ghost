@@ -1,0 +1,26 @@
+# Python source (jogo original pygame - nao necessario no deploy web)
+*.py
+__pycache__/
+*.pyc
+config/
+core/
+game/
+graphics/
+ui/
+
+# Docs e guides
+*.md
+PKMNRSEU.FON
+
+# Backup e scripts
+jokenghost_backup.py
+jokenghost_refatorado.py
+jokenghost.py
+loja_helper.py
+setup.py
+run_game.bat
+requirements.txt
+
+# Dev
+.git/
+node_modules/

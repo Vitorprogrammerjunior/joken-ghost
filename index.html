@@ -30,7 +30,83 @@
     <div id="screen-menu" class="screen active">
       <h1 class="game-title">JOKENGHOST</h1>
       <p class="game-subtitle">Caçada em Turnos</p>
-      <button class="btn-primary" id="btn-play">JOGAR</button>
+      <div class="menu-buttons">
+        <button class="btn-primary" id="btn-play">JOGAR</button>
+        <button class="btn-secondary menu-btn" id="btn-saves">ARQUIVOS</button>
+        <button class="btn-secondary menu-btn" id="btn-options">OPCOES</button>
+        <a class="btn-secondary menu-btn" href="wiki.html" target="_blank">WIKI</a>
+      </div>
+    </div>
+
+    <!-- ═════════════════════ OPTIONS MODAL ═════════════════════ -->
+    <div id="options-modal" class="modal-overlay hidden">
+      <div id="options-panel">
+        <h2 class="options-title">OPCOES</h2>
+
+        <div class="opt-section">
+          <div class="opt-section-label">AUDIO</div>
+
+          <div class="opt-row">
+            <label class="opt-label" for="opt-bgm-vol">MUSICA</label>
+            <input class="opt-slider" type="range" id="opt-bgm-vol" min="0" max="100" value="45">
+            <span class="opt-val" id="opt-bgm-val">45</span>
+          </div>
+
+          <div class="opt-row">
+            <label class="opt-label" for="opt-sfx-vol">EFEITOS SONOROS</label>
+            <input class="opt-slider" type="range" id="opt-sfx-vol" min="0" max="100" value="100">
+            <span class="opt-val" id="opt-sfx-val">100</span>
+          </div>
+        </div>
+
+        <div class="opt-section">
+          <div class="opt-section-label">EFEITOS VISUAIS</div>
+
+          <div class="opt-row">
+            <label class="opt-label" for="opt-shake">TREPIDACAO DE TELA</label>
+            <button class="opt-toggle" id="opt-shake" data-on="true">ATIVO</button>
+          </div>
+
+          <div class="opt-row">
+            <label class="opt-label" for="opt-coins">MOEDAS FLUTUANTES</label>
+            <button class="opt-toggle" id="opt-coins" data-on="true">ATIVO</button>
+          </div>
+
+          <div class="opt-row">
+            <label class="opt-label" for="opt-toast">NOTIFICACOES</label>
+            <button class="opt-toggle" id="opt-toast" data-on="true">ATIVO</button>
+          </div>
+        </div>
+
+        <div class="opt-section">
+          <div class="opt-section-label">TELA</div>
+
+          <div class="opt-row">
+            <label class="opt-label">ESCALA</label>
+            <div class="opt-scale-btns">
+              <button class="opt-scale-btn" data-scale="0.75">75%</button>
+              <button class="opt-scale-btn active" data-scale="fit">FIT</button>
+              <button class="opt-scale-btn" data-scale="1">100%</button>
+            </div>
+          </div>
+
+          <div class="opt-row">
+            <label class="opt-label" for="opt-fullscreen">TELA CHEIA</label>
+            <button class="opt-toggle" id="opt-fullscreen" data-on="false">INATIVO</button>
+          </div>
+        </div>
+
+        <button class="btn-secondary saves-close" id="btn-options-close">FECHAR</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ SAVES MODAL ═══════════════════ -->
+    <div id="saves-modal" class="modal-overlay hidden">
+      <div id="saves-panel">
+        <h2 class="saves-title">SELECIONAR ARQUIVO</h2>
+        <div id="saves-list"></div>
+        <button class="btn-secondary saves-close" id="btn-saves-close">✕ FECHAR</button>
+      </div>
     </div>
 
     <!-- ═══════════════════ LEVEL SELECT ═══════════════════ -->
@@ -112,8 +188,8 @@
 
       <!-- Coin HUD (top-right corner) -->
       <div id="coin-hud">
-        <button id="btn-mute" title="Mute/Unmute">🔊</button>
-        <span class="coin-icon">💰</span>
+        <button id="btn-mute" title="Mute/Unmute"><img id="mute-img" src="desmutado.png" width="22" height="22" alt="som"></button>
+        <img src="dinheiro.png" class="coin-icon-img" width="22" height="22" alt="moedas">
         <span id="coin-amount">0</span>
       </div>
 
@@ -145,17 +221,17 @@
       </div>
       <div class="panel-body attack-grid">
         <button class="btn-attack" data-choice="pedra">
-          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Estaca.png" alt="Estaca" onerror="this.style.display='none'">🪵</div>
+          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Estaca.png" alt="Estaca" onerror="this.style.display='none'"></div>
           <span class="attack-name">ESTACA</span>
           <span class="attack-desc">Pedra</span>
         </button>
         <button class="btn-attack" data-choice="papel">
-          <div class="attack-icon"><img src="Assests/Sprites/Ballons/aspirador.png" alt="Aspirador" onerror="this.style.display='none'">🌀</div>
+          <div class="attack-icon"><img src="Assests/Sprites/Ballons/aspirador.png" alt="Aspirador" onerror="this.style.display='none'"></div>
           <span class="attack-name">ASPIRADOR</span>
-          <span class="attack-desc">Papel • +💰25</span>
+          <span class="attack-desc">Papel • +$25</span>
         </button>
         <button class="btn-attack" data-choice="tesoura">
-          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Cruz.png" alt="Cruz" onerror="this.style.display='none'">✝️</div>
+          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Cruz.png" alt="Cruz" onerror="this.style.display='none'"></div>
           <span class="attack-name">CRUZ</span>
           <span class="attack-desc">Tesoura</span>
         </button>
@@ -165,7 +241,7 @@
     <!-- ═══════════════════ SHOP PANEL (slides up) ═══════════════════ -->
     <div id="shop-panel" class="panel hidden">
       <div class="panel-header">
-        <span class="panel-title">🏪 LOJA</span>
+        <span class="panel-title">LOJA</span>
         <button class="btn-close" id="btn-close-shop">✕</button>
       </div>
       <div class="panel-body shop-grid" id="shop-items-container">
@@ -178,7 +254,7 @@
       <div class="bestiary-book">
         <img class="bestiary-bg-img" src="Assests/Sprites/molders/Monstruario.png" alt="" onerror="this.style.display='none'">
         <div class="bestiary-inner">
-          <h2 class="bestiary-title">📖 MONSTRUÁRIO</h2>
+          <h2 class="bestiary-title">MONSTRUÁRIO</h2>
           <div id="bestiary-content"></div>
           <div class="bestiary-nav hidden" id="bestiary-nav">
             <button id="btn-bst-prev">◀ Anterior</button>
@@ -203,8 +279,10 @@
       </div>
     </div>
 
+    <div id="screen-fade-overlay"></div>
+
   </div><!-- /game-root -->
 
-  <script src="game.js?v=5"></script>
+  <script src="game.js?v=6"></script>
 </body>
 </html>

@@ -14,11 +14,60 @@ const FPS = 60;
 const STATE = { MENU: 0, INTRO: 1, TRANSITION: 2, DIALOGUE: 5, BATTLE: 3, RESULT: 4, LEVEL_SELECT: 6 };
 const CHOICE = { PEDRA: 'pedra', PAPEL: 'papel', TESOURA: 'tesoura' };
 
+// ═══════════════════════════════════════════════════════════════════
+//  SAVE SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+const SAVE_KEY  = (n) => `jokenghost_save_${n}`;
+const NUM_SLOTS = 7;
+const LEVEL_NAMES = { 1: 'Floresta Maldita', 2: 'Pátio da Mansão', 3: 'Interior', 4: 'Câmara Final' };
+
+// ═══════════════════════════════════════════════════════════════════
+//  OPTIONS SYSTEM
+// ═══════════════════════════════════════════════════════════════════
+const OPT_KEY = 'jokenghost_options';
+const DEFAULT_OPTIONS = {
+  bgmVol:       45,
+  sfxVol:       100,
+  shake:        true,
+  floatingCoins: true,
+  toasts:       true,
+  scale:        'fit',
+};
+function loadOptions() {
+  try { return Object.assign({}, DEFAULT_OPTIONS, JSON.parse(localStorage.getItem(OPT_KEY))); }
+  catch { return { ...DEFAULT_OPTIONS }; }
+}
+function saveOptions(opts) {
+  localStorage.setItem(OPT_KEY, JSON.stringify(opts));
+}
+
+function getSave(slot) {
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY(slot))); } catch { return null; }
+}
+function setSave(slot, data) {
+  localStorage.setItem(SAVE_KEY(slot), JSON.stringify(data));
+}
+function deleteSave(slot) {
+  localStorage.removeItem(SAVE_KEY(slot));
+}
+function buildSaveData(slot, game) {
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2,'0');
+  return {
+    slot,
+    date: `${pad(now.getDate())}/${pad(now.getMonth()+1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    level: game.currentLevel || 1,
+    coins: game.economy.coins,
+    bestiaryCount: Object.keys(game.bestiary.entries || {}).length,
+  };
+}
+
 // Rock-paper-scissors: who beats whom
 const WINS_AGAINST = { pedra: 'tesoura', papel: 'pedra', tesoura: 'papel' };
 
 const PLAYER_MAX_HP   = 100;
 const PLAYER_DAMAGE   = 25;
+const WEAKNESS_DAMAGE = 40;
 const ENEMY_DAMAGE    = 20;
 
 const REWARD_PEDRA  = 25; // aspirador vs fantasma
@@ -26,16 +75,16 @@ const REWARD_OTHER  = 15;
 const REWARD_CLEAR  = 60; // per enemy on full clear
 
 const SHOP_ITEMS = [
-  { name: 'Poção de Cura',  price: 30, effect: 'heal_small', desc: '+30 HP',          img: 'Assests/Sprites/itens/Frasco mágico com poção verde.png', icon: '🧪' },
-  { name: 'Buff Ofensivo',  price: 50, effect: 'buff_attack', desc: '-15HP inimigo',   img: 'Assests/Sprites/itens/buff_potion.png',                  icon: '⚗️' },
-  { name: 'Poção Grande',   price: 80, effect: 'heal_big',    desc: '+60 HP',          img: 'Assests/Sprites/itens/Frasco mágico com poção verde.png', icon: '🧪' },
+  { name: 'Pocao de Cura',  price: 30, effect: 'heal_small', desc: '+30 HP',          img: 'Assests/Sprites/itens/Frasco mágico com poção verde.png' },
+  { name: 'Buff Ofensivo',  price: 50, effect: 'buff_attack', desc: '-15HP inimigo',   img: 'Assests/Sprites/itens/buff_potion.png'                 },
+  { name: 'Pocao Grande',   price: 80, effect: 'heal_big',    desc: '+60 HP',          img: 'Assests/Sprites/itens/Frasco mágico com poção verde.png' },
 ];
 
 const DIALOGUE_LINES = [
   "...Que floresta mais estranha.\nSinto calafrios só de caminhar por aqui.",
   "Espera — sinto uma presença!\nIsso é energia sobrenatural!",
-  "São fantasmas. SÃO FANTASMAS!\nComo fui parar nessa mansão maldita?!",
-  "Respira fundo... você treinou pra isso.\nEstaca ✔  Aspirador ✔  Cruz ✔",
+  "São fantasmas. SÃO FANTASMAS!\nComo fui parar nessa maldita floresta?!",
+  "Respira fundo... voce treinou pra isso.\nEstaca   Aspirador   Cruz",
   "Muito bem, seus malditos espíritos —\nquem vai ser o primeiro?!",
 ];
 
@@ -46,7 +95,7 @@ const INTRO_LINES = [
   'estranhos acontecimentos em uma antiga mansão.',
   '',
   'Ele segue pela floresta à noite, armado com',
-  'suas três armas espirituais:',
+  'suas tres armas espirituais:',
   'Estaca, Aspirador e Cruz,',
   '',
   'determinado a investigar os relatos...'
@@ -59,7 +108,7 @@ const ENEMY_TYPES = [
 ];
 
 const WEAKNESSES = {
-  fantasma: ['Estaca', 'Aspirador', 'Cruz'],
+  fantasma: ['Aspirador'],
 };
 
 const ATTACK_MAP = {
@@ -400,6 +449,8 @@ class JokenGhost {
     this.state   = STATE.MENU;
     this.running = false;
     this.lastTs  = 0;
+    this.currentLevel = 1;
+    this.activeSaveSlot = null;
 
     // Player
     this.playerHP        = PLAYER_MAX_HP;
@@ -418,6 +469,7 @@ class JokenGhost {
     this.entryAnim       = false;
     this.transAlpha      = 0;
     this.transDir        = 1;
+    this.transHold       = 0;  // ms to hold at full black before fading out
 
     // Battle state
     this.turnActive       = false;
@@ -469,11 +521,14 @@ class JokenGhost {
     this.$dlgSpeaker     = document.getElementById('dialogue-speaker');
     this.$screenLevelSelect = document.getElementById('screen-level-select');
 
+    // Options
+    this.options = loadOptions();
+
     // Audio
     this.bgm             = document.getElementById('bgm');
-    this.bgm.volume      = 0.45;
+    this.bgm.volume      = this.options.bgmVol / 100;
     this.sfxHit          = document.getElementById('sfx-hit');
-    this.sfxHit.volume   = 1.0;
+    this.sfxHit.volume   = this.options.sfxVol / 100;
 
     // Dialogue state
     this.dlgLine     = 0;
@@ -539,8 +594,13 @@ class JokenGhost {
     this.transAlpha += this.transDir * (255 / (FPS * 0.5));
     if (this.transAlpha >= 255) {
       this.transAlpha = 255;
-      this.transDir   = -1;
-      this.$transText.classList.remove('hidden');
+      if (this.transHold < 2000) {
+        // Hold here — show text, wait 2s before fading out
+        this.$transText.classList.remove('hidden');
+        this.transHold += 16; // ~1 frame
+        return;
+      }
+      this.transDir = -1;
     }
     if (this.transAlpha < 0 && this.transDir === -1) {
       this.transAlpha = 0;
@@ -789,18 +849,201 @@ class JokenGhost {
   //  STATE TRANSITIONS
   // ─────────────────────────────────────────────────────────────
   _goToLevelSelect() {
-    this.$screenMenu.classList.add('hidden');
-    this.$screenResult.classList.add('hidden');
-    this.$screenLevelSelect.classList.remove('hidden');
-    this.state = STATE.LEVEL_SELECT;
-    // BGM
-    this.bgm.currentTime = 0;
-    this.bgm.play().catch(() => {});
+    const overlay = document.getElementById('screen-fade-overlay');
+    // Fade to black
+    overlay.classList.remove('fade-out');
+    overlay.classList.add('fade-in');
+    overlay.style.opacity = '';
+    setTimeout(() => {
+      this.$screenMenu.classList.add('hidden');
+      this.$screenResult.classList.add('hidden');
+      this.$screenLevelSelect.classList.remove('hidden');
+      this.state = STATE.LEVEL_SELECT;
+      this.bgm.currentTime = 0;
+      this.bgm.play().catch(() => {});
+      // Fade back out
+      overlay.classList.remove('fade-in');
+      overlay.classList.add('fade-out');
+    }, 350);
   }
 
   _playHit() {
     this.sfxHit.currentTime = 0;
     this.sfxHit.play().catch(() => {});
+  }
+
+  // ─── SAVE SYSTEM ──────────────────────────────────────────────
+  _autoSave() {
+    if (this.activeSaveSlot == null) return;
+    setSave(this.activeSaveSlot, buildSaveData(this.activeSaveSlot, this));
+  }
+
+  _openSavesModal() {
+    const list = document.getElementById('saves-list');
+    list.innerHTML = '';
+    for (let i = 1; i <= NUM_SLOTS; i++) {
+      const data = getSave(i);
+      const slot = document.createElement('div');
+      slot.className = 'save-slot' + (data ? '' : ' empty');
+
+      const num   = document.createElement('div');
+      num.className = 'save-slot-num';
+      num.textContent = i;
+
+      const info  = document.createElement('div');
+      info.className = 'save-slot-info';
+
+      if (data) {
+        const name = document.createElement('div');
+        name.className = 'save-slot-name';
+        name.textContent = `${LEVEL_NAMES[data.level] || 'Fase '+data.level}`;
+        const meta = document.createElement('div');
+        meta.className = 'save-slot-meta';
+        meta.textContent = `${data.date}  •  $ ${data.coins}  •  ${data.bestiaryCount} monstros`;
+        info.appendChild(name);
+        info.appendChild(meta);
+      } else {
+        const name = document.createElement('div');
+        name.className = 'save-slot-name';
+        name.textContent = '— VAZIO —';
+        info.appendChild(name);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'save-slot-actions';
+
+      const btnPlay = document.createElement('button');
+      btnPlay.className = 'btn-save-play';
+      btnPlay.textContent = data ? 'CONTINUAR' : 'NOVO JOGO';
+      btnPlay.addEventListener('click', () => {
+        this.activeSaveSlot = i;
+        if (data) {
+          this.economy.coins = data.coins;
+          this._updateCoinDisplay();
+          this.currentLevel = data.level;
+        } else {
+          this.economy.coins = 0;
+          this._updateCoinDisplay();
+          this.currentLevel = 1;
+          setSave(i, buildSaveData(i, this));
+        }
+        document.getElementById('saves-modal').classList.add('hidden');
+        this._goToLevelSelect();
+      });
+      actions.appendChild(btnPlay);
+
+      if (data) {
+        const btnDel = document.createElement('button');
+        btnDel.className = 'btn-save-del';
+        btnDel.textContent = 'DEL';
+        btnDel.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm(`Apagar Arquivo ${i}?`)) {
+            deleteSave(i);
+            this._openSavesModal();
+          }
+        });
+        actions.appendChild(btnDel);
+      }
+
+      slot.appendChild(num);
+      slot.appendChild(info);
+      slot.appendChild(actions);
+      list.appendChild(slot);
+    }
+    document.getElementById('saves-modal').classList.remove('hidden');
+  }
+
+  _openOptions() {
+    const modal = document.getElementById('options-modal');
+    const opts  = this.options;
+
+    // Sync slider values
+    const bgmSlider = document.getElementById('opt-bgm-vol');
+    const sfxSlider = document.getElementById('opt-sfx-vol');
+    bgmSlider.value = opts.bgmVol;
+    sfxSlider.value = opts.sfxVol;
+    document.getElementById('opt-bgm-val').textContent = opts.bgmVol;
+    document.getElementById('opt-sfx-val').textContent = opts.sfxVol;
+
+    // Sync toggles
+    const setToggle = (id, val) => {
+      const btn = document.getElementById(id);
+      btn.dataset.on = val ? 'true' : 'false';
+      btn.textContent = val ? 'ATIVO' : 'INATIVO';
+    };
+    setToggle('opt-shake',     opts.shake);
+    setToggle('opt-coins',     opts.floatingCoins);
+    setToggle('opt-toast',     opts.toasts);
+    setToggle('opt-fullscreen', !!document.fullscreenElement);
+
+    // Sync scale buttons
+    document.querySelectorAll('.opt-scale-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.scale === String(opts.scale));
+    });
+
+    modal.classList.remove('hidden');
+  }
+
+  _bindOptions() {
+    const modal = document.getElementById('options-modal');
+
+    document.getElementById('btn-options').addEventListener('click', () => this._openOptions());
+    document.getElementById('btn-options-close').addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+    modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+
+    // BGM volume
+    document.getElementById('opt-bgm-vol').addEventListener('input', e => {
+      const v = parseInt(e.target.value);
+      this.options.bgmVol = v;
+      this.bgm.volume = v / 100;
+      document.getElementById('opt-bgm-val').textContent = v;
+      saveOptions(this.options);
+    });
+
+    // SFX volume
+    document.getElementById('opt-sfx-vol').addEventListener('input', e => {
+      const v = parseInt(e.target.value);
+      this.options.sfxVol = v;
+      this.sfxHit.volume = v / 100;
+      document.getElementById('opt-sfx-val').textContent = v;
+      saveOptions(this.options);
+    });
+
+    // Toggles
+    const bindToggle = (id, key, onTrue, onFalse) => {
+      document.getElementById(id).addEventListener('click', e => {
+        const btn = e.currentTarget;
+        const newVal = btn.dataset.on !== 'true';
+        btn.dataset.on = newVal ? 'true' : 'false';
+        btn.textContent = newVal ? 'ATIVO' : 'INATIVO';
+        this.options[key] = newVal;
+        saveOptions(this.options);
+        if (newVal && onTrue) onTrue();
+        if (!newVal && onFalse) onFalse();
+      });
+    };
+    bindToggle('opt-shake', 'shake');
+    bindToggle('opt-coins', 'floatingCoins');
+    bindToggle('opt-toast', 'toasts');
+    bindToggle('opt-fullscreen', '_fs',
+      () => document.documentElement.requestFullscreen?.().catch(() => {}),
+      () => document.exitFullscreen?.().catch(() => {})
+    );
+
+    // Scale buttons
+    document.querySelectorAll('.opt-scale-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.opt-scale-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const val = btn.dataset.scale;
+        this.options.scale = val === 'fit' ? 'fit' : parseFloat(val);
+        saveOptions(this.options);
+        this._handleResize();
+      });
+    });
   }
 
   _goToIntro() {
@@ -822,6 +1065,7 @@ class JokenGhost {
     this.$transText.classList.add('hidden');
     this.transAlpha = 0;
     this.transDir   = 1;
+    this.transHold  = 0;
     this.state = STATE.TRANSITION;
   }
 
@@ -852,6 +1096,7 @@ class JokenGhost {
     const totalCoins = this.economy.coins;
     this.$hud.classList.add('hidden');
     this._closePanel();
+    this._autoSave();
 
     this.$resultTitle.textContent  = win ? 'VOCE VENCEU!' : 'VOCE FOI DERROTADO!';
     this.$resultTitle.className    = win ? 'win' : 'lose';
@@ -911,7 +1156,7 @@ class JokenGhost {
     // Build messages
     const choiceNames      = { pedra: 'Estaca',     papel: 'Aspirador',    tesoura: 'Cruz'      };
     const enemyChoiceNames = { pedra: 'Possessão',  papel: 'Assombração',  tesoura: 'Maldição'  };
-    this.$battleMsgP.textContent = `Você usou: ${choiceNames[choice]}`;
+    this.$battleMsgP.textContent = `Voce usou: ${choiceNames[choice]}`;
     this.$battleMsgE.textContent = `${enemy.name} usou: ${enemyChoiceNames[enemyChoice]}`;
     this.$battleMsgBox.classList.remove('hidden');
     // Restart animation on every reveal
@@ -922,20 +1167,22 @@ class JokenGhost {
     // Apply result
     if (outcome === 'player') {
       // Player wins round
-      const reward = choice === CHOICE.PEDRA ? REWARD_PEDRA : REWARD_OTHER;
-      enemy.hp = Math.max(0, enemy.hp - PLAYER_DAMAGE);
+      const weapon = ATTACK_MAP[choice];
+      const isWeakness = WEAKNESSES[enemy.type]?.includes(weapon);
+      const reward = isWeakness ? REWARD_PEDRA : REWARD_OTHER;
+      const dmg    = isWeakness ? WEAKNESS_DAMAGE : PLAYER_DAMAGE;
+      enemy.hp = Math.max(0, enemy.hp - dmg);
       enemy.shake.start(15);
       this._playHit();
       this.economy.add(reward);
       this._updateCoinDisplay();
-      this.floatingCoins.push(new FloatingCoin(reward, enemy.x + 40, enemy.y - 20));
+      if (this.options.floatingCoins) this.floatingCoins.push(new FloatingCoin(reward, enemy.x + 40, enemy.y - 20));
 
-      // Bestiary discovery
-      const weapon = ATTACK_MAP[choice];
-      if (WEAKNESSES[enemy.type] && WEAKNESSES[enemy.type].includes(weapon)) {
+      // Bestiary: só revela fraqueza se acertou com o Aspirador
+      if (isWeakness) {
         const newDisc = this.bestiary.discover(enemy.type, weapon);
-        if (newDisc) {
-          this.toast.show(`🔍 Nova descoberta!\n${enemy.type.charAt(0).toUpperCase()+enemy.type.slice(1)} é fraco contra ${weapon}!`);
+        if (newDisc && this.options.toasts) {
+          this.toast.show(`Fraqueza revelada!\n${enemy.type.charAt(0).toUpperCase()+enemy.type.slice(1)} e fraco contra ${weapon}!`);
         }
       }
 
@@ -944,7 +1191,7 @@ class JokenGhost {
         const clearBonus = REWARD_CLEAR;
         this.economy.add(clearBonus);
         this._updateCoinDisplay();
-        this.floatingCoins.push(new FloatingCoin(clearBonus, enemy.x + 20, enemy.y - 50));
+        if (this.options.floatingCoins) this.floatingCoins.push(new FloatingCoin(clearBonus, enemy.x + 20, enemy.y - 50));
         this._showRoundResult(`${enemy.name} derrotado! +$${clearBonus}`, 'win');
       } else {
         this._showRoundResult(`Acertou! +$${reward}`, 'win');
@@ -956,7 +1203,7 @@ class JokenGhost {
     } else if (outcome === 'enemy') {
       // Enemy wins round
       this.playerHP = Math.max(0, this.playerHP - ENEMY_DAMAGE);
-      this.playerShake.start(15);
+      if (this.options.shake) this.playerShake.start(15);
       this._playHit();
       this._showRoundResult(`${enemy.name} te acertou!`, 'lose');
 
@@ -1001,7 +1248,6 @@ class JokenGhost {
       btn.innerHTML = `
         <div class="shop-item-icon">
           <img src="${item.img}" alt="${item.name}" onerror="this.style.display='none'">
-          <span>${item.icon}</span>
         </div>
         <span class="shop-item-name">${item.name}</span>
         <span class="shop-item-price ${canAfford ? '' : 'no-money'}">$${item.price}</span>
@@ -1025,17 +1271,17 @@ class JokenGhost {
   }
 
   _buyItem(item) {
-    if (!this.economy.canAfford(item.price)) { this.toast.show('💰 Dinheiro insuficiente!'); return; }
+    if (!this.economy.canAfford(item.price)) { if (this.options.toasts) this.toast.show('Dinheiro insuficiente!'); return; }
     this.economy.spend(item.price);
 
     if (item.effect === 'heal_small') {
       const healed = Math.min(30, PLAYER_MAX_HP - this.playerHP);
       this.playerHP = Math.min(PLAYER_MAX_HP, this.playerHP + 30);
-      this.toast.show(`🧪 Poção usada! +${healed} HP`);
+      if (this.options.toasts) this.toast.show(`Pocao usada! +${healed} HP`);
     } else if (item.effect === 'heal_big') {
       const healed = Math.min(60, PLAYER_MAX_HP - this.playerHP);
       this.playerHP = Math.min(PLAYER_MAX_HP, this.playerHP + 60);
-      this.toast.show(`🧪 Poção Grande! +${healed} HP`);
+      if (this.options.toasts) this.toast.show(`Pocao Grande! +${healed} HP`);
     } else if (item.effect === 'buff_attack') {
       const enemy = this.enemyMgr.getEnemyAtFront();
       if (enemy) {
@@ -1043,7 +1289,7 @@ class JokenGhost {
         enemy.shake.start(10);
         if (enemy.hp <= 0) { enemy.active = false; }
         this._buildEnemyHPBars();
-        this.toast.show('⚗️ Buff aplicado! -15 HP no inimigo!');
+        if (this.options.toasts) this.toast.show('Buff aplicado! -15 HP no inimigo!');
       }
     }
 
@@ -1058,10 +1304,20 @@ class JokenGhost {
   _openBestiary() {
     this._renderBestiaryContent();
     this.$bestiaryModal.classList.remove('hidden');
+    this.$bestiaryModal.classList.remove('bst-close');
+    void this.$bestiaryModal.offsetWidth;
+    this.$bestiaryModal.classList.add('bst-open');
   }
 
   _closeBestiary() {
-    this.$bestiaryModal.classList.add('hidden');
+    this.$bestiaryModal.classList.remove('bst-open');
+    this.$bestiaryModal.classList.add('bst-close');
+    const onDone = () => {
+      this.$bestiaryModal.classList.add('hidden');
+      this.$bestiaryModal.classList.remove('bst-close');
+      this.$bestiaryModal.removeEventListener('animationend', onDone);
+    };
+    this.$bestiaryModal.addEventListener('animationend', onDone);
   }
 
   _renderBestiaryContent() {
@@ -1218,7 +1474,13 @@ class JokenGhost {
   // ─────────────────────────────────────────────────────────────
   _bindEvents() {
     // Menu
-    document.getElementById('btn-play').addEventListener('click', () => this._goToLevelSelect());
+    document.getElementById('btn-play').addEventListener('click', () => this._openSavesModal());
+    document.getElementById('btn-saves').addEventListener('click', () => this._openSavesModal());
+    document.getElementById('btn-saves-close').addEventListener('click', () => {
+      document.getElementById('saves-modal').classList.add('hidden');
+    });
+
+    this._bindOptions();
 
     // Level select nodes
     document.querySelectorAll('.level-node').forEach(btn => {
@@ -1284,7 +1546,7 @@ class JokenGhost {
     // Mute toggle
     document.getElementById('btn-mute').addEventListener('click', () => {
       this.bgm.muted = !this.bgm.muted;
-      document.getElementById('btn-mute').textContent = this.bgm.muted ? '\uD83D\uDD07' : '\uD83D\uDD0A';
+      document.getElementById('mute-img').src = this.bgm.muted ? 'mutado-Sheet.png' : 'desmutado.png';
     });
 
     // Keyboard
@@ -1320,9 +1582,13 @@ class JokenGhost {
   _handleResize() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const scaleX = vw / GW;
-    const scaleY = vh / GH;
-    const scale  = Math.min(scaleX, scaleY);
+    const scaleOpt = this.options?.scale ?? 'fit';
+    let scale;
+    if (scaleOpt === 'fit') {
+      scale = Math.min(vw / GW, vh / GH);
+    } else {
+      scale = parseFloat(scaleOpt);
+    }
 
     const offX = Math.floor((vw - GW * scale) / 2);
     const offY = Math.floor((vh - GH * scale) / 2);

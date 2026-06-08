@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JokenGhost Wiki — Caçada em Turnos</title>
+<style>
+@font-face {
+  font-family: 'DogicaPixel';
+  src: url('dogica/TTF/dogicapixel.ttf') format('truetype');
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0f0a;
+  --surface: #111a10;
+  --border:  #2a4a2a;
+  --gold:    #f5c842;
+  --green:   #4aff7a;
+  --red:     #ff5050;
+  --text:    #d4e8c8;
+  --muted:   #6a8860;
+  --accent:  #3aff8a;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DogicaPixel', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── STARS BACKGROUND ───────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 10%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(2px 2px at 15% 55%, rgba(100,255,150,0.2) 0%, transparent 100%),
+    radial-gradient(2px 2px at 80% 45%, rgba(100,255,150,0.15) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+  animation: twinkle 8s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from { opacity: 0.7; }
+  to   { opacity: 1; }
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── HEADER ─────────────────────────────────────────────── */
+header {
+  text-align: center;
+  padding: 60px 0 40px;
+  position: relative;
+}
+
+.logo-ghost {
+  font-size: 72px;
+  display: block;
+  animation: ghostFloat 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 20px rgba(74,255,122,0.4));
+}
+
+@keyframes ghostFloat {
+  0%, 100% { transform: translateY(0);   }
+  50%       { transform: translateY(-14px); }
+}
+
+.wiki-title {
+  font-size: 36px;
+  color: var(--gold);
+  text-shadow: 3px 3px 0 #000, 0 0 30px rgba(245,200,66,0.5);
+  letter-spacing: 4px;
+  margin: 16px 0 8px;
+  animation: titleGlow 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  from { text-shadow: 3px 3px 0 #000, 0 0 15px rgba(245,200,66,0.3); }
+  to   { text-shadow: 3px 3px 0 #000, 0 0 40px rgba(245,200,66,0.8), 0 0 80px rgba(245,200,66,0.3); }
+}
+
+.wiki-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 3px;
+}
+
+.play-link {
+  display: inline-block;
+  margin-top: 24px;
+  padding: 12px 32px;
+  background: #2a5a3a;
+  color: var(--green);
+  border: 2px solid var(--green);
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 13px;
+  letter-spacing: 2px;
+  transition: all 0.2s;
+  animation: btnPulse 2s ease-in-out infinite;
+}
+
+.play-link:hover {
+  background: #3a7a4a;
+  box-shadow: 0 0 20px rgba(74,255,122,0.4);
+  transform: translateY(-2px);
+}
+
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(74,255,122,0); }
+  50%       { box-shadow: 0 0 16px rgba(74,255,122,0.3); }
+}
+
+/* ── NAV ────────────────────────────────────────────────── */
+nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 24px 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 40px;
+  position: sticky;
+  top: 0;
+  background: rgba(10,15,10,0.92);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 6px 14px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+nav a:hover {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: rgba(245,200,66,0.08);
+}
+
+/* ── SECTIONS ───────────────────────────────────────────── */
+section {
+  margin-bottom: 56px;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.section-title {
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(to right, var(--border), transparent);
+}
+
+p {
+  font-size: 10px;
+  line-height: 2;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* ── CARDS ──────────────────────────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.card:hover {
+  border-color: var(--gold);
+  transform: translateY(-3px);
+}
+
+.card-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+.card-title { font-size: 12px; color: var(--gold); margin-bottom: 8px; }
+.card-desc { font-size: 9px; color: var(--muted); line-height: 1.8; }
+
+/* ── SVG ICONS ──────────────────────────────────────────── */
+.ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+.ico svg { width: 100%; height: 100%; }
+
+.card-icon-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.card-icon-wrap .ico { width: 44px; height: 44px; }
+
+.area-ico { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ── WEAPON TABLE ───────────────────────────────────────── */
+.weapon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.weapon-table th {
+  background: rgba(245,200,66,0.1);
+  color: var(--gold);
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 2px solid var(--border);
+  letter-spacing: 2px;
+}
+
+.weapon-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.weapon-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+.tag-win  { background: rgba(74,255,122,0.15); color: var(--green); border: 1px solid var(--green); }
+.tag-lose { background: rgba(255,80,80,0.15);  color: var(--red);   border: 1px solid var(--red); }
+.tag-draw { background: rgba(245,200,66,0.15); color: var(--gold);  border: 1px solid var(--gold); }
+
+/* ── ENEMY CARDS ────────────────────────────────────────── */
+.enemy-card {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.enemy-card:hover { border-color: rgba(255,80,80,0.5); }
+
+.enemy-sprite {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: enemyIdle 2s ease-in-out infinite;
+}
+
+@keyframes enemyIdle {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.08); }
+}
+
+.enemy-info { flex: 1; }
+.enemy-name { font-size: 14px; color: var(--red); margin-bottom: 4px; }
+.enemy-type { font-size: 8px; color: var(--muted); letter-spacing: 2px; margin-bottom: 8px; }
+.enemy-weak { font-size: 9px; color: var(--green); }
+
+/* ── CONTRIBUTE ─────────────────────────────────────────── */
+.contribute-box {
+  background: linear-gradient(135deg, rgba(42,74,42,0.3), rgba(10,15,10,0.8));
+  border: 2px solid var(--green);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.contribute-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(74,255,122,0.05) 0%, transparent 70%);
+  animation: ripple 4s ease-in-out infinite;
+}
+
+@keyframes ripple {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%       { transform: scale(1.05); opacity: 0.5; }
+}
+
+.contribute-box h3 {
+  font-size: 18px;
+  color: var(--green);
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.contribute-box p { position: relative; }
+
+.collab-links {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 24px;
+  position: relative;
+}
+
+.collab-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 11px;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.collab-link.github {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border: 2px solid rgba(255,255,255,0.2);
+}
+
+.collab-link.github:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: #fff;
+  transform: translateY(-2px);
+}
+
+.collab-link.itch {
+  background: rgba(250,71,63,0.1);
+  color: #fa473f;
+  border: 2px solid rgba(250,71,63,0.4);
+}
+
+.collab-link.itch:hover {
+  background: rgba(250,71,63,0.2);
+  transform: translateY(-2px);
+}
+
+.areas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.area-item {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.area-item:hover {
+  border-color: var(--green);
+  color: var(--text);
+}
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 32px 0;
+  border-top: 2px solid var(--border);
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  line-height: 2.2;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .wiki-title { font-size: 22px; }
+  .logo-ghost { font-size: 48px; }
+  nav { padding: 16px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <span class="logo-ghost">
+      <svg viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:72px;height:90px;filter:drop-shadow(0 0 20px rgba(74,255,122,0.4))">
+        <ellipse cx="32" cy="28" rx="22" ry="24" fill="#b8f0c8" opacity="0.9"/>
+        <rect x="10" y="50" width="44" height="24" rx="4" fill="#b8f0c8" opacity="0.9"/>
+        <path d="M10 74 Q18 62 26 74 Q32 62 38 74 Q44 62 54 74" stroke="#0a0f0a" stroke-width="2" fill="none"/>
+        <circle cx="24" cy="26" r="4" fill="#0a0f0a"/>
+        <circle cx="40" cy="26" r="4" fill="#0a0f0a"/>
+        <line x1="24" y1="36" x2="40" y2="36" stroke="#0a0f0a" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </span>
+    <h1 class="wiki-title">JOKENGHOST</h1>
+    <p class="wiki-subtitle">WIKI OFICIAL — CAÇADA EM TURNOS</p>
+    <a class="play-link" href="index.html">▶ JOGAR AGORA</a>
+  </header>
+
+  <!-- NAV -->
+  <nav>
+    <a href="#sobre">SOBRE</a>
+    <a href="#como-jogar">COMO JOGAR</a>
+    <a href="#armas">ARMAS</a>
+    <a href="#inimigos">INIMIGOS</a>
+    <a href="#sistemas">SISTEMAS</a>
+    <a href="#colaborar">COLABORAR</a>
+  </nav>
+
+  <!-- SOBRE -->
+  <section id="sobre">
+    <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/></svg> SOBRE O JOGO</h2>
+    <p>
+      JokenGhost é um jogo de RPG por turnos baseado em pedra-papel-tesoura. Você é um caçador de fantasmas que adentra uma mansão amaldiçoada, enfrentando espíritos com três armas espirituais: Estaca, Aspirador e Cruz.
+    </p>
+    <p>
+      O jogo combina mecânicas simples de jokenpo com progressão de RPG: acumule moedas, descubra fraquezas dos inimigos no Monstruário e sobreviva a fases cada vez mais sombrias.
+    </p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M8 12h2m-1-1v2M14 11h2M6 18l-2 2M18 18l2 2"/></svg></div></div>
+        <div class="card-title">GÊNERO</div>
+        <p class="card-desc">RPG por turnos • Jokenpo • Roguelite</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div></div>
+        <div class="card-title">PLATAFORMA</div>
+        <p class="card-desc">Navegador (HTML5) • Desktop & Mobile</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><rect x="4" y="4" width="16" height="14" rx="2"/><circle cx="9" cy="10" r="1.5" fill="#f5c842"/><circle cx="15" cy="10" r="1.5" fill="#f5c842"/><path d="M7 18v2M17 18v2M4 14h2M18 14h2"/></svg></div></div>
+        <div class="card-title">ESTILO</div>
+        <p class="card-desc">Pixel art • 16-bit • Gótico</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div></div>
+        <div class="card-title">SAVE SYSTEM</div>
+        <p class="card-desc">7 arquivos de save via localStorage</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMO JOGAR -->
+  <section id="como-jogar">
+    <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg> COMO JOGAR</h2>
+    <p>
+      A batalha funciona em rodadas. A cada rodada, você escolhe uma das três armas e o inimigo escolhe aleatoriamente. O resultado segue as regras do jokenpo clássico com nomes temáticos.
+    </p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico" style="font-size:22px;font-family:monospace;color:#f5c842;font-weight:bold;">01</div></div>
+        <div class="card-title">SELECIONE ARQUIVO</div>
+        <p class="card-desc">Escolha um dos 7 slots de save. Arquivos salvos continuam de onde pararam.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico" style="font-size:22px;font-family:monospace;color:#f5c842;font-weight:bold;">02</div></div>
+        <div class="card-title">ESCOLHA A FASE</div>
+        <p class="card-desc">No mapa, clique na fase desbloqueada para iniciar. Novas fases são reveladas ao progredir.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico" style="font-size:22px;font-family:monospace;color:#f5c842;font-weight:bold;">03</div></div>
+        <div class="card-title">ATAQUE</div>
+        <p class="card-desc">Clique em "ATAQUES", escolha sua arma. Vencer a rodada causa dano e gera moedas.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico" style="font-size:22px;font-family:monospace;color:#f5c842;font-weight:bold;">04</div></div>
+        <div class="card-title">LOJA & MONSTRUÁRIO</div>
+        <p class="card-desc">Use moedas para se curar ou potencializar ataques. Consulte o monstruário para ver fraquezas descobertas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARMAS -->
+  <section id="armas">
+    <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M16.5 15.5l2 2L22 14l-2-2M7 7L5 5"/></svg> ARMAS DO CAÇADOR</h2>
+    <p>As três armas espirituais seguem a lógica de pedra-papel-tesoura. Cada uma tem nome temático e bonificações diferentes.</p>
+    <table class="weapon-table">
+      <thead>
+        <tr>
+          <th>ARMA</th>
+          <th>TIPO</th>
+          <th>VENCE</th>
+          <th>PERDE PARA</th>
+          <th>BÔNUS</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>&#x2665; ESTACA</td>
+          <td>Pedra</td>
+          <td><span class="tag tag-win">Cruz</span></td>
+          <td><span class="tag tag-lose">Aspirador</span></td>
+          <td>+ bonus</td>
+        </tr>
+        <tr>
+          <td>&#x25CE; ASPIRADOR</td>
+          <td>Papel</td>
+          <td><span class="tag tag-win">Estaca</span></td>
+          <td><span class="tag tag-lose">Cruz</span></td>
+          <td>+$25</td>
+        </tr>
+        <tr>
+          <td>&#x271D; CRUZ</td>
+          <td>Tesoura</td>
+          <td><span class="tag tag-win">Aspirador</span></td>
+          <td><span class="tag tag-lose">Estaca</span></td>
+          <td>Normal</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <br>
+    <h3 style="font-size:13px; color:var(--muted); letter-spacing:2px; margin-bottom:12px;">ATAQUES DOS FANTASMAS</h3>
+    <table class="weapon-table">
+      <thead>
+        <tr><th>ATAQUE DO GHOST</th><th>EQUIVALE A</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>&#x25A0; Possessão</td><td>Pedra</td></tr>
+        <tr><td>&#x25A1; Assombração</td><td>Papel</td></tr>
+        <tr><td>&#x25C6; Maldição</td><td>Tesoura</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- INIMIGOS -->
+  <section id="inimigos">
+    <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M9 8h.01M15 8h.01M9 11s1 2 3 2 3-2 3-2"/><path d="M8 17v4h3v-2h2v2h3v-4"/><path d="M8 17a4 4 0 018 0"/></svg> INIMIGOS</h2>
+    <p>Derrote inimigos com diferentes armas para desbloquear entradas no Monstruário e revelar suas fraquezas.</p>
+
+    <div class="enemy-card">
+      <div class="enemy-sprite"><svg viewBox="0 0 48 60" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:54px"><ellipse cx="24" cy="20" rx="16" ry="18" fill="#8eeaaa" opacity="0.85"/><rect x="8" y="36" width="32" height="18" rx="3" fill="#8eeaaa" opacity="0.85"/><path d="M8 54 Q14 44 20 54 Q24 44 28 54 Q32 44 40 54" stroke="#0a0f0a" stroke-width="1.5" fill="none"/><circle cx="18" cy="19" r="3" fill="#0a0f0a"/><circle cx="30" cy="19" r="3" fill="#0a0f0a"/></svg></div>
+      <div class="enemy-info">
+        <div class="enemy-name">FANTASMA</div>
+        <div class="enemy-type">TIPO: FANTASMA • FASE 1</div>
+        <p style="font-size:9px; color:var(--muted); margin-bottom:6px;">Espírito inquieto que assombra a mansão. Forte contra ataques físicos comuns.</p>
+        <div class="enemy-weak">&#x25B2; Fraqueza: Estaca, Cruz</div>
+      </div>
+    </div>
+
+    <div class="enemy-card" style="opacity:0.5;">
+      <div class="enemy-sprite"><svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:52px"><rect x="8" y="20" width="32" height="34" fill="#7a6a5a" opacity="0.8"/><rect x="4" y="14" width="8" height="14" fill="#7a6a5a" opacity="0.8"/><rect x="36" y="14" width="8" height="14" fill="#7a6a5a" opacity="0.8"/><rect x="18" y="8" width="12" height="14" fill="#7a6a5a" opacity="0.8"/><rect x="19" y="36" width="10" height="18" fill="#0a0f0a" opacity="0.5"/><rect x="5" y="15" width="2" height="4" fill="#0a0f0a" opacity="0.6"/><rect x="7" y="15" width="2" height="4" fill="#0a0f0a" opacity="0.6"/><rect x="37" y="15" width="2" height="4" fill="#0a0f0a" opacity="0.6"/><rect x="39" y="15" width="2" height="4" fill="#0a0f0a" opacity="0.6"/></svg></div>
+      <div class="enemy-info">
+        <div class="enemy-name">KASTLE</div>
+        <div class="enemy-type">TIPO: CONSTRUTO • FASE 2 (EM BREVE)</div>
+        <p style="font-size:9px; color:var(--muted); margin-bottom:6px;">Entidade ligada à mansão. Guarda as câmaras internas com força brutal.</p>
+        <div class="enemy-weak" style="color:var(--muted);">&#x25B2; Fraqueza: ???</div>
+      </div>
+    </div>
+
+    <div class="enemy-card" style="opacity:0.5;">
+      <div class="enemy-sprite"><svg viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:44px;height:52px"><ellipse cx="24" cy="22" rx="18" ry="20" fill="#c8c8b8" opacity="0.7"/><circle cx="16" cy="20" r="5" fill="#0a0f0a" opacity="0.8"/><circle cx="32" cy="20" r="5" fill="#0a0f0a" opacity="0.8"/><rect x="14" y="36" width="6" height="10" rx="1" fill="#c8c8b8" opacity="0.7"/><rect x="22" y="36" width="4" height="10" rx="1" fill="#c8c8b8" opacity="0.7"/><rect x="28" y="36" width="6" height="10" rx="1" fill="#c8c8b8" opacity="0.7"/></svg></div>
+      <div class="enemy-info">
+        <div class="enemy-name">???</div>
+        <div class="enemy-type">TIPO: DESCONHECIDO • FASES 3-4 (EM BREVE)</div>
+        <p style="font-size:9px; color:var(--muted); margin-bottom:6px;">Há rumores de uma presença ainda mais sombria no andar superior...</p>
+        <div class="enemy-weak" style="color:var(--muted);">&#x25B2; Fraqueza: ???</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SISTEMAS -->
+  <section id="sistemas">
+    <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> SISTEMAS</h2>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 6v2m0 8v2M9 9a3 3 0 016 0c0 2-3 3-3 3m0 0v1"/></svg></div></div>
+        <div class="card-title">ECONOMIA</div>
+        <p class="card-desc">Ganhe moedas ao vencer rodadas. Aspirador gera +💰25 bônus. Derrota completa de inimigo gera bônus adicional.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div></div>
+        <div class="card-title">MONSTRUÁRIO</div>
+        <p class="card-desc">Use armas diferentes contra o mesmo inimigo para desbloquear entradas e fraquezas. Conhecimento é poder.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div></div>
+        <div class="card-title">LOJA</div>
+        <p class="card-desc">Cure HP, aumente dano ou aplique veneno durante a batalha gastando moedas acumuladas.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div></div>
+        <div class="card-title">7 SAVES</div>
+        <p class="card-desc">Salve progresso em 7 arquivos independentes. Saves automáticos ao final de cada batalha.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></div></div>
+        <div class="card-title">MAPA DE FASES</div>
+        <p class="card-desc">4 nós de fase no mapa. Desbloqueie progressivamente ao avançar na história.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg></div></div>
+        <div class="card-title">ÁUDIO</div>
+        <p class="card-desc">BGM ambiente + SFX de impacto em batalha. Controle de mute pelo ícone de som.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COLABORAR -->
+  <section id="colaborar">
+    <h2 class="section-title"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> COLABORAR</h2>
+    <div class="contribute-box">
+      <h3>AJUDE A CONSTRUIR O JOKENGHOST!</h3>
+      <p>Este é um projeto open source feito com amor por um dev independente. Qualquer contribuição — código, arte, música, ideias — é muito bem-vinda!</p>
+
+      <div class="collab-links">
+        <a class="collab-link github" href="https://github.com" target="_blank">
+          <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0112 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0022 12c0-5.52-4.48-10-10-10z"/></svg>
+          GITHUB — VER CÓDIGO
+        </a>
+        <a class="collab-link itch" href="index.html" target="_blank">
+          <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          JOGAR NO NAVEGADOR
+        </a>
+      </div>
+    </div>
+
+    <br>
+    <p style="font-size:11px; color:var(--gold); letter-spacing:2px; margin-bottom:16px;">ÁREAS QUE PRECISAM DE AJUDA:</p>
+    <div class="areas-grid">
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="0.5" fill="currentColor"/><circle cx="17.5" cy="10.5" r="0.5" fill="currentColor"/><circle cx="8.5" cy="7.5" r="0.5" fill="currentColor"/><circle cx="6.5" cy="12.5" r="0.5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 011.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg> Pixel Art & Sprites</div>
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> Música & SFX</div>
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Programação JS</div>
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg> Game Design</div>
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg> Novos Mapas</div>
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M8 17v4h3v-2h2v2h3v-4"/><path d="M8 17a4 4 0 018 0"/></svg> Novos Inimigos</div>
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg> Tradução</div>
+      <div class="area-item"><svg class="area-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Testes & QA</div>
+    </div>
+
+    <br>
+    <div class="card" style="text-align:center; margin-top:8px;">
+      <div class="card-icon-wrap"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="#f5c842" stroke-width="1.5"><path d="M9 21h6M12 3a6 6 0 016 6c0 2.22-1.2 4.16-3 5.2V17H9v-2.8A6 6 0 0112 3z"/></svg></div></div>
+      <div class="card-title">COMO CONTRIBUIR</div>
+      <p class="card-desc" style="text-align:left; line-height:2.2;">
+        1. Faça fork do repositório no GitHub<br>
+        2. Crie uma branch com sua feature: <span style="color:var(--green);">git checkout -b minha-feature</span><br>
+        3. Commit suas mudanças: <span style="color:var(--green);">git commit -m "feat: nova feature"</span><br>
+        4. Abra um Pull Request descrevendo o que foi feito<br>
+        5. Aguarde revisão — toda contribuição é revisada com carinho!
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>&#x2605; JOKENGHOST — CAÇADA EM TURNOS</p>
+  <p>Feito com HTML5 + CSS + JavaScript puro</p>
+  <p style="margin-top:8px;"><a href="index.html" style="color:var(--green); text-decoration:none;">▶ JOGAR</a> &nbsp;|&nbsp; <a href="https://github.com" target="_blank" style="color:var(--muted); text-decoration:none;">GITHUB</a></p>
+</footer>
+
+<script>
+// Intersection Observer para animação de entrada das sections
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+      observer.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('section').forEach(s => observer.observe(s));
+
+// Anima cards com delay escalonado
+document.querySelectorAll('.card, .area-item, .enemy-card').forEach((el, i) => {
+  el.style.transitionDelay = `${i * 60}ms`;
+});
+</script>
+</body>
+</html>
