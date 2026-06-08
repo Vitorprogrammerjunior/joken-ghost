@@ -1396,10 +1396,12 @@ html, body {
   #battle-msg-box  { bottom: 160px; }
   /* Painel de ataque/loja — desce 15px */
   .panel           { bottom: 65px; border-radius: 12px 12px 0 0; }
-  /* HP dos inimigos — desce */
-  #enemy-hp-area   { top: 60px; right: 12px; }
-  /* Moedas e mute — desce */
-  #coin-hud        { top: 60px; }
+  /* HP dos inimigos — desce mais 20px */
+  #enemy-hp-area   { top: 80px; right: 12px; }
+  /* Moedas e mute — desce mais 20px */
+  #coin-hud        { top: 80px; }
+  /* Toast/notificações — desce 45px */
+  #toast           { top: 115px; }
 }
 
 /* ─── Rotate overlay (portrait mobile) ──────────────────── */
