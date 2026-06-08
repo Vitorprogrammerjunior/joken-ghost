@@ -1585,12 +1585,13 @@ class JokenGhost {
     const vw = vv ? vv.width  : window.innerWidth;
     const vh = vv ? vv.height : window.innerHeight;
     const scaleOpt = this.options?.scale ?? 'fit';
+    const isLandscape = vw > vh;
     const isMobile = window.matchMedia('(pointer: coarse)').matches;
     let scale;
     if (scaleOpt === 'fit') {
-      // Mobile: scale to FILL (crops edges, no black bars)
-      // Desktop: scale to FIT (letterbox, no cropping)
-      scale = isMobile
+      // Mobile landscape: fill (sem barras pretas)
+      // Mobile portrait / desktop: fit (jogo inteiro visível)
+      scale = (isMobile && isLandscape)
         ? Math.max(vw / GW, vh / GH)
         : Math.min(vw / GW, vh / GH);
     } else {
