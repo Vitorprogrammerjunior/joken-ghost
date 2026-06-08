@@ -1390,12 +1390,12 @@ html, body {
 @media (pointer: coarse) and (orientation: landscape) {
   /* HP do player — posição original boa */
   .hp-player       { bottom: 110px; }
-  /* Botões de ação — posição original boa */
-  #battle-actions  { bottom: 60px; }
+  /* Botões de ação — sobe 30px */
+  #battle-actions  { bottom: 90px; }
   /* Caixa de diálogo */
   #battle-msg-box  { bottom: 160px; }
-  /* Painel de ataque/loja — baixou 20px */
-  .panel           { bottom: 120px; border-radius: 12px 12px 0 0; }
+  /* Painel de ataque/loja — desce 40px */
+  .panel           { bottom: 80px; border-radius: 12px 12px 0 0; }
   /* HP dos inimigos */
   #enemy-hp-area   { top: 20px; right: 12px; }
 }
