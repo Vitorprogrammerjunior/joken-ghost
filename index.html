@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>JokenGhost - Caçada em Turnos</title>
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+
+  <!-- Background music -->
+  <audio id="bgm" src="Cursed_Save_Slot.mp3" loop preload="auto"></audio>
+  <audio id="sfx-hit" src="data_pion-sfx10-impact-324522.mp3" preload="auto"></audio>
+
+  <!-- Portrait-mode overlay (hidden on desktop / landscape) -->
+  <div id="rotate-overlay">
+    <span class="rotate-icon">📱</span>
+    <p>Gire o celular<br>para jogar!</p>
+  </div>
+
+  <!-- Root container: always 1280×720 internally, scaled by JS to fit any screen -->
+  <div id="game-root">
+
+    <!-- Canvas: background rendering (scenes, sprites, effects) -->
+    <canvas id="gameCanvas" width="1280" height="720"></canvas>
+
+    <!-- ═══════════════════ MENU SCREEN ═══════════════════ -->
+    <div id="screen-menu" class="screen active">
+      <h1 class="game-title">JOKENGHOST</h1>
+      <p class="game-subtitle">Caçada em Turnos</p>
+      <button class="btn-primary" id="btn-play">JOGAR</button>
+    </div>
+
+    <!-- ═══════════════════ LEVEL SELECT ═══════════════════ -->
+    <div id="screen-level-select" class="screen hidden">
+      <div id="level-map-wrap">
+        <img id="level-map-img" src="level_select.png" alt="Mapa de Fases" draggable="false">
+        <!-- Nós clicáveis sobrepostos à imagem -->
+        <button class="level-node active"  id="lvl-node-1" data-level="1" title="Floresta Maldita">
+          <span class="node-ring"></span>
+          <span class="node-label">1</span>
+        </button>
+        <button class="level-node locked" id="lvl-node-2" data-level="2" title="Pátio da Mansão" disabled>
+          <span class="node-label">2</span>
+          <span class="node-lock">🔒</span>
+        </button>
+        <button class="level-node locked" id="lvl-node-3" data-level="3" title="Interior da Mansão" disabled>
+          <span class="node-label">3</span>
+          <span class="node-lock">🔒</span>
+        </button>
+        <button class="level-node locked" id="lvl-node-4" data-level="4" title="Câmara do Mal" disabled>
+          <span class="node-label">4</span>
+          <span class="node-lock">🔒</span>
+        </button>
+      </div>
+      <p class="level-select-hint">Clique em uma fase para jogar</p>
+    </div>
+
+    <!-- ═══════════════════ INTRO SCREEN ═══════════════════ -->
+    <div id="screen-intro" class="screen hidden">
+      <div class="intro-box">
+        <img id="intro-card" src="Assests/Sprites/Scenes/card_inicial.png" alt="Carta Misteriosa" onerror="this.style.display='none'">
+        <div class="intro-text-area">
+          <p id="intro-text"></p>
+        </div>
+        <button class="btn-secondary" id="btn-intro-continue">▼ Pressione ESPAÇO para continuar</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ TRANSITION OVERLAY ═══════════════════ -->
+    <div id="screen-transition" class="screen hidden">
+      <div id="transition-overlay"></div>
+      <p id="transition-text" class="hidden">UM GHOST APARECEU!</p>
+    </div>
+
+    <!-- ═══════════════════ DIALOGUE / COMIC SCENE ═══════════════════ -->
+    <div id="screen-dialogue" class="screen hidden">
+      <div class="dlg-layout">
+        <!-- Speech bubble (right side, player talks) -->
+        <div class="dlg-bubble-col">
+          <div class="dlg-speaker-tag" id="dialogue-speaker">CAÇADOR</div>
+          <div class="dlg-bubble-wrap">
+            <img class="dlg-balloon-img"
+                 src="Assests/Sprites/Scenes/Ballon.png"
+                 alt=""
+                 draggable="false"
+                 onerror="this.style.opacity='0'">
+            <div class="dlg-text-layer">
+              <p id="dialogue-text" class="dlg-text"></p>
+            </div>
+            <span class="dlg-hint" id="dialogue-hint">▼ toque para continuar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ BATTLE HUD ═══════════════════ -->
+    <div id="hud" class="hidden">
+
+      <!-- Player HP bar (bottom-left) -->
+      <div id="hp-player-box" class="hp-box hp-player">
+        <span class="hp-name">VOCE</span>
+        <div class="hp-bar-bg">
+          <div id="hp-player-fill" class="hp-bar-fill" style="width:100%"></div>
+        </div>
+      </div>
+
+      <!-- Enemy HP bars (top-right area, rendered per-enemy) -->
+      <div id="enemy-hp-area"></div>
+
+      <!-- Coin HUD (top-right corner) -->
+      <div id="coin-hud">
+        <button id="btn-mute" title="Mute/Unmute">🔊</button>
+        <span class="coin-icon">💰</span>
+        <span id="coin-amount">0</span>
+      </div>
+
+      <!-- Battle message box (center-bottom) -->
+      <div id="battle-msg-box" class="hidden">
+        <p id="battle-msg-player"></p>
+        <p id="battle-msg-enemy"></p>
+      </div>
+
+      <!-- Round result flash -->
+      <div id="round-result" class="hidden">
+        <span id="round-result-text"></span>
+      </div>
+
+      <!-- Main action buttons (bottom bar) -->
+      <div id="battle-actions">
+        <button class="btn-action" id="btn-attacks">⚔️ ATAQUES</button>
+        <button class="btn-action" id="btn-shop">🏪 LOJA</button>
+        <button class="btn-action" id="btn-bestiary">📖 MONSTRUÁRIO</button>
+      </div>
+
+    </div><!-- /hud -->
+
+    <!-- ═══════════════════ ATTACK PANEL (slides up) ═══════════════════ -->
+    <div id="attack-panel" class="panel hidden">
+      <div class="panel-header">
+        <span class="panel-title">ESCOLHA SEU ATAQUE</span>
+        <button class="btn-close" id="btn-close-attack">✕</button>
+      </div>
+      <div class="panel-body attack-grid">
+        <button class="btn-attack" data-choice="pedra">
+          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Estaca.png" alt="Estaca" onerror="this.style.display='none'">🪵</div>
+          <span class="attack-name">ESTACA</span>
+          <span class="attack-desc">Pedra</span>
+        </button>
+        <button class="btn-attack" data-choice="papel">
+          <div class="attack-icon"><img src="Assests/Sprites/Ballons/aspirador.png" alt="Aspirador" onerror="this.style.display='none'">🌀</div>
+          <span class="attack-name">ASPIRADOR</span>
+          <span class="attack-desc">Papel • +💰25</span>
+        </button>
+        <button class="btn-attack" data-choice="tesoura">
+          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Cruz.png" alt="Cruz" onerror="this.style.display='none'">✝️</div>
+          <span class="attack-name">CRUZ</span>
+          <span class="attack-desc">Tesoura</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ SHOP PANEL (slides up) ═══════════════════ -->
+    <div id="shop-panel" class="panel hidden">
+      <div class="panel-header">
+        <span class="panel-title">🏪 LOJA</span>
+        <button class="btn-close" id="btn-close-shop">✕</button>
+      </div>
+      <div class="panel-body shop-grid" id="shop-items-container">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- ═══════════════════ BESTIARY MODAL ═══════════════════ -->
+    <div id="bestiary-modal" class="modal-overlay hidden" id="bestiary-overlay">
+      <div class="bestiary-book">
+        <img class="bestiary-bg-img" src="Assests/Sprites/molders/Monstruario.png" alt="" onerror="this.style.display='none'">
+        <div class="bestiary-inner">
+          <h2 class="bestiary-title">📖 MONSTRUÁRIO</h2>
+          <div id="bestiary-content"></div>
+          <div class="bestiary-nav hidden" id="bestiary-nav">
+            <button id="btn-bst-prev">◀ Anterior</button>
+            <span id="bst-page-label">1/1</span>
+            <button id="btn-bst-next">Próximo ▶</button>
+          </div>
+          <p class="bestiary-hint">Toque fora do livro ou pressione ESC para fechar</p>
+        </div>
+        <button class="btn-close bestiary-close-btn" id="btn-close-bestiary">✕</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ TOAST NOTIFICATION ═══════════════════ -->
+    <div id="toast" class="hidden"></div>
+
+    <!-- ═══════════════════ RESULT SCREEN ═══════════════════ -->
+    <div id="screen-result" class="screen hidden">
+      <div class="result-box">
+        <h2 id="result-title">RESULTADO</h2>
+        <p id="result-coins-text"></p>
+        <button class="btn-primary" id="btn-restart">NOVO JOGO</button>
+      </div>
+    </div>
+
+  </div><!-- /game-root -->
+
+  <script src="game.js?v=5"></script>
+</body>
+</html>
