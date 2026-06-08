@@ -1182,10 +1182,6 @@ html, body {
   color: #5a3a1a;
   font-size: 12px;
   line-height: 2.2;
-  cd C:\Users\vitor\Documents\Projects\joken-ghost
-  git add game.css
-  git commit -m "fix: reposition HUD elements on mobile landscape"
-  git push origin web-game  grid-column: 1 / -1;
   max-width: 180px;
   margin: 40px auto auto 160px;
 }
@@ -1395,9 +1391,9 @@ html, body {
   /* HP do player sobe */
   .hp-player       { bottom: 110px; }
   /* Botões de ação sobem */
-  #battle-actions  { bottom: 12px; }
-  /* Caixa de diálogo/batalha desce (fica mais perto dos botões) */
-  #battle-msg-box  { bottom: 80px; }
+  #battle-actions  { bottom: 60px; }
+  /* Caixa de diálogo sobe junto */
+  #battle-msg-box  { bottom: 160px; }
   /* HP dos inimigos desce um pouco */
   #enemy-hp-area   { top: 20px; right: 12px; }
 }
