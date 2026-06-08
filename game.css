@@ -1395,11 +1395,11 @@ html, body {
   /* HP do player sobe */
   .hp-player       { bottom: 110px; }
   /* Botões de ação sobem */
-  #battle-actions  { bottom: 22px; }
+  #battle-actions  { bottom: 12px; }
   /* Caixa de diálogo/batalha desce (fica mais perto dos botões) */
-  #battle-msg-box  { bottom: 100px; }
+  #battle-msg-box  { bottom: 80px; }
   /* HP dos inimigos desce um pouco */
-  #enemy-hp-area   { top: 12px; right: 12px; }
+  #enemy-hp-area   { top: 20px; right: 12px; }
 }
 
 /* ─── Rotate overlay (portrait mobile) ──────────────────── */
