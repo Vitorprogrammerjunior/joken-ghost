@@ -1555,6 +1555,7 @@ class JokenGhost {
     // Resize
     window.addEventListener('resize', () => this._handleResize());
     screen.orientation && screen.orientation.addEventListener('change', () => this._handleResize());
+    window.visualViewport && window.visualViewport.addEventListener('resize', () => this._handleResize());
   }
 
   _onKey(e) {
@@ -1580,12 +1581,18 @@ class JokenGhost {
   //  RESPONSIVE SCALING
   // ─────────────────────────────────────────────────────────────
   _handleResize() {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
+    const vv = window.visualViewport;
+    const vw = vv ? vv.width  : window.innerWidth;
+    const vh = vv ? vv.height : window.innerHeight;
     const scaleOpt = this.options?.scale ?? 'fit';
+    const isMobile = window.matchMedia('(pointer: coarse)').matches;
     let scale;
     if (scaleOpt === 'fit') {
-      scale = Math.min(vw / GW, vh / GH);
+      // Mobile: scale to FILL (crops edges, no black bars)
+      // Desktop: scale to FIT (letterbox, no cropping)
+      scale = isMobile
+        ? Math.max(vw / GW, vh / GH)
+        : Math.min(vw / GW, vh / GH);
     } else {
       scale = parseFloat(scaleOpt);
     }
