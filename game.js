@@ -1047,15 +1047,21 @@ class JokenGhost {
   }
 
   _goToIntro() {
-    this.$screenMenu.classList.add('hidden');
-    this.$screenIntro.classList.remove('hidden');
-    this.$introText.textContent = INTRO_LINES.join('\n');
-    this.state = STATE.INTRO;
-    // BGM: inicia só se não estiver tocando (pode vir do level select)
+    // BGM: inicia só se não estiver tocando
     if (this.bgm.paused) {
       this.bgm.currentTime = 0;
       this.bgm.play().catch(() => {});
     }
+    // Mobile: pula a tela da carta, vai direto para a transição
+    if (window.matchMedia('(pointer: coarse)').matches) {
+      this.$screenMenu.classList.add('hidden');
+      this._goToTransition();
+      return;
+    }
+    this.$screenMenu.classList.add('hidden');
+    this.$screenIntro.classList.remove('hidden');
+    this.$introText.textContent = INTRO_LINES.join('\n');
+    this.state = STATE.INTRO;
   }
 
   _goToTransition() {
