@@ -1480,7 +1480,10 @@ class JokenGhost {
   // ─────────────────────────────────────────────────────────────
   _bindEvents() {
     // Menu
-    document.getElementById('btn-play').addEventListener('click', () => this._openSavesModal());
+    document.getElementById('btn-play').addEventListener('click', () => {
+      this._requestFullscreen();
+      this._openSavesModal();
+    });
     document.getElementById('btn-saves').addEventListener('click', () => this._openSavesModal());
     document.getElementById('btn-saves-close').addEventListener('click', () => {
       document.getElementById('saves-modal').classList.add('hidden');
@@ -1585,6 +1588,16 @@ class JokenGhost {
 
   // ─────────────────────────────────────────────────────────────
   //  RESPONSIVE SCALING
+  // ─────────────────────────────────────────────────────────────
+  _requestFullscreen() {
+    if (!window.matchMedia('(pointer: coarse)').matches) return; // só mobile
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen;
+    if (req && !document.fullscreenElement && !document.webkitFullscreenElement) {
+      req.call(el).catch(() => {});
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────
   _handleResize() {
     const vv = window.visualViewport;
