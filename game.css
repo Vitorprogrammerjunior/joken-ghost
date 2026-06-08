@@ -1400,8 +1400,8 @@ html, body {
   #enemy-hp-area   { top: 80px; right: 12px; }
   /* Moedas e mute — desce mais 20px */
   #coin-hud        { top: 80px; }
-  /* Toast/notificações — desce 45px */
-  #toast           { top: 115px; }
+  /* Toast/notificações — desce mais 20px */
+  #toast           { top: 135px; }
 }
 
 /* ─── Rotate overlay (portrait mobile) ──────────────────── */
