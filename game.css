@@ -1388,14 +1388,14 @@ html, body {
 
 /* ─── Mobile landscape: reposition HUD elements ─────────── */
 @media (pointer: coarse) and (orientation: landscape) {
-  /* HP do player sobe */
-  .hp-player       { bottom: 220px; }
-  /* Botões de ação sobem */
-  #battle-actions  { bottom: 160px; }
-  /* Caixa de diálogo sobe junto */
-  #battle-msg-box  { bottom: 280px; }
-  /* Painel de ataque/loja sobe (fica acima da barra) */
-  .panel           { bottom: 140px; border-radius: 12px 12px 0 0; }
+  /* HP do player — posição original boa */
+  .hp-player       { bottom: 110px; }
+  /* Botões de ação — posição original boa */
+  #battle-actions  { bottom: 60px; }
+  /* Caixa de diálogo */
+  #battle-msg-box  { bottom: 160px; }
+  /* Painel de ataque/loja — baixou 20px */
+  .panel           { bottom: 120px; border-radius: 12px 12px 0 0; }
   /* HP dos inimigos */
   #enemy-hp-area   { top: 20px; right: 12px; }
 }
