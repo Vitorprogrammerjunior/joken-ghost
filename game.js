@@ -686,6 +686,15 @@ class JokenGhost {
   // ─────────────────────────────────────────────────────────────
   _render() {
     const ctx = this.ctx;
+
+    // Multiplayer usa o mesmo canvas — nao sobrescrever
+    if (window._mp && window._mp.state !== 0) {
+      if (window._mp.state === 3) return; // batalha PvP renderiza em multiplayer.js
+      ctx.fillStyle = '#0b130b';
+      ctx.fillRect(0, 0, GW, GH);
+      return;
+    }
+
     ctx.clearRect(0, 0, GW, GH);
 
     switch (this.state) {

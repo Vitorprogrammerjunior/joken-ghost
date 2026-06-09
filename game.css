@@ -1446,3 +1446,310 @@ html, body {
 @media (orientation: portrait) and (pointer: coarse) {
   #rotate-overlay { display: flex; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MULTIPLAYER (Fase 1)
+   ═══════════════════════════════════════════════════════════ */
+.mp-screen-title {
+  font-size: 22px;
+  color: #f5c842;
+  letter-spacing: 5px;
+  margin-bottom: 8px;
+}
+.mp-screen-sub {
+  font-size: 11px;
+  color: #a8d8a8;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+.mp-conn-status {
+  font-size: 9px;
+  color: #6a8a6a;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+}
+.mp-lobby-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 360px;
+  max-width: 92%;
+  background: rgba(0,0,0,0.65);
+  border: 2px solid #8b6849;
+  border-radius: 12px;
+  padding: 24px;
+}
+.mp-label {
+  font-size: 9px;
+  color: #8b6849;
+  letter-spacing: 2px;
+}
+.mp-input {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 10px 12px;
+  background: #0f0a06;
+  border: 2px solid #5a4030;
+  color: #f5e6c8;
+  border-radius: 6px;
+  outline: none;
+}
+.mp-input:focus { border-color: #f5c842; }
+.mp-code-input { text-transform: uppercase; letter-spacing: 3px; text-align: center; }
+.mp-lobby-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+.mp-lobby-actions .btn-primary,
+.mp-lobby-actions .btn-secondary { flex: 1; }
+.mp-back-btn { margin-top: 8px; width: 100%; }
+.mp-hint {
+  font-size: 9px;
+  color: #6a7a6a;
+  letter-spacing: 1px;
+  margin-top: 16px;
+  text-align: center;
+  line-height: 1.6;
+}
+.mp-hint-code { color: #f5c842; }
+.mp-room-code {
+  font-size: 28px;
+  color: #f5c842;
+  letter-spacing: 6px;
+  margin: 16px 0 8px;
+}
+.mp-role-badge {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 3px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+.mp-role-badge.role-hunter {
+  background: rgba(58,123,213,0.25);
+  color: #7ab8ff;
+  border: 1px solid #3a7bd5;
+}
+.mp-role-badge.role-monster {
+  background: rgba(94,234,138,0.15);
+  color: #5eea8a;
+  border: 1px solid #5eea8a;
+}
+.mp-waiting-msg {
+  font-size: 12px;
+  color: #d4e8d4;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.mp-share-link {
+  font-size: 9px;
+  color: #8ab88a;
+  word-break: break-all;
+  max-width: 90%;
+  text-align: center;
+  margin: 8px 0 16px;
+  padding: 8px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 6px;
+}
+
+/* Battle overlay — transparent, canvas visible behind */
+#screen-mp-battle.mp-battle-screen {
+  background: transparent;
+  justify-content: flex-end;
+  pointer-events: none;
+  z-index: 25;
+}
+#screen-mp-battle .mp-battle-hud,
+#screen-mp-battle .mp-battle-panel {
+  pointer-events: auto;
+}
+.mp-battle-hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 16px 24px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent);
+}
+.mp-scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mp-score-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+}
+.mp-score-label {
+  font-size: 9px;
+  color: #8b6849;
+  letter-spacing: 2px;
+}
+.mp-score-val {
+  font-size: 32px;
+  color: #f5c842;
+  line-height: 1.1;
+}
+.mp-score-mid { text-align: center; }
+.mp-round-label {
+  font-size: 12px;
+  color: #d4e8d4;
+  letter-spacing: 2px;
+  display: block;
+}
+.mp-rounds-hint {
+  font-size: 8px;
+  color: #6a7a6a;
+  letter-spacing: 1px;
+}
+.mp-phase-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid #5a4030;
+  border-radius: 8px;
+}
+.mp-phase-title {
+  font-size: 11px;
+  color: #f5c842;
+  letter-spacing: 2px;
+}
+.mp-timer {
+  font-size: 14px;
+  color: #ff6b6b;
+  min-width: 36px;
+  text-align: right;
+}
+.mp-battle-panel {
+  width: 100%;
+  padding: 0 24px 24px;
+}
+.mp-perks-grid,
+.mp-attacks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.mp-perk-btn,
+.mp-attack-btn {
+  font-family: inherit;
+  background: rgba(26,15,7,0.92);
+  border: 2px solid #8b6849;
+  border-radius: 10px;
+  padding: 14px 10px;
+  color: #f5e6c8;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  min-height: 90px;
+}
+.mp-perk-btn:hover:not(:disabled),
+.mp-attack-btn:hover:not(:disabled) {
+  border-color: #f5c842;
+  transform: translateY(-2px);
+}
+.mp-perk-btn:disabled,
+.mp-attack-btn:disabled { opacity: 0.45; cursor: default; }
+.mp-perk-btn.selected,
+.mp-attack-btn.selected {
+  border-color: #5eea8a;
+  background: rgba(30,60,30,0.9);
+}
+.mp-perk-name,
+.mp-attack-name {
+  font-size: 11px;
+  color: #f5c842;
+  letter-spacing: 1px;
+}
+.mp-perk-desc {
+  font-size: 8px;
+  color: #a8c8a8;
+  line-height: 1.4;
+  text-align: center;
+}
+.mp-attack-key {
+  font-size: 9px;
+  color: #6a8a6a;
+}
+.mp-reveal-box {
+  background: rgba(0,0,0,0.82);
+  border: 2px solid #f5c842;
+  border-radius: 12px;
+  padding: 20px 24px;
+  text-align: center;
+  animation: mpRevealIn 0.35s ease both;
+}
+@keyframes mpRevealIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.mp-reveal-text {
+  font-size: 12px;
+  color: #d4e8d4;
+  line-height: 1.8;
+  letter-spacing: 1px;
+}
+.mp-reveal-text strong {
+  font-size: 16px;
+  color: #f5c842;
+  display: block;
+  margin-bottom: 8px;
+}
+.mp-reveal-detail { font-size: 10px; color: #a8c8a8; }
+.mp-status-msg {
+  font-size: 10px;
+  color: #8ab88a;
+  text-align: center;
+  letter-spacing: 1px;
+  min-height: 16px;
+  margin-top: 8px;
+}
+
+/* Result */
+.mp-result-box {
+  background: rgba(0,0,0,0.85);
+  border: 3px solid #8b6849;
+  border-radius: 14px;
+  padding: 36px 48px;
+  text-align: center;
+  max-width: 90%;
+}
+.mp-result-title {
+  font-size: 24px;
+  letter-spacing: 4px;
+  margin-bottom: 16px;
+}
+.mp-result-title.mp-result-win { color: #5eea8a; }
+.mp-result-title.mp-result-lose { color: #ff6b6b; }
+.mp-result-detail {
+  font-size: 11px;
+  color: #c8d8c8;
+  line-height: 1.8;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+}
+.mp-result-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 700px) {
+  .mp-perks-grid,
+  .mp-attacks-grid {
+    grid-template-columns: 1fr;
+  }
+  .mp-score-val { font-size: 24px; }
+}

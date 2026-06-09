@@ -147,3 +147,6 @@ Thumbs.db
 # Game specific
 *.pyc
 debug.log
+
+# Node multiplayer server
+server/node_modules/

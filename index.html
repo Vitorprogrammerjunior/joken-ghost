@@ -32,6 +32,7 @@
       <p class="game-subtitle">Caçada em Turnos</p>
       <div class="menu-buttons">
         <button class="btn-primary" id="btn-play">JOGAR</button>
+        <button class="btn-secondary menu-btn" id="btn-multiplayer">MULTIPLAYER</button>
         <button class="btn-secondary menu-btn" id="btn-saves">ARQUIVOS</button>
         <button class="btn-secondary menu-btn" id="btn-options">OPCOES</button>
         <a class="btn-secondary menu-btn" href="wiki.html" target="_blank">WIKI</a>
@@ -281,8 +282,86 @@
 
     <div id="screen-fade-overlay"></div>
 
+    <!-- ═══════════════════ MULTIPLAYER LOBBY ═══════════════════ -->
+    <div id="screen-mp-lobby" class="screen hidden">
+      <h2 class="mp-screen-title">MULTIPLAYER</h2>
+      <p class="mp-screen-sub">Cacador vs Monstro — Melhor de 3</p>
+      <p id="mp-conn-status" class="mp-conn-status">Pronto</p>
+      <div class="mp-lobby-form">
+        <label class="mp-label" for="mp-nickname">SEU NOME</label>
+        <input class="mp-input" id="mp-nickname" type="text" maxlength="16" placeholder="Nickname" autocomplete="off">
+        <label class="mp-label" for="mp-join-code">CODIGO DA SALA (entrar)</label>
+        <input class="mp-input mp-code-input" id="mp-join-code" type="text" maxlength="8" placeholder="JGH-XXXX" autocomplete="off">
+        <div class="mp-lobby-actions">
+          <button class="btn-primary" id="btn-mp-create">CRIAR SALA</button>
+          <button class="btn-secondary" id="btn-mp-join">ENTRAR</button>
+        </div>
+        <button class="btn-secondary mp-back-btn" id="btn-mp-back-menu">VOLTAR</button>
+      </div>
+      <p class="mp-hint">Compartilhe o codigo com um amigo ou use o link: <span class="mp-hint-code">?room=JGH-XXXX</span></p>
+    </div>
+
+    <!-- ═══════════════════ MULTIPLAYER WAITING ═══════════════════ -->
+    <div id="screen-mp-waiting" class="screen hidden">
+      <h2 class="mp-screen-title">SALA</h2>
+      <p id="mp-waiting-code" class="mp-room-code">JGH-????</p>
+      <p id="mp-role-badge" class="mp-role-badge role-hunter">CACADOR</p>
+      <p id="mp-waiting-msg" class="mp-waiting-msg">Aguardando oponente...</p>
+      <p id="mp-share-link" class="mp-share-link"></p>
+      <p class="mp-hint">Envie o codigo ou link para seu amigo</p>
+      <button class="btn-secondary mp-back-btn" id="btn-mp-cancel-wait">CANCELAR</button>
+    </div>
+
+    <!-- ═══════════════════ MULTIPLAYER BATTLE ═══════════════════ -->
+    <div id="screen-mp-battle" class="screen hidden mp-battle-screen">
+      <div class="mp-battle-hud">
+        <div class="mp-scoreboard">
+          <div class="mp-score-side">
+            <span class="mp-score-label">CACADOR</span>
+            <span id="mp-score-hunter" class="mp-score-val">0</span>
+          </div>
+          <div class="mp-score-mid">
+            <span id="mp-round-label" class="mp-round-label">Rodada 1</span>
+            <span class="mp-rounds-hint">/ 3 para vencer</span>
+          </div>
+          <div class="mp-score-side">
+            <span class="mp-score-label">MONSTRO</span>
+            <span id="mp-score-monster" class="mp-score-val">0</span>
+          </div>
+        </div>
+        <div class="mp-phase-bar">
+          <span id="mp-phase-title" class="mp-phase-title">ESCOLHA SEU PERK</span>
+          <span id="mp-timer" class="mp-timer"></span>
+        </div>
+      </div>
+
+      <div class="mp-battle-panel">
+        <div id="mp-perks-grid" class="mp-perks-grid hidden"></div>
+        <div id="mp-attacks-grid" class="mp-attacks-grid hidden"></div>
+        <div id="mp-reveal-box" class="mp-reveal-box hidden">
+          <p id="mp-reveal-text" class="mp-reveal-text"></p>
+        </div>
+        <p id="mp-status-msg" class="mp-status-msg"></p>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ MULTIPLAYER RESULT ═══════════════════ -->
+    <div id="screen-mp-result" class="screen hidden">
+      <div class="mp-result-box">
+        <h2 id="mp-result-title" class="mp-result-title">RESULTADO</h2>
+        <p id="mp-result-detail" class="mp-result-detail"></p>
+        <div class="mp-result-actions">
+          <button class="btn-primary" id="btn-mp-result-rematch">NOVA SALA</button>
+          <button class="btn-secondary" id="btn-mp-result-menu">MENU</button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /game-root -->
 
-  <script src="game.js?v=6"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <script src="multiplayer-config.js?v=1"></script>
+  <script src="game.js?v=7"></script>
+  <script src="multiplayer.js?v=1"></script>
 </body>
 </html>
