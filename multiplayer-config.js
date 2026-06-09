@@ -10,7 +10,6 @@ window.JOKENGHOST_MP_CONFIG = {
       return 'http://localhost:3001';
     }
 
-    // Substitua pela URL publica do Railway, ex: https://jokenghost-mp.up.railway.app
-    return 'https://jokenghost-mp.up.railway.app';
+    return 'https://joken-ghost-production.up.railway.app';
   })(),
 };
