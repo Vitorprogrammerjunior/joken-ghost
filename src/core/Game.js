@@ -98,13 +98,19 @@ export class Game {
   #loop(ts) {
     const dt = Math.min(MAX_DT, ts - this.lastTs) * this.timeScale;
     this.lastTs = ts;
+    // agenda o próximo quadro antes: um erro numa cena não pode congelar o jogo inteiro
+    requestAnimationFrame((t) => this.#loop(t));
     const s = this.scene;
-    if (s) {
+    if (!s) return;
+    try {
       if (!s.paused) s.update(dt);
       this.renderer.begin();
       s.render(this.renderer);
+      this.loopError = null;
+    } catch (err) {
+      if (!this.loopError) console.error('Erro no quadro:', err); // avisa uma vez, não 60 por segundo
+      this.loopError = err;
     }
-    requestAnimationFrame((t) => this.#loop(t));
   }
 
   // ─── entrada ──────────────────────────────────────────────────

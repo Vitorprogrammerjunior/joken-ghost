@@ -40,8 +40,9 @@ export class DuelScene extends Scene {
     net.on('opponent_ready', here((d) => this.#say(d.phase === 'card' ? 'O oponente já escolheu a carta.' : 'O oponente já escolheu a arma!')));
     net.on('opponent_weapon', here((d) => this.#vision(d.weapon)));
     net.on('opponent_status', here((d) => this.#say(d.connected ? 'O oponente voltou!' : `O oponente caiu... esperando ${Math.round((d.graceMs ?? 15000) / 1000)}s para ele voltar.`)));
-    net.on('round_result', here((d) => this.#roundResult(d)));
-    net.on('match_end', here((d) => this.#matchEnd(d)));
+    // o fim espera a animação da última rodada (aba em segundo plano ou aparelho lento atrasam ela)
+    net.on('round_result', here((d) => { this.roundAnim = this.#roundResult(d); }));
+    net.on('match_end', here(async (d) => { await this.roundAnim; if (game.scene === this) this.#matchEnd(d); }));
     net.on('error_msg', here((d) => this.ui.toasts.show(d.message, { force: true })));
     net.on('disconnected', here(() => this.#say('Conexão perdida! Tentando reconectar...')));
   }
@@ -62,6 +63,7 @@ export class DuelScene extends Scene {
     this.jokenWord = null;
     this.reveal = null;
     this.visionWeapon = null;
+    this.roundAnim = null;
     this.endsAt = 0;
     this.total = 1;
 

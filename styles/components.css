@@ -105,7 +105,7 @@
   align-items: center;
   gap: 20px;
   min-width: 560px;
-  max-height: 680px;
+  max-height: 688px; /* cabe na tela de 720; o conteúdo longo rola por dentro */
   animation: pop 0.25s ease-out both;
 }
 .modal-sm { min-width: 480px; }

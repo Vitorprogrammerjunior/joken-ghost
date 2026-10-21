@@ -17,7 +17,9 @@ export class Effects {
 
   /** Texto que sobe e some (dano, moedas, avisos). */
   text(str, x, y, { color = '#f4f2fa', size = 24, life = 1100, rise = 60, delay = 0 } = {}) {
-    this.items.push({ kind: 'text', str, x, y, color, size, life, rise, t: -delay });
+    // se ainda há um texto parecido no mesmo lugar, este nasce acima dele em vez de sobrepor
+    const stacked = this.items.filter(i => i.kind === 'text' && i.t < i.life * 0.7 && Math.abs(i.x - x) < 48 && Math.abs(i.baseY - y) < 24).length;
+    this.items.push({ kind: 'text', str, x, y: y - stacked * (size + 8), baseY: y, color, size, life, rise, t: -delay });
   }
 
   /** Sprite que viaja de A até B (estaca arremessada, orbe...). */

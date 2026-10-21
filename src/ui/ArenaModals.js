@@ -61,7 +61,7 @@ export class ArenaModals {
       const owned = p.unlocked.characters.includes(c.id);
       const current = p.character === c.id;
       return h('div', { class: `char-tile${owned ? '' : ' locked'}${current ? ' current' : ''}` },
-        spriteCanvas(this.game.assets, `char/${c.id}/side/idle`, { size: 128, dim: !owned }),
+        spriteCanvas(this.game.assets, `char/${c.id}/side/idle`, { size: 96, dim: !owned }),
         h('b', {}, owned ? c.name : '???'),
         h('p', { class: 'char-passive' }, owned ? c.passive : `Desbloqueie com ${c.trophies} troféus.`),
         owned

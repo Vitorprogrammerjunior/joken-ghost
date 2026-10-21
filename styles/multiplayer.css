@@ -37,7 +37,7 @@ button.pcard { cursor: pointer; }
   overflow: hidden;
   font-size: calc(4 * var(--u));
   line-height: 1;
-  white-space: nowrap;
+  text-align: center; /* nomes longos ("Escudo Sagrado") quebram em duas linhas */
   color: var(--ink);
   pointer-events: none;
 }
@@ -65,13 +65,13 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
   bottom: calc(100% + 12px);
   left: 50%;
   width: 260px;
+  margin-left: -130px; /* centraliza sem transform: a animação pop usa transform */
   display: none;
   flex-direction: column;
   gap: 4px;
   padding: 16px 18px;
   border: 2px solid transparent;
   border-image: url('../assets/sprites/ui/parchment.svg') 16 fill / 24px / 0 stretch;
-  transform: translateX(-50%);
   color: var(--ink-2);
   text-align: left;
   font-size: 16px;
@@ -115,14 +115,17 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .lobby-actions { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 12px; }
 .lb-join-row { gap: 8px; }
 .lb-join-row .field { flex: 1; }
-.lobby-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.lobby-tabs { display: flex; gap: 8px; }
+.lobby-tabs .btn { flex: 1 1 auto; min-width: 0; padding-inline: 10px; gap: 6px; }
 .mp-status { min-height: 24px; color: var(--cyan); text-shadow: var(--outline); text-align: center; }
 
-.lobby-online { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.lobby-online { display: flex; flex-direction: column; gap: 10px; padding: 32px 20px; overflow: hidden; }
 .lobby-online h3 { font-weight: normal; color: var(--gold); text-shadow: var(--outline); }
-.online-list { list-style: none; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; pointer-events: auto; }
-.online-row { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 10px; padding: 4px 8px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--ink-3); text-shadow: var(--outline); }
-.online-row .on-info { display: flex; flex-direction: column; }
+.online-list { list-style: none; display: flex; flex-direction: column; gap: 6px; overflow-x: hidden; overflow-y: auto; pointer-events: auto; }
+.online-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 4px 8px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--ink-3); text-shadow: var(--outline); }
+.online-row .on-info { display: flex; flex-direction: column; min-width: 0; }
+.online-row .on-info > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.online-row .btn-sm { padding-inline: 12px; }
 .online-row small { color: var(--fog); display: flex; align-items: center; gap: 4px; }
 .online-row.s-match small, .online-row.s-queue small { color: var(--orange); }
 .online-empty { color: var(--mist); padding: 12px; }
@@ -153,8 +156,8 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 
 .duel-hand {
   position: absolute;
-  left: 0;
-  right: 400px; /* deixa livre a caixa de vida do jogador */
+  left: 320px; /* deixa livre o caçador de costas */
+  right: 400px; /* e a caixa de vida do jogador */
   bottom: 176px;
   display: flex;
   flex-direction: column;
@@ -190,21 +193,24 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .modal-wide { min-width: 960px; max-width: 1180px; }
 .modal-sub { color: var(--fog); text-shadow: var(--outline); text-align: center; }
 .card-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; padding-top: 140px; margin-top: -120px; }
-.char-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.char-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; min-height: 0; overflow-y: auto; pointer-events: auto; }
 .char-tile {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-rows: auto 1fr auto;
+  column-gap: 12px;
+  row-gap: 4px;
   align-items: center;
-  gap: 6px;
-  padding: 14px;
+  padding: 12px 14px;
   border: 2px solid transparent;
   border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 24px / 0 stretch;
-  text-align: center;
   text-shadow: var(--outline);
 }
+.char-tile .sprite-canvas { grid-row: 1 / 4; }
 .char-tile.current { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
 .char-tile b { font-weight: normal; color: var(--gold); }
-.char-passive { min-height: 48px; color: var(--fog); }
+.char-passive { align-self: start; color: var(--fog); }
+.char-tile .btn { justify-self: start; }
 .char-need { display: flex; align-items: center; gap: 4px; color: var(--mist); }
 .sprite-canvas { image-rendering: pixelated; }
 
