@@ -567,6 +567,105 @@ function sorte() {
   return finish(g, { shade: false });
 }
 
+
+// ─── perks novos (cartas) ─────────────────────────────────────
+function cura() {
+  const g = coracao('r3');
+  g.rect(28, 22, 8, 22, 'w'); g.rect(21, 29, 22, 8, 'w');
+  g.rect(29, 23, 6, 20, 'v4'); g.rect(22, 30, 20, 6, 'v4');
+  return g;
+}
+
+function espinhos() {
+  const g = new Grid();
+  // bola de espinhos: espinhos brancos em volta de um núcleo verde
+  for (let i = 0; i < 10; i++) {
+    const a = i * Math.PI / 5;
+    const c = [32 + Math.cos(a) * 14, 32 + Math.sin(a) * 14];
+    const tip = [32 + Math.cos(a) * 28, 32 + Math.sin(a) * 28];
+    const n = [-Math.sin(a) * 5, Math.cos(a) * 5];
+    g.poly([[c[0] + n[0], c[1] + n[1]], [c[0] - n[0], c[1] - n[1]], tip], 'g5');
+  }
+  g.shade();
+  const B = new Grid();
+  B.circle(32, 32, 15, 'v3');
+  B.shade({ depth: 2 });
+  g.blit(B);
+  g.px([[26, 26], [27, 25], [28, 25]], 'v6');
+  g.rect(27, 33, 4, 2, 'k'); g.rect(34, 33, 4, 2, 'k');   // carinha brava
+  g.line(26, 31, 30, 32, 'k').line(39, 31, 35, 32, 'k');
+  return finish(g, { shade: false });
+}
+
+function vampirismo() {
+  const g = new Grid();
+  const M = new Grid();
+  M.ellipse(32, 24, 20, 12, 'r1');
+  M.erase((x, y) => y < 22);
+  g.blit(M);
+  g.rect(12, 20, 40, 4, 'q3');
+  g.poly([[18, 22], [24, 22], [21, 36]], 'w');
+  g.poly([[40, 22], [46, 22], [43, 36]], 'w');
+  g.ellipse(43, 46, 4, 6, 'r3');
+  g.poly([[39, 44], [47, 44], [43, 36]], 'r3');
+  g.ellipse(21, 46, 3, 4, 'r3');
+  g.shade();
+  g.set(42, 44, 'r5');
+  return finish(g, { shade: false });
+}
+
+function furia() {
+  const g = new Grid();
+  for (const [x, h] of [[18, 22], [26, 30], [34, 34], [42, 26], [48, 18]]) g.poly([[x - 7, 40], [x + 7, 40], [x, 40 - h]], 'o3');
+  for (const [x, h] of [[24, 18], [32, 24], [40, 18]]) g.poly([[x - 5, 40], [x + 5, 40], [x, 40 - h]], 'y3');
+  const F = new Grid();
+  F.rect(20, 32, 24, 20, 's4');
+  for (let i = 0; i < 4; i++) F.rect(20 + i * 6, 27, 5, 7, 's4');
+  F.shade();
+  for (let i = 1; i < 4; i++) F.rect(19 + i * 6, 28, 1, 6, 's2');
+  g.blit(F);
+  return finish(g, { shade: false });
+}
+
+function escudoSagrado() {
+  const g = new Grid();
+  g.ring(32, 10, 12, 2, 'y4');
+  g.poly([[12, 16], [52, 16], [50, 38], [32, 58], [14, 38]], 'y3');
+  g.shade({ depth: 2 });
+  g.poly([[18, 20], [46, 20], [44, 37], [32, 51], [20, 37]], 'w');
+  g.rect(30, 24, 4, 20, 'y2'); g.rect(24, 29, 16, 4, 'y2');
+  for (const [x, y] of [[6, 30], [58, 30], [8, 46], [56, 46]]) g.px([[x, y], [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]], 'y4');
+  return finish(g, { shade: false });
+}
+
+function juizo() {
+  const g = new Grid();
+  for (const [x, y, r] of [[20, 18, 9], [32, 14, 11], [44, 18, 9], [32, 22, 10]]) g.circle(x, y, r, 'g2');
+  g.shade({ light: 1, dark: 0 });
+  g.poly([[34, 26], [42, 26], [34, 40], [40, 40], [24, 62], [28, 44], [22, 44]], 'y3');
+  g.poly([[35, 28], [39, 28], [32, 40], [36, 40], [27, 54]], 'y4');
+  return finish(g, { shade: false });
+}
+
+// ─── ligas do ranking ─────────────────────────────────────────
+function liga(fill, extra) {
+  const g = new Grid();
+  g.poly([[14, 8], [50, 8], [50, 34], [32, 58], [14, 34]], fill);
+  g.shade({ depth: 2 });
+  g.poly([[20, 14], [44, 14], [44, 32], [32, 48], [20, 32]], 'k2');
+  const pts = [];
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 4 : 10;
+    pts.push([32 + Math.cos(a) * r, 29 + Math.sin(a) * r]);
+  }
+  g.poly(pts, fill);
+  if (extra === 'coroa') {
+    g.poly([[18, 8], [22, 0], [27, 6], [32, 0], [37, 6], [42, 0], [46, 8]], 'y3');
+    g.set(32, 2, 'r3');
+  }
+  return finish(g, { shade: false });
+}
+
 export function iconSheets() {
   return {
     estaca: estaca(), aspirador: aspirador(), cruz: cruz(),
@@ -583,5 +682,8 @@ export function iconSheets() {
     jogar: jogar(), casa: casa(), repetir: repetir(),
     perk_escudo: escudo(), perk_golpe_duplo: golpeDuplo(), perk_empate_forte: empateForte(),
     perk_visao: visao(), perk_resistencia: resistencia(), perk_sorte: sorte(),
+    perk_cura: cura(), perk_espinhos: espinhos(), perk_vampirismo: vampirismo(),
+    perk_furia: furia(), perk_escudo_sagrado: escudoSagrado(), perk_juizo: juizo(),
+    liga_bronze: liga('o2'), liga_prata: liga('t4'), liga_ouro: liga('y3'), liga_platina: liga('c4'), liga_lenda: liga('p4', 'coroa'),
   };
 }

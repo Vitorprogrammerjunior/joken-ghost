@@ -3,24 +3,264 @@
 export const FRAME_SIZE = 64;
 
 export const SPRITES = {
-  "hunter/idle": {
-    "src": "assets/sprites/characters/hunter/idle.svg",
+  "char/cacador/side/idle": {
+    "src": "assets/sprites/characters/cacador/side/idle.svg",
     "frames": 4
   },
-  "hunter/attack": {
-    "src": "assets/sprites/characters/hunter/attack.svg",
+  "char/cacador/side/attack": {
+    "src": "assets/sprites/characters/cacador/side/attack.svg",
     "frames": 4
   },
-  "hunter/hurt": {
-    "src": "assets/sprites/characters/hunter/hurt.svg",
+  "char/cacador/side/hurt": {
+    "src": "assets/sprites/characters/cacador/side/hurt.svg",
     "frames": 2
   },
-  "hunter/win": {
-    "src": "assets/sprites/characters/hunter/win.svg",
+  "char/cacador/side/win": {
+    "src": "assets/sprites/characters/cacador/side/win.svg",
     "frames": 2
   },
-  "hunter/ko": {
-    "src": "assets/sprites/characters/hunter/ko.svg",
+  "char/cacador/side/ko": {
+    "src": "assets/sprites/characters/cacador/side/ko.svg",
+    "frames": 1
+  },
+  "char/cacador/back/idle": {
+    "src": "assets/sprites/characters/cacador/back/idle.svg",
+    "frames": 4
+  },
+  "char/cacador/back/attack": {
+    "src": "assets/sprites/characters/cacador/back/attack.svg",
+    "frames": 4
+  },
+  "char/cacador/back/hurt": {
+    "src": "assets/sprites/characters/cacador/back/hurt.svg",
+    "frames": 2
+  },
+  "char/cacador/back/win": {
+    "src": "assets/sprites/characters/cacador/back/win.svg",
+    "frames": 2
+  },
+  "char/cacador/back/ko": {
+    "src": "assets/sprites/characters/cacador/back/ko.svg",
+    "frames": 1
+  },
+  "char/luna/side/idle": {
+    "src": "assets/sprites/characters/luna/side/idle.svg",
+    "frames": 4
+  },
+  "char/luna/side/attack": {
+    "src": "assets/sprites/characters/luna/side/attack.svg",
+    "frames": 4
+  },
+  "char/luna/side/hurt": {
+    "src": "assets/sprites/characters/luna/side/hurt.svg",
+    "frames": 2
+  },
+  "char/luna/side/win": {
+    "src": "assets/sprites/characters/luna/side/win.svg",
+    "frames": 2
+  },
+  "char/luna/side/ko": {
+    "src": "assets/sprites/characters/luna/side/ko.svg",
+    "frames": 1
+  },
+  "char/luna/back/idle": {
+    "src": "assets/sprites/characters/luna/back/idle.svg",
+    "frames": 4
+  },
+  "char/luna/back/attack": {
+    "src": "assets/sprites/characters/luna/back/attack.svg",
+    "frames": 4
+  },
+  "char/luna/back/hurt": {
+    "src": "assets/sprites/characters/luna/back/hurt.svg",
+    "frames": 2
+  },
+  "char/luna/back/win": {
+    "src": "assets/sprites/characters/luna/back/win.svg",
+    "frames": 2
+  },
+  "char/luna/back/ko": {
+    "src": "assets/sprites/characters/luna/back/ko.svg",
+    "frames": 1
+  },
+  "char/bento/side/idle": {
+    "src": "assets/sprites/characters/bento/side/idle.svg",
+    "frames": 4
+  },
+  "char/bento/side/attack": {
+    "src": "assets/sprites/characters/bento/side/attack.svg",
+    "frames": 4
+  },
+  "char/bento/side/hurt": {
+    "src": "assets/sprites/characters/bento/side/hurt.svg",
+    "frames": 2
+  },
+  "char/bento/side/win": {
+    "src": "assets/sprites/characters/bento/side/win.svg",
+    "frames": 2
+  },
+  "char/bento/side/ko": {
+    "src": "assets/sprites/characters/bento/side/ko.svg",
+    "frames": 1
+  },
+  "char/bento/back/idle": {
+    "src": "assets/sprites/characters/bento/back/idle.svg",
+    "frames": 4
+  },
+  "char/bento/back/attack": {
+    "src": "assets/sprites/characters/bento/back/attack.svg",
+    "frames": 4
+  },
+  "char/bento/back/hurt": {
+    "src": "assets/sprites/characters/bento/back/hurt.svg",
+    "frames": 2
+  },
+  "char/bento/back/win": {
+    "src": "assets/sprites/characters/bento/back/win.svg",
+    "frames": 2
+  },
+  "char/bento/back/ko": {
+    "src": "assets/sprites/characters/bento/back/ko.svg",
+    "frames": 1
+  },
+  "char/helga/side/idle": {
+    "src": "assets/sprites/characters/helga/side/idle.svg",
+    "frames": 4
+  },
+  "char/helga/side/attack": {
+    "src": "assets/sprites/characters/helga/side/attack.svg",
+    "frames": 4
+  },
+  "char/helga/side/hurt": {
+    "src": "assets/sprites/characters/helga/side/hurt.svg",
+    "frames": 2
+  },
+  "char/helga/side/win": {
+    "src": "assets/sprites/characters/helga/side/win.svg",
+    "frames": 2
+  },
+  "char/helga/side/ko": {
+    "src": "assets/sprites/characters/helga/side/ko.svg",
+    "frames": 1
+  },
+  "char/helga/back/idle": {
+    "src": "assets/sprites/characters/helga/back/idle.svg",
+    "frames": 4
+  },
+  "char/helga/back/attack": {
+    "src": "assets/sprites/characters/helga/back/attack.svg",
+    "frames": 4
+  },
+  "char/helga/back/hurt": {
+    "src": "assets/sprites/characters/helga/back/hurt.svg",
+    "frames": 2
+  },
+  "char/helga/back/win": {
+    "src": "assets/sprites/characters/helga/back/win.svg",
+    "frames": 2
+  },
+  "char/helga/back/ko": {
+    "src": "assets/sprites/characters/helga/back/ko.svg",
+    "frames": 1
+  },
+  "char/ze/side/idle": {
+    "src": "assets/sprites/characters/ze/side/idle.svg",
+    "frames": 4
+  },
+  "char/ze/side/attack": {
+    "src": "assets/sprites/characters/ze/side/attack.svg",
+    "frames": 4
+  },
+  "char/ze/side/hurt": {
+    "src": "assets/sprites/characters/ze/side/hurt.svg",
+    "frames": 2
+  },
+  "char/ze/side/win": {
+    "src": "assets/sprites/characters/ze/side/win.svg",
+    "frames": 2
+  },
+  "char/ze/side/ko": {
+    "src": "assets/sprites/characters/ze/side/ko.svg",
+    "frames": 1
+  },
+  "char/ze/back/idle": {
+    "src": "assets/sprites/characters/ze/back/idle.svg",
+    "frames": 4
+  },
+  "char/ze/back/attack": {
+    "src": "assets/sprites/characters/ze/back/attack.svg",
+    "frames": 4
+  },
+  "char/ze/back/hurt": {
+    "src": "assets/sprites/characters/ze/back/hurt.svg",
+    "frames": 2
+  },
+  "char/ze/back/win": {
+    "src": "assets/sprites/characters/ze/back/win.svg",
+    "frames": 2
+  },
+  "char/ze/back/ko": {
+    "src": "assets/sprites/characters/ze/back/ko.svg",
+    "frames": 1
+  },
+  "char/sombra/side/idle": {
+    "src": "assets/sprites/characters/sombra/side/idle.svg",
+    "frames": 4
+  },
+  "char/sombra/side/attack": {
+    "src": "assets/sprites/characters/sombra/side/attack.svg",
+    "frames": 4
+  },
+  "char/sombra/side/hurt": {
+    "src": "assets/sprites/characters/sombra/side/hurt.svg",
+    "frames": 2
+  },
+  "char/sombra/side/win": {
+    "src": "assets/sprites/characters/sombra/side/win.svg",
+    "frames": 2
+  },
+  "char/sombra/side/ko": {
+    "src": "assets/sprites/characters/sombra/side/ko.svg",
+    "frames": 1
+  },
+  "char/sombra/back/idle": {
+    "src": "assets/sprites/characters/sombra/back/idle.svg",
+    "frames": 4
+  },
+  "char/sombra/back/attack": {
+    "src": "assets/sprites/characters/sombra/back/attack.svg",
+    "frames": 4
+  },
+  "char/sombra/back/hurt": {
+    "src": "assets/sprites/characters/sombra/back/hurt.svg",
+    "frames": 2
+  },
+  "char/sombra/back/win": {
+    "src": "assets/sprites/characters/sombra/back/win.svg",
+    "frames": 2
+  },
+  "char/sombra/back/ko": {
+    "src": "assets/sprites/characters/sombra/back/ko.svg",
+    "frames": 1
+  },
+  "card/card_comum": {
+    "src": "assets/sprites/cards/card_comum.svg",
+    "frames": 1
+  },
+  "card/card_raro": {
+    "src": "assets/sprites/cards/card_raro.svg",
+    "frames": 1
+  },
+  "card/card_epico": {
+    "src": "assets/sprites/cards/card_epico.svg",
+    "frames": 1
+  },
+  "card/card_lendario": {
+    "src": "assets/sprites/cards/card_lendario.svg",
+    "frames": 1
+  },
+  "card/card_verso": {
+    "src": "assets/sprites/cards/card_verso.svg",
     "frames": 1
   },
   "enemy/fantasma/idle": {
@@ -285,6 +525,50 @@ export const SPRITES = {
   },
   "icon/perk_sorte": {
     "src": "assets/sprites/icons/perk_sorte.svg",
+    "frames": 1
+  },
+  "icon/perk_cura": {
+    "src": "assets/sprites/icons/perk_cura.svg",
+    "frames": 1
+  },
+  "icon/perk_espinhos": {
+    "src": "assets/sprites/icons/perk_espinhos.svg",
+    "frames": 1
+  },
+  "icon/perk_vampirismo": {
+    "src": "assets/sprites/icons/perk_vampirismo.svg",
+    "frames": 1
+  },
+  "icon/perk_furia": {
+    "src": "assets/sprites/icons/perk_furia.svg",
+    "frames": 1
+  },
+  "icon/perk_escudo_sagrado": {
+    "src": "assets/sprites/icons/perk_escudo_sagrado.svg",
+    "frames": 1
+  },
+  "icon/perk_juizo": {
+    "src": "assets/sprites/icons/perk_juizo.svg",
+    "frames": 1
+  },
+  "icon/liga_bronze": {
+    "src": "assets/sprites/icons/liga_bronze.svg",
+    "frames": 1
+  },
+  "icon/liga_prata": {
+    "src": "assets/sprites/icons/liga_prata.svg",
+    "frames": 1
+  },
+  "icon/liga_ouro": {
+    "src": "assets/sprites/icons/liga_ouro.svg",
+    "frames": 1
+  },
+  "icon/liga_platina": {
+    "src": "assets/sprites/icons/liga_platina.svg",
+    "frames": 1
+  },
+  "icon/liga_lenda": {
+    "src": "assets/sprites/icons/liga_lenda.svg",
     "frames": 1
   },
   "fx/hit": {
@@ -573,6 +857,22 @@ export const SPRITES = {
   },
   "tile/path_dot": {
     "src": "assets/sprites/tiles/path_dot.svg",
+    "frames": 1
+  },
+  "tile/plat_grama": {
+    "src": "assets/sprites/tiles/plat_grama.svg",
+    "frames": 1
+  },
+  "tile/plat_pedra": {
+    "src": "assets/sprites/tiles/plat_pedra.svg",
+    "frames": 1
+  },
+  "tile/plat_tapete": {
+    "src": "assets/sprites/tiles/plat_tapete.svg",
+    "frames": 1
+  },
+  "tile/plat_runa": {
+    "src": "assets/sprites/tiles/plat_runa.svg",
     "frames": 1
   }
 };

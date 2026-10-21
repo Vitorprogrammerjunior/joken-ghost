@@ -108,7 +108,7 @@
 #screen-dialogue { justify-content: flex-start; padding-top: 72px; cursor: pointer; }
 .speech {
   position: absolute;
-  top: 120px;
+  top: 200px;
   width: 640px;
   min-height: 176px;
   padding: 40px 44px 36px;
@@ -118,8 +118,8 @@
   pointer-events: auto;
   animation: pop 0.25s ease-out both;
 }
-.speech[data-side='left'] { left: 330px; }
-.speech[data-side='right'] { left: 260px; }
+.speech[data-side='left'] { left: 250px; }
+.speech[data-side='right'] { left: 400px; }
 .speech-name {
   position: absolute;
   top: -20px;
@@ -135,14 +135,14 @@
 .speech-next { position: absolute; right: 28px; bottom: 16px; color: var(--purple); }
 .speech-tail {
   position: absolute;
-  bottom: -76px;
+  bottom: -58px; /* sobrepõe 6px a borda do balão para emendar */
   width: 64px;
-  height: 80px;
+  height: 64px;
   background: url('../assets/sprites/ui/dialog_tail.svg') no-repeat 0 0 / 128px 128px;
   image-rendering: pixelated;
 }
-.speech[data-side='left'] .speech-tail { left: -12px; transform: scaleX(-1) rotate(20deg); }
-.speech[data-side='right'] .speech-tail { right: 40px; transform: rotate(-10deg); }
+.speech[data-side='left'] .speech-tail { left: 48px; }
+.speech[data-side='right'] .speech-tail { right: 48px; transform: scaleX(-1); }
 .skip-btn { position: absolute; right: 24px; bottom: 24px; }
 
 /* ─── resultado ─── */

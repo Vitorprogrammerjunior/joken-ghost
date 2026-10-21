@@ -1,0 +1,37 @@
+title    Taverna dos Caçadores
+composer Claude
+about    Lobby do multiplayer. Jazz de taverna com vibrafone, clarinete e um baixo que anda sem pressa.
+tempo    104
+beats    4
+steps    2
+swing    0.22
+reverb   0.3
+
+voice vibes  vibes    vol=1.0  pan=-0.2
+voice clar   clarinet vol=0.7  pan=0.25
+voice gtr    guitar   vol=0.7  pan=0.3 center=A4 gate=0.6
+voice bass   upright  vol=0.95
+voice ride   ride     vol=0.35 pan=0.35
+voice rim    rim      vol=0.3  pan=-0.2
+
+pattern A
+vibes | A4 C5 E5 F5- E5 C5 A4 | F5--- D5- C5- | Bb4 D5 F5 A5- G5 F5 D5 | E5----- . . |
+vibes | A4 C5 F5 A5- G5 F5 E5 | D5- F5- A5- C6- | Bb5- A5- G5- E5- | F5----- . . |
+gtr   | . [Fmaj7] . [Fmaj7] . [Fmaj7] . [Fmaj7] | . [Dm7] . [Dm7] . [Dm7] . [Dm7] | . [Gm7] . [Gm7] . [Gm7] . [Gm7] | . [C7] . [C7] . [C7] . [C7] |
+gtr   | . [Fmaj7] . [Fmaj7] . [Fmaj7] . [Fmaj7] | . [Dm7] . [Dm7] . [Dm7] . [Dm7] | . [Gm7] . [Gm7] . [C7] . [C7] | . [Fmaj7] . [Fmaj7] . [Fmaj7] . [Fmaj7] |
+bass  | F2- A2- C3- E3- | D2- F2- A2- C3- | G2- Bb2- D3- F3- | C3- Bb2- G2- E2- |
+bass  | F2- A2- C3- A2- | D2- F2- A2- F2- | G2- D3- C3- C2- | F2- C3- F2- E2- |
+ride  | x.x.x.xx | % | % | % | % | % | % | % |
+rim   | ..x...x. | % | % | % | % | % | % | % |
+
+pattern B
+clar  | D5--- F5- A5- | G5--- Db5- F5- | E5--- C5- A4- | F#5----- . . |
+clar  | F5- D5- Bb4- D5- | E5- G5- Bb5- G5- | A5------- | G5--- E5--- |
+gtr   | . [Bbmaj7] . [Bbmaj7] . [Bbmaj7] . [Bbmaj7] | . [Bbm6] . [Bbm6] . [Bbm6] . [Bbm6] | . [Am7] . [Am7] . [Am7] . [Am7] | . [D7] . [D7] . [D7] . [D7] |
+gtr   | . [Gm7] . [Gm7] . [Gm7] . [Gm7] | . [C7] . [C7] . [C7] . [C7] | . [Fmaj7] . [Fmaj7] . [Fmaj7] . [Fmaj7] | . [C7] . [C7] . [C7] . [C7] |
+bass  | Bb1- D2- F2- A2- | Bb1- Db2- F2- G2- | A1- C2- E2- G2- | D2- F#2- A2- C3- |
+bass  | G2- Bb2- D3- F2- | C2- E2- G2- Bb2- | F2- A2- C3- E3- | C3- Bb2- G2- E2- |
+ride  | x.x.x.xx | % | % | % | % | % | % | % |
+rim   | ..x...x. | % | % | % | % | % | % | ..x.x.xx |
+
+loop A B

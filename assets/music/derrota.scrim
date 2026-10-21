@@ -1,0 +1,20 @@
+title    Derrota
+composer Claude
+about    Vinheta de derrota. Toca uma vez.
+tempo    70
+beats    4
+steps    4
+reverb   0.6
+
+voice organ pipe    vol=0.7
+voice choir choir   vol=0.55 center=G4
+voice bell  bell    vol=0.45
+voice timp  timpani vol=0.7
+
+pattern A
+organ | G4--- F4--- Eb4--- D4--- | C4--------------- |
+choir | [Cm]--------------- | [Cm]?--------------- |
+bell  | _ | C4--------------- |
+timp  | C2--- .--- .--- .--- | G1--- .--- .--- .--- |
+
+play A

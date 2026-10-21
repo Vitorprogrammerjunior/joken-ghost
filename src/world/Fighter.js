@@ -7,7 +7,7 @@ export class Fighter {
   /**
    * @param {import('../core/Assets.js').Assets} assets
    * @param {object} o
-   * @param {string} o.base     prefixo das folhas: 'hunter' ou 'enemy/fantasma'
+   * @param {string} o.base     prefixo das folhas: 'char/cacador/side' ou 'enemy/fantasma'
    */
   constructor(assets, { base, x, y, scale = PX, flying = false, flipX = false }) {
     this.assets = assets;

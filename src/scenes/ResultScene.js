@@ -1,4 +1,5 @@
 // Tela de resultado da fase (vitória ou derrota).
+import { selectedCharacter } from '../config/characters.js';
 import { Scene } from '../core/Scene.js';
 import { GW, GH } from '../core/Renderer.js';
 import { LEVELS, levelById } from '../config/levels.js';
@@ -20,7 +21,7 @@ export class ResultScene extends Scene {
     this.r = r;
     const lvl = levelById(r.levelId);
     this.scenery = new Scenery(this.game.assets, lvl.scenery);
-    this.hunter = new Fighter(this.game.assets, { base: 'hunter', x: 300, y: GROUND_Y });
+    this.hunter = new Fighter(this.game.assets, { base: `char/${selectedCharacter(this.game.storage)}/side`, x: 300, y: GROUND_Y });
     this.hunter.play(r.won ? 'win' : 'ko', { loop: r.won, hold: !r.won });
 
     this.titleEl.textContent = r.won ? 'VITÓRIA!' : 'DERROTA...';

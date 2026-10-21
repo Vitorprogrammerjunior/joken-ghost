@@ -12,7 +12,10 @@ import { StoryScene } from './scenes/StoryScene.js';
 import { DialogueScene } from './scenes/DialogueScene.js';
 import { BattleScene } from './scenes/BattleScene.js';
 import { ResultScene } from './scenes/ResultScene.js';
-import { MultiplayerScene } from './scenes/MultiplayerScene.js';
+import { LobbyScene } from './scenes/LobbyScene.js';
+import { DuelScene } from './scenes/DuelScene.js';
+import { MultiplayerClient } from './net/MultiplayerClient.js';
+import { ArenaModals } from './ui/ArenaModals.js';
 import { $ } from './ui/dom.js';
 
 async function boot() {
@@ -29,6 +32,9 @@ async function boot() {
     saves: new SavesModal(game, modals),
     bestiary: new BestiaryModal(game, modals),
   };
+  const net = new MultiplayerClient(game.storage);
+  ui.arena = new ArenaModals(game, modals, net);
+  game.bus.on('toast', (text) => ui.toasts.show(text, { force: true }));
 
   game.register('menu', new MenuScene(game, ui));
   game.register('map', new MapScene(game, ui));
@@ -36,7 +42,8 @@ async function boot() {
   game.register('dialogue', new DialogueScene(game));
   game.register('battle', new BattleScene(game, ui));
   game.register('result', new ResultScene(game));
-  game.register('mp', new MultiplayerScene(game, ui));
+  game.register('lobby', new LobbyScene(game, ui, net));
+  game.register('duel', new DuelScene(game, ui, net));
 
   // moedas aparecem em vários lugares da interface
   const syncCoins = (c) => document.querySelectorAll('.coin-value').forEach((el) => { el.textContent = c; });
@@ -44,7 +51,7 @@ async function boot() {
   syncCoins(game.economy.coins);
 
   // começar a música no primeiro gesto (regra dos navegadores)
-  const firstGesture = () => { game.audio.unlock(); game.audio.playMusic(); };
+  const firstGesture = () => game.audio.unlock();
   window.addEventListener('pointerdown', firstGesture, { once: true });
   window.addEventListener('keydown', firstGesture, { once: true });
 
@@ -52,7 +59,7 @@ async function boot() {
 
   $('screen-loading').classList.add('hidden');
   const room = new URLSearchParams(location.search).get('room');
-  game.start(room ? 'mp' : 'menu', room ? { room: room.toUpperCase() } : undefined);
+  game.start(room ? 'lobby' : 'menu', room ? { room: room.toUpperCase() } : undefined);
 
   window.__jokenghost = game; // ajuda a depurar pelo console
 }

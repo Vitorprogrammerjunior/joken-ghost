@@ -1,0 +1,22 @@
+title    Vitória!
+composer Claude
+about    Vinheta de vitória. Toca uma vez.
+tempo    132
+beats    4
+steps    4
+reverb   0.3
+
+voice trumpet trumpet vol=0.9
+voice brass   brass   vol=0.6 center=G4
+voice glock   glock   vol=0.6 pan=0.3
+voice timp    timpani vol=0.8
+voice crash   crash   vol=0.4
+
+pattern A
+trumpet | C5- E5- G5- C6------- . . | E6--- D6- C6- G5- E5- C6--- | C6--------------- |
+brass   | [C]!--- . . . . [C]--- . . . . | [F]--- [G]--- [Am]--- [G]--- | [C]!--------------- |
+glock   | _ | _ | C6 E6 G6 C7------------ |
+timp    | C2!--- . . . . G2--- . . . . | . . . . . . . . G2 G2 G2 G2 G2! G2! G2! G2! | C2!--- .--- .--- .--- |
+crash   | X... .... .... .... | _ | X... .... .... .... |
+
+play A

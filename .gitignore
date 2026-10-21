@@ -153,3 +153,6 @@ server/node_modules/
 
 # Ferramentas de build de assets
 tools/node_modules/
+
+# Dados locais do servidor multiplayer (modo arquivo JSON)
+server/data/

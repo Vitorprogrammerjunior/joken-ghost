@@ -1,0 +1,53 @@
+title    Duelo de Caçadores
+composer Claude
+about    Multiplayer. Trompete, cravo e pizzicato a galope: dois caçadores, uma arena.
+tempo    160
+beats    4
+steps    2            # grade de colcheias: 8 passos por compasso
+reverb   0.25
+
+voice trumpet trumpet     vol=0.85 pan=-0.1
+voice hpsi    harpsichord vol=1.0  pan=0.35
+voice strings strings     vol=0.45 pan=-0.25 center=D5 att=0.08
+voice brass   brass       vol=0.6  pan=0.15 center=G4
+voice pizz    pizz        vol=0.9  pan=0.2
+voice timp    timpani     vol=0.8
+voice snare   snare       vol=0.5  pan=0.1
+voice kick    kick        vol=0.6
+voice crash   crash       vol=0.35 pan=-0.2
+
+pattern intro steps=4
+timp  | G2!--- . . . . D2--- . . . . | G2!--- D2--- G2--- D2! . . . |
+snare | o.o. o.o. o.o. oooo | oooo oooo xxxx XXXX |
+brass | _ | . . . . . . . . . . . . [D]!--- |
+
+# ------------------------------------------------ A: frente a frente
+pattern A
+trumpet | G4 Bb4 D5 G5- F5 D5 Bb4 | Eb5- G5- Bb5--- | F5 A5 C6 A5 F5 C5 A4 C5 | D5------- |
+trumpet | G5 F5 D5 Bb4 G4- A4- | C5- Eb5- G5- C6- | D6 C6 Bb5 A5 F#5 A5 D5 F#5 | G5--- . D5 G4- |
+hpsi    | G3 D4 G4 Bb4 D5 Bb4 G4 D4 | Eb3 Bb3 Eb4 G4 Bb4 G4 Eb4 Bb3 | F3 C4 F4 A4 C5 A4 F4 C4 | D3 A3 D4 F#4 A4 F#4 D4 A3 |
+hpsi    | G3 D4 G4 Bb4 D5 Bb4 G4 D4 | C3 G3 C4 Eb4 G4 Eb4 C4 G3 | D3 A3 C4 F#4 A4 F#4 C4 A3 | G3 D4 G4 Bb4 D5 Bb4 G4 D4 |
+pizz    | G2 . G2 . D2 . G2 . | Eb2 . Eb2 . Bb1 . Eb2 . | F2 . F2 . C2 . F2 . | D2 . D2 . A1 . D2 . |
+pizz    | G2 . G2 . D2 . G2 . | C2 . C2 . G1 . C2 . | D2 . D2 . A1 . F#2 . | G2 . D2 . G1 . . . |
+brass   | [Gm]! . . . . . [Gm] [Gm] | [Eb]! . . . . . . . | [F]! . . . . . [F] [F] | . . . . [D]! . [D]! . |
+brass   | [Gm]! . . . . . [Gm] [Gm] | [Cm]! . . . . . . . | . . . . [D7]! . [D7]! [D7]! | [Gm]! . . . . . . . |
+snare   | ..x...x. | % | % | % | % | % | % | ..x.xxXX |
+kick    | x...x... | % | % | % | % | % | % | % |
+crash   | X....... | _ | _ | _ | X....... | _ | _ | _ |
+timp    | G2!- . . . . . . | _ | _ | D2!- . . D2- D2- | G2!- . . . . . . | _ | _ | D2 D2 D2 D2 D2! D2! D2! D2! |
+
+# ------------------------------------------------ B: as cordas assumem
+pattern B
+strings | D5------- | C5------- | Bb4------- | A4------- | G4--- Bb4--- | F5------- | Eb5--- F#5--- | G5------- |
+trumpet | _ | _ | _ | D5 E5 F#5 G5 A5--- | _ | _ | _ | D5 F#5 A5 C6 D6--- |
+hpsi    | Bb3 F4 Bb4 D5 F5 D5 Bb4 F4 | F3 C4 F4 A4 C5 A4 F4 C4 | G3 D4 G4 Bb4 D5 Bb4 G4 D4 | D3 A3 D4 F#4 A4 F#4 D4 A3 |
+hpsi    | Eb3 Bb3 Eb4 G4 Bb4 G4 Eb4 Bb3 | Bb2 F3 Bb3 D4 F4 D4 Bb3 F3 | C3 G3 C4 Eb4 D3 A3 C4 F#4 | G3 D4 G4 Bb4 D5 Bb4 G4 D4 |
+brass   | [Bb]------- | [F]------- | [Gm]------- | [D]------- | [Eb]------- | [Bb]------- | [Cm]--- [D]--- | [Gm]------- |
+pizz    | Bb1 . Bb1 . F2 . Bb1 . | F2 . F2 . C2 . F2 . | G2 . G2 . D2 . G2 . | D2 . D2 . A1 . D2 . |
+pizz    | Eb2 . Eb2 . Bb1 . Eb2 . | Bb1 . Bb1 . F2 . Bb1 . | C2 . C2 . D2 . D2 . | G2 . D2 . G1 . F#2 . |
+snare   | ..x.x.xx | % | % | % | % | % | % | xxxxXXXX |
+kick    | x..xx... | % | % | % | % | % | % | % |
+crash   | X....... | _ | _ | _ | X....... | _ | _ | _ |
+
+play intro
+loop A B

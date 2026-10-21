@@ -3,10 +3,13 @@
 RPG por turnos em pixel art onde cada golpe é decidido no **pedra, papel e tesoura**.
 Você é o Caçador: atravesse a Floresta Maldita, invada a mansão e derrote **Kastle**, o Bobo da Corte das trevas.
 
+- Batalhas em perspectiva estilo Pokémon: você de costas em primeiro plano, os monstros na plataforma ao fundo
 - 4 fases com história, diálogos e ondas de monstros (incluindo um chefe que muda de fraqueza)
 - 7 monstros, cada um com fraqueza, resistência e um jeito próprio de jogar (que você descobre no **Monstruário**)
 - Loja com 6 itens, combos, estrelas por fase e 3 arquivos de save
-- Multiplayer 1x1 online (Caçador vs Monstro) com perks
+- **Arena dos Caçadores** (multiplayer online): lobby, partida rápida, desafios e salas privadas,
+  cartas de perk estilo baralho, troféus, ranking global e 6 caçadores para desbloquear
+- Trilha sonora composta em partituras [Scrimshaw](https://tools.simonwillison.net/scrimshaw-jukebox), tocada ao vivo
 - Funciona no navegador, no desktop e no celular
 
 ## Como rodar
@@ -45,18 +48,21 @@ src/
   main.js           monta serviços, interface e cenas
   config/           dados do jogo: armas, monstros, itens, fases, balanceamento
   domain/           regras puras e testáveis (batalha, IA, economia, saves, monstruário)
-  core/             motor: loop e cenas, renderizador pixel-perfect, tweens, partículas, áudio
-  world/            personagens animados, efeitos e cenários montados com tiles
-  scenes/           Menu, Mapa, História, Diálogo, Batalha, Resultado, Multiplayer
-  ui/               HUD da batalha, modais (saves, opções, monstruário), toasts
+  core/             motor: loop e cenas, renderizador pixel-perfect, tweens, partículas, áudio, música
+  world/            personagens animados, efeitos, cenários laterais e palco de batalha em perspectiva
+  scenes/           Menu, Mapa, História, Diálogo, Batalha, Resultado, Arena (lobby) e Duelo
+  ui/               HUD da batalha, cartas, modais (saves, opções, monstruário, arena), toasts
   net/              cliente Socket.io do multiplayer
+  vendor/scrimshaw/ motor de partituras Scrimshaw (Apache 2.0)
 assets/
   sprites/          SVGs 64x64 gerados (personagens, inimigos, ícones, efeitos, UI, tiles)
   fonts/            fonte pixel JokenPixel (gerada)
-  audio/            música e impacto
+  music/            trilha sonora em partituras .scrim
+  audio/            efeito de impacto
 tools/
   sprites/          gerador das sprites (pixel art desenhada em código)
   font/             gerador da fonte JokenPixel
+  music/            verificador das partituras (node tools/music/check.mjs)
 server/             servidor multiplayer (Node + Socket.io, deploy no Railway)
 tests/              testes do domínio (node --test)
 legacy/pygame/      versão original em Python/Pygame
@@ -75,6 +81,23 @@ desenhadas em código com uma paleta única, então o jogo inteiro tem o mesmo e
 
 A fonte JokenPixel (com acentos do português) é desenhada em `tools/font/glyphs.mjs`.
 Use tamanhos múltiplos de 8px (16, 24, 32...) para ela ficar nítida.
+
+## Trilha sonora
+
+Cada música é um texto em `assets/music/*.scrim` (formato Scrimshaw: vozes, padrões e `play`/`loop`).
+O jogo compila a partitura e toca com os instrumentos sintetizados do Scrimshaw, então as músicas
+pesam poucos KB. Para compor ou testar, cole o arquivo no editor do
+[Scrimshaw Jukebox](https://tools.simonwillison.net/scrimshaw-jukebox) e confira com
+`node tools/music/check.mjs`.
+
+| Arquivo | Onde toca |
+|---------|-----------|
+| `menu` | menu principal |
+| `mapa` | mapa, cartas e diálogos |
+| `batalha` | batalhas das fases |
+| `chefe` | Kastle |
+| `lobby` / `duelo` | Arena e duelos online |
+| `vitoria` / `derrota` | vinhetas de resultado |
 
 ## Deploy
 

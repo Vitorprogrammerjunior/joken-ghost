@@ -8,6 +8,7 @@
   <link rel="icon" type="image/svg+xml" href="assets/sprites/icons/livro.svg">
   <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/multiplayer.css">
   <style>
     html, body { overflow: auto; height: auto; user-select: text; -webkit-user-select: text; }
     body {
@@ -49,6 +50,11 @@
     .keys kbd { display: inline-block; min-width: 40px; padding: 0 8px; margin-right: 10px; text-align: center; font-family: inherit; background: var(--ink-3); box-shadow: 0 0 0 2px var(--stone), 0 4px 0 var(--ink); }
     details summary { cursor: pointer; color: var(--cyan); }
     footer { margin-top: 64px; text-align: center; color: var(--mist); }
+    h3.sub { margin: 28px 0 12px; font-size: 24px; font-weight: normal; color: var(--cyan); text-shadow: var(--outline); }
+    .cards-wrap { display: flex; flex-wrap: wrap; gap: 16px; }
+    .wiki-rank { list-style: none; display: flex; flex-direction: column; gap: 6px; max-width: 560px; }
+    .wiki-rank li { display: flex; gap: 12px; align-items: center; padding: 6px 12px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--ink-3); }
+    .wiki-rank b { color: var(--gold); font-weight: normal; margin-left: auto; }
     @media (max-width: 700px) {
       header h1 { font-size: 40px; line-height: 48px; }
       .rules { grid-template-columns: 1fr; }
@@ -119,9 +125,16 @@
 
     <section id="multiplayer">
       <h2><img class="ico" src="assets/sprites/icons/duelo.svg" alt="">MULTIPLAYER</h2>
-      <p class="lead">Crie uma sala e mande o código (ou o link) para um amigo. Quem cria é o Caçador; quem entra é o Monstro.
-        A cada rodada, cada um escolhe um perk e depois o ataque. O primeiro a fazer 3 pontos vence.</p>
-      <div class="grid" id="perks"></div>
+      <p class="lead">Na Arena dos Caçadores você duela contra outros jogadores: partida rápida (por troféus parecidos),
+        desafio direto a quem está online ou sala privada com código. A cada rodada você joga uma carta da mão
+        (ou passa) e depois escolhe a arma. Cada carta só pode ser usada uma vez por partida. Vencer dá troféus,
+        e os troféus liberam novos caçadores e cartas.</p>
+      <h3 class="sub">Cartas</h3>
+      <div class="grid cards-wrap" id="mp-cards"><p class="lead">Carregando do servidor...</p></div>
+      <h3 class="sub">Caçadores</h3>
+      <div class="grid" id="mp-chars"></div>
+      <h3 class="sub">Top 10 do ranking</h3>
+      <ol class="wiki-rank" id="mp-rank"></ol>
     </section>
 
     <footer>

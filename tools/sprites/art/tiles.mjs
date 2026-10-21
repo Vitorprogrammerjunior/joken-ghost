@@ -547,6 +547,47 @@ function pathDot() {
   return g;
 }
 
+
+// ═══════════════════ PLATAFORMAS (batalha estilo Pokémon) ═══════════════════
+/** Oval achatado onde os lutadores ficam de pé. */
+function platform(kind) {
+  const g = new Grid();
+  const C = {
+    grama: ['v3', 'v4', 'v2', 'm2'],
+    pedra: ['t3', 't4', 't2', 't1'],
+    tapete: ['r2', 'r3', 'r1', 'm1'],
+    runa: ['g2', 'g3', 'g1', 'k2'],
+  }[kind];
+  g.ellipse(32, 36, 30, 10, C[3]);           // lateral (espessura)
+  g.ellipse(32, 33, 30, 10, C[2]);
+  g.ellipse(32, 32, 29, 9, C[0]);
+  g.ellipse(30, 30, 22, 5, C[1]);            // luz no topo
+  g.ellipse(32, 32, 20, 5, C[0]);
+  if (kind === 'grama') {
+    const r = rng(77);
+    for (let i = 0; i < 16; i++) {
+      const x = 6 + r() * 52, y = 26 + r() * 12;
+      if (g.get(x, y) && g.get(x, y + 2)) { g.set(x, y, 'v5'); g.set(x, y - 1, 'v4'); }
+    }
+  } else if (kind === 'pedra') {
+    for (const [x0, y0, x1, y1] of [[10, 30, 54, 30], [16, 35, 48, 35], [24, 25, 22, 41], [40, 25, 42, 41]]) g.line(x0, y0, x1, y1, C[2]);
+  } else if (kind === 'tapete') {
+    const T = new Grid();
+    T.ellipse(32, 32, 24, 7, 'y2');
+    T.ellipse(32, 32, 22, 6, null);
+    T.erase((x, y) => Math.hypot((x - 32) / 22, (y - 32) / 6) < 1);
+    g.blit(T);
+  } else if (kind === 'runa') {
+    const R = new Grid();
+    R.ellipse(32, 32, 24, 7, 'r3');
+    R.erase((x, y) => Math.hypot((x - 32) / 22, (y - 32) / 5.5) < 1);
+    g.blit(R);
+    for (const [x, y] of [[32, 26], [14, 32], [50, 32], [22, 37], [42, 37]]) g.set(x, y, 'r4');
+  }
+  g.outline('k');
+  return g;
+}
+
 export function tileSheets() {
   return {
     moon: moon(), cloud: cloud(), fog: fog(),
@@ -561,5 +602,6 @@ export function tileSheets() {
     rune: sheet([0, 1, 2, 3].map(rune)), chains: chains(), banner: banner(), skulls: skulls(),
     loc_floresta: location('floresta'), loc_patio: location('patio'), loc_mansao: location('mansao'), loc_camara: location('camara'),
     path_dot: pathDot(),
+    plat_grama: platform('grama'), plat_pedra: platform('pedra'), plat_tapete: platform('tapete'), plat_runa: platform('runa'),
   };
 }

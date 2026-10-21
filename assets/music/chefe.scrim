@@ -1,0 +1,57 @@
+title    O Bobo da Corte
+composer Claude
+about    Tema do Kastle. Um carnaval macabro em 6/8: órgão de tubos, acordeão, tuba e um coro que não devia estar ali.
+tempo    120          # semínimas pontuadas
+beats    2
+steps    3            # 6/8
+reverb   0.45
+
+voice organ pipe      vol=0.8  pan=-0.1
+voice xylo  xylophone vol=0.55 pan=0.35
+voice acc   accordion vol=0.65 pan=-0.25 center=G4
+voice choir choir     vol=0.55 pan=0.2  center=G4
+voice tuba  tuba      vol=0.85
+voice timp  timpani   vol=0.8
+voice snare snare     vol=0.4  pan=0.1
+voice crash crash     vol=0.35 pan=-0.2
+voice bell  bell      vol=0.4  pan=0.4
+
+pattern intro
+choir | [Cm]?----- | [Cm]----- | [G]----- | [G7]!----- |
+organ | C3----- | = | G2----- | = |
+timp  | C2 . . . . . | C2 . . C2 . . | G2 . . G2 G2 G2 | G2 G2 G2 G2! G2! G2!! |
+bell  | C5----- | _ | B4----- | _ |
+
+# ------------------------------------------------ A: a dança do bobo
+pattern A
+organ | C5 Eb5 G5 C6-- | B5 C6 D6 Eb6 D6 C6 | Ab5-- G5 F5 Eb5 | D5 F5 B5 G5-- |
+organ | C5 Eb5 G5 C6 B5 C6 | Ab5 C6 Eb6 Ab6-- | G6 F6 Eb6 D6 C6 B5 | C6----- |
+acc   | . [Cm] [Cm] . [Cm] [Cm] | % | . [Fm] [Fm] . [Fm] [Fm] | . [G7] [G7] . [G7] [G7] |
+acc   | . [Cm] [Cm] . [Cm] [Cm] | . [Ab] [Ab] . [Ab] [Ab] | . [G7] [G7] . [G7] [G7] | . [Cm] [Cm] . [Cm] [Cm] |
+tuba  | C2-- G1-- | % | F1-- C2-- | G1-- D2-- |
+tuba  | C2-- G1-- | Ab1-- Eb2-- | G1-- D2-- | C2-- G1-- |
+snare | .xx.xx | % | % | % | % | % | % | .xx.xx |
+timp  | _ | _ | _ | G2 . . G2 G2 G2! | _ | _ | _ | C2! . . C2 C2 C2! |
+crash | X..... | _ | _ | _ | _ | _ | _ | _ |
+
+# ------------------------------------------------ B: as risadas pelos corredores
+pattern B
+organ | F5-- Ab5 G5 F5 | Eb5-- G5 F5 Eb5 | Db5-- F5 Eb5 Db5 | B4----- |
+organ | F5 Ab5 C6 F6-- | Eb6 D6 C6 G5-- | Db6 C6 Bb5 Ab5 G5 F5 | G5 Ab5 G5 F5 Eb5 D5 |
+acc   | . [Fm] [Fm] . [Fm] [Fm] | . [Cm] [Cm] . [Cm] [Cm] | . [Db] [Db] . [Db] [Db] | . [G] [G] . [G] [G] |
+acc   | . [Fm] [Fm] . [Fm] [Fm] | . [Cm] [Cm] . [Cm] [Cm] | . [Db] [Db] . [Db] [Db] | . [G7] [G7] . [G7] [G7] |
+choir | [Fm]----- | [Cm]----- | [Db]----- | [G]----- |
+choir | [Fm]----- | [Cm]----- | [Db]----- | [G7]!----- |
+tuba  | F1-- C2-- | C2-- G1-- | Db2-- Ab1-- | G1-- D2-- |
+tuba  | F1-- C2-- | C2-- G1-- | Db2-- Ab1-- | G1-- B1-- |
+snare | .xx.xx | % | % | % | % | % | % | xxxXXX |
+timp  | F2 . . . . . | C2 . . . . . | Db2 . . . . . | G2 . . G2 G2 G2! | F2 . . . . . | C2 . . . . . | Db2 . . . . . | G2 G2 G2 G2! G2! G2!! |
+bell  | C6----- | _ | _ | _ | C6----- | _ | _ | _ |
+
+# ------------------------------------------------ A de novo, com um xilofone de ossos
+pattern A2 from A
+xylo  | C6 Eb6 G6 C7-- | B6 C7 D7 Eb7 D7 C7 | Ab6-- G6 F6 Eb6 | D6 F6 B6 G6-- |
+xylo  | C6 Eb6 G6 C7 B6 C7 | Ab6 C7 Eb7 Ab7-- | G7 F7 Eb7 D7 C7 B6 | C7----- |
+
+play intro
+loop A B A2 B

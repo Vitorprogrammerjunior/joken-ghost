@@ -7,7 +7,8 @@ import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { toSVG } from './lib/export.mjs';
-import { hunterSheets } from './art/hunter.mjs';
+import { characterSheets } from './art/hunter.mjs';
+import { cardSheets } from './art/cards.mjs';
 import { enemySheets } from './art/enemies.mjs';
 import { iconSheets } from './art/icons.mjs';
 import { fxSheets } from './art/fx.mjs';
@@ -37,7 +38,12 @@ function emit(key, path, grid) {
   files++;
 }
 
-for (const [anim, g] of Object.entries(hunterSheets())) emit(`hunter/${anim}`, `characters/hunter/${anim}`, g);
+for (const [id, views] of Object.entries(characterSheets())) {
+  for (const [view, anims] of Object.entries(views)) {
+    for (const [anim, g] of Object.entries(anims)) emit(`char/${id}/${view}/${anim}`, `characters/${id}/${view}/${anim}`, g);
+  }
+}
+for (const [name, g] of Object.entries(cardSheets())) emit(`card/${name}`, `cards/${name}`, g);
 for (const [enemy, anims] of Object.entries(enemySheets())) {
   for (const [anim, g] of Object.entries(anims)) emit(`enemy/${enemy}/${anim}`, `enemies/${enemy}/${anim}`, g);
 }

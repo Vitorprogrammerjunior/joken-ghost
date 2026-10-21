@@ -1,0 +1,55 @@
+title    Trilha da Lua
+composer Claude
+about    Exploração: mapa, cartas e diálogos. Marimba que caminha, flauta grave e tambores de mão.
+tempo    96
+beats    4
+steps    4
+swing    0.14
+reverb   0.35
+
+voice marimba marimba  vol=0.95 pan=0.3
+voice flute   flute    vol=0.85 pan=-0.2
+voice vibes   vibes    vol=0.8  pan=-0.3
+voice strings strings  vol=0.4  pan=0.1 center=E4
+voice bass    fretless vol=0.8
+voice shaker  shaker   vol=0.4  pan=-0.45
+voice clave   clave    vol=0.3  pan=0.45
+voice bongo   bongo    vol=0.45 pan=0.35
+voice tomlo   tomlo    vol=0.55 pan=-0.15
+
+pattern intro
+marimba | A4- E5- C5- E5- A4- E5- C5- E5- | % |
+shaker  | x.o. x.ox x.o. x.oo | % |
+bass    | A2--------------- | = |
+
+# ------------------------------------------------ A: a caminhada
+pattern A
+marimba | A4- E5- C5- E5- A4- E5- C5- E5- | A4- F5- C5- F5- A4- F5- C5- F5- | G4- E5- C5- E5- G4- E5- C5- E5- | G4- D5- B4- D5- G4- D5- B4- D5- |
+marimba | A4- E5- C5- E5- A4- E5- C5- E5- | A4- F5- C5- F5- A4- F5- C5- F5- | A4- F5- D5- F5- A4- F5- D5- F5- | G#4- E5- B4- E5- G#4- E5- B4- E5- |
+flute   | E5------- D5- C5- B4- C5- | A4----------- C5--- | G5------- F5- E5- D5- E5- | D5------------- . . |
+flute   | E5------- A5--- G5--- | F5--- E5--- C5--- A4--- | D5--- F5--- A5--- G5- F5- | E5----------- . . . . |
+strings | [Am]--------------- | [F]--------------- | [C]--------------- | [G]--------------- |
+strings | [Am]--------------- | [F]--------------- | [Dm]--------------- | [E]--------------- |
+bass    | A2--- . . A2- E2--- . . E2- | F2--- . . F2- C3--- . . C3- | C3--- . . C3- G2--- . . G2- | G2--- . . G2- D3--- . . D3- |
+bass    | A2--- . . A2- E2--- . . E2- | F2--- . . F2- C3--- . . C3- | D3--- . . D3- A2--- . . A2- | E2--- . . E2- B2--- . . G#2- |
+shaker  | x.o. x.ox x.o. x.oo | % | % | % | % | % | % | % |
+clave   | x..x ..x. ..x. x... | % | % | % | % | % | % | % |
+bongo   | ..x. x.ox ..x. x.o. | % | % | % | % | % | % | % |
+tomlo   | _ | _ | _ | _ | _ | _ | _ | X... ..x. x.x. xxXX |
+
+# ------------------------------------------------ B: a lua aparece entre as árvores
+pattern B
+vibes   | A5------- G5--- F5--- | G5------- B5--- D6--- | E6------- D6--- B5--- | C6--------------- |
+vibes   | A5--- C6--- F6--- E6--- | D6--- B5--- G5--- D6--- | E6--------------- | D6--- B5--- G#5--- E5--- |
+marimba | A4- F5- C5- F5- A4- F5- C5- F5- | G4- D5- B4- D5- G4- D5- B4- D5- | G4- E5- B4- E5- G4- E5- B4- E5- | A4- E5- C5- E5- A4- E5- C5- E5- |
+marimba | A4- F5- C5- F5- A4- F5- C5- F5- | G4- D5- B4- D5- G4- D5- B4- D5- | G#4- E5- B4- E5- G#4- E5- B4- E5- | G#4- D5- B4- D5- G#4- D5- B4- D5- |
+strings | [F]--------------- | [G]--------------- | [Em]--------------- | [Am]--------------- |
+strings | [F]--------------- | [G]--------------- | [E]--------------- | [E7]--------------- |
+bass    | F2--- . . F2- C3--- . . C3- | G2--- . . G2- D3--- . . D3- | E2--- . . E2- B2--- . . B2- | A2--- . . A2- E2--- . . E2- |
+bass    | F2--- . . F2- C3--- . . C3- | G2--- . . G2- D3--- . . D3- | E2--- . . E2- B2--- . . B2- | E2--- . . E2- D3--- . . G#2- |
+shaker  | x.o. x.ox x.o. x.oo | % | % | % | % | % | % | % |
+bongo   | ..x. x.ox ..x. x.o. | % | % | % | % | % | % | % |
+tomlo   | X... .... x... .... | % | % | % | % | % | % | X... ..x. x.x. xxXX |
+
+play intro
+loop A B

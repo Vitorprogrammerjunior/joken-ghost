@@ -1,0 +1,60 @@
+title    A Mansão na Colina
+composer Claude
+about    Tema do menu. Caixinha de música, coro distante e um trovão lá longe.
+tempo    84
+beats    4
+steps    4
+reverb   0.5
+
+voice mbox    musicbox vol=0.85 pan=0.2  rev=0.6
+voice celesta celesta  vol=0.5  pan=-0.3
+voice strings strings  vol=0.42 pan=-0.15 center=D4 att=0.3
+voice choir   choir    vol=0.5  pan=0.15 center=A4
+voice harp    harp     vol=0.55 pan=-0.4
+voice pizz    pizz     vol=0.8  pan=0.1
+voice timp    timpani  vol=0.7
+voice bell    bell     vol=0.45 pan=-0.3
+voice thunder thunder  vol=0.5
+
+pattern intro
+thunder | x... .... .... .... | _ | _ | _ |
+bell    | D5--------------- | _ | A4--------------- | _ |
+strings | [Dm]?--------------- | = | [Bb]?--------------- | [A7]?--------------- |
+harp    | _ | _ | _ | A2 C#3 E3 G3 A3 C#4 E4 G4 A4 C#5 E5 G5 A5--- |
+timp    | _ | _ | _ | . . . . . . . . A2? A2? A2 A2 A2! A2! A2! A2! |
+
+# ------------------------------------------------ A: o tema
+pattern A
+mbox    | A4--- D5--- F5- E5- D5--- | Bb4--- D5--- F5--- Bb5--- | A5- G5- F5- E5- D5--- G4--- | C#5------- E5--- A4--- |
+mbox    | A4--- D5--- F5- E5- D5--- | C5--- F5--- A5- G5- F5--- | Bb5--- G5--- E5--- C#5--- | D5----------- . . . . |
+strings | [Dm]--------------- | [Bb]--------------- | [Gm]--------------- | [A7]--------------- |
+strings | [Dm]--------------- | [F]--------------- | [Gm]------- [A7]------- | [Dm]--------------- |
+harp    | D3- A3- D4- F4- A4- F4- D4- A3- | Bb2- F3- Bb3- D4- F4- D4- Bb3- F3- | G2- D3- G3- Bb3- D4- Bb3- G3- D3- | A2- E3- G3- C#4- E4- C#4- G3- E3- |
+harp    | D3- A3- D4- F4- A4- F4- D4- A3- | F2- C3- F3- A3- C4- A3- F3- C3- | G2- D3- G3- Bb3- A2- E3- G3- C#4- | D3- A3- D4- F4- A4- F4- D4- A3- |
+pizz    | D2--- .--- A2--- .--- | Bb1--- .--- F2--- .--- | G2--- .--- D2--- .--- | A1--- .--- E2--- .--- |
+pizz    | D2--- .--- A2--- .--- | F2--- .--- C3--- .--- | G2--- .--- A1--- .--- | D2--- .--- A2--- .--- |
+bell    | D5--------------- | _ | _ | _ | _ | _ | _ | _ |
+timp    | _ | _ | _ | . . . . . . . . A2? A2? A2 A2 A2! A2! A2! A2! | _ | _ | _ | D2!--- .--- .--- .--- |
+
+# ------------------------------------------------ B: o coro sobe a escada
+pattern B
+celesta | D6--- C6--- Bb5--- A5--- | G5------- Bb5--- D6--- | Eb6--- D6--- C6--- Bb5--- | A5----------- C#6--- |
+celesta | D6--- F6--- D6--- Bb5--- | G5--- Bb5--- D6--- G6--- | G6- F6- Eb6- D6- C6--- Bb5--- | A5--------------- |
+choir   | [Bb]--------------- | [Gm]--------------- | [Eb]--------------- | [A]--------------- |
+choir   | [Bb]--------------- | [Gm]--------------- | [Eb]--------------- | [A7]--------------- |
+harp    | Bb2- F3- Bb3- D4- F4- D4- Bb3- F3- | G2- D3- G3- Bb3- D4- Bb3- G3- D3- | Eb3- Bb3- Eb4- G4- Bb4- G4- Eb4- Bb3- | A2- E3- A3- C#4- E4- C#4- A3- E3- |
+harp    | Bb2- F3- Bb3- D4- F4- D4- Bb3- F3- | G2- D3- G3- Bb3- D4- Bb3- G3- D3- | Eb3- Bb3- Eb4- G4- Bb4- G4- Eb4- Bb3- | A2- E3- G3- C#4- E4- G4- A4- C#5- |
+pizz    | Bb1--- .--- F2--- .--- | G1--- .--- D2--- .--- | Eb2--- .--- Bb1--- .--- | A1--- .--- E2--- .--- |
+pizz    | Bb1--- .--- F2--- .--- | G1--- .--- D2--- .--- | Eb2--- .--- Bb1--- .--- | A1--- .--- A2--- .--- |
+thunder | x... .... .... .... | _ | _ | _ | _ | _ | _ | _ |
+timp    | _ | _ | _ | . . . . . . . . A2? A2? A2 A2 A2! A2! A2! A2! | _ | _ | _ | A2? A2? A2? A2? A2 A2 A2 A2 A2! A2! A2! A2! A2!! A2!! A2!! A2!! |
+
+# ------------------------------------------------ A de novo, com a celesta uma oitava acima
+pattern A2 from A
+celesta | A5--- D6--- F6- E6- D6--- | Bb5--- D6--- F6--- Bb6--- | A6- G6- F6- E6- D6--- G5--- | C#6------- E6--- A5--- |
+celesta | A5--- D6--- F6- E6- D6--- | C6--- F6--- A6- G6- F6--- | Bb6--- G6--- E6--- C#6--- | D6----------- . . . . |
+choir   | [Dm]?--------------- | [Bb]?--------------- | [Gm]?--------------- | [A7]?--------------- |
+choir   | [Dm]?--------------- | [F]?--------------- | [Gm]?------- [A7]?------- | [Dm]?--------------- |
+
+play intro
+loop A B A2 B

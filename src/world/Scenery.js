@@ -7,7 +7,7 @@ export const GROUND_Y = 600; // linha dos pés dos personagens
 const T = 64 * PX;           // tamanho de um tile na tela (128px)
 
 /** Gradiente em faixas com pontilhado nas transições (visual 8-bit). */
-function bandedGradient(r, y0, y1, stops, band = 8) {
+export function bandedGradient(r, y0, y1, stops, band = 8) {
   const ctx = r.ctx;
   const lerp = (a, b, k) => Math.round(a + (b - a) * k);
   const hex = (c) => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
@@ -32,7 +32,7 @@ function bandedGradient(r, y0, y1, stops, band = 8) {
 }
 
 /** Brilho suave de uma fonte de luz (vela, lampião, tocha). */
-function glow(r, x, y, radius, rgb, alpha = 0.3) {
+export function glow(r, x, y, radius, rgb, alpha = 0.3) {
   const g = r.ctx.createRadialGradient(x, y, 4, x, y, radius);
   g.addColorStop(0, `rgba(${rgb},${alpha})`);
   g.addColorStop(1, `rgba(${rgb},0)`);
@@ -40,7 +40,7 @@ function glow(r, x, y, radius, rgb, alpha = 0.3) {
   r.ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
 }
 
-function seededRandom(seed) {
+export function seededRandom(seed) {
   let s = seed;
   return () => ((s = (s * 16807) % 2147483647) / 2147483647);
 }

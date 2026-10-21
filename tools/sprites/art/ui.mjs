@@ -76,10 +76,14 @@ function dialog() {
   return g;
 }
 
+/**
+ * Rabicho do balão (desenhado a 2x como o balão). O topo é branco no meio
+ * para cobrir a borda inferior do balão e emendar sem costura.
+ */
 function dialogTail() {
   const g = new Grid();
-  g.poly([[8, 0], [34, 0], [6, 40]], 'k');
-  g.poly([[13, 0], [29, 0], [10, 30]], 'w');
+  g.poly([[2, 0], [27, 0], [1, 31]], 'k');
+  g.poly([[5, 0], [23, 0], [3, 25]], 'w');
   return g;
 }
 

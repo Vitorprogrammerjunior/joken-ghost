@@ -1,4 +1,5 @@
 // Cena de diálogo em quadrinhos antes da batalha.
+import { selectedCharacter } from '../config/characters.js';
 import { Scene } from '../core/Scene.js';
 import { levelById } from '../config/levels.js';
 import { Scenery, GROUND_Y } from '../world/Scenery.js';
@@ -25,11 +26,12 @@ export class DialogueScene extends Scene {
   enter({ levelId }) {
     this.level = levelById(levelId);
     this.scenery = new Scenery(this.game.assets, this.level.scenery);
-    this.hunter = new Fighter(this.game.assets, { base: 'hunter', x: 300, y: GROUND_Y });
+    this.hunter = new Fighter(this.game.assets, { base: `char/${selectedCharacter(this.game.storage)}/side`, x: 300, y: GROUND_Y });
     this.hunter.ox = -500;
     this.tweens.to(this.hunter, { ox: 0 }, 700);
     const hasKastle = this.level.dialogue.some(l => l.who === 'kastle');
     this.other = hasKastle ? new Fighter(this.game.assets, { base: 'enemy/kastle', x: 960, y: GROUND_Y, scale: 3 }) : null;
+    this.game.audio.playMusic(hasKastle ? 'chefe' : 'mapa');
     this.line = -1;
     this.next();
   }

@@ -1,6 +1,6 @@
 // Batalha por turnos: o domínio (domain/battle.js) decide, esta cena anima.
 import { Scene } from '../core/Scene.js';
-import { GW, PX, hpColor } from '../core/Renderer.js';
+import { GW, PX } from '../core/Renderer.js';
 import { Ease } from '../core/Tween.js';
 import { Battle } from '../domain/battle.js';
 import * as Bestiary from '../domain/bestiary.js';
@@ -8,19 +8,13 @@ import { recordVictory, recordDefeat } from '../domain/progress.js';
 import { LEVELS, levelById } from '../config/levels.js';
 import { WEAPONS, WEAPON_LIST, ENEMY_MOVES } from '../config/weapons.js';
 import { itemById } from '../config/items.js';
-import { Scenery, GROUND_Y } from '../world/Scenery.js';
+import { BattleStage, LAYOUT } from '../world/BattleStage.js';
+import { CHARACTERS, selectedCharacter } from '../config/characters.js';
 import { Fighter } from '../world/Fighter.js';
 import { Effects } from '../world/Effects.js';
 import { BattleHud } from '../ui/BattleHud.js';
 import { $ } from '../ui/dom.js';
 
-const HUNTER_X = 300;
-const SLOTS = [
-  { x: 820, y: GROUND_Y - 6 },
-  { x: 990, y: GROUND_Y + 26 },
-  { x: 1140, y: GROUND_Y - 14 },
-];
-const BOSS_SLOT = { x: 940, y: GROUND_Y + 10 };
 const PHASE_TINTS = [null, ['#d23a3a', 0.22], ['#6a34a3', 0.32]];
 const WEAPON_SPARKS = {
   estaca: ['#c99358', '#ecc58a', '#fff3a6'],
@@ -38,6 +32,8 @@ export class BattleScene extends Scene {
       bestiary: () => this.openBestiary(),
       pause: () => this.pause(),
       toggleMute: () => this.toggleMute(),
+      target: (uid) => { if (!this.busy && uid !== this.targetUid) { this.setTarget(uid); this.game.audio.play('select'); } },
+      cycleTarget: () => this.cycleTarget(1),
     });
 
     $('pause-resume').addEventListener('click', () => ui.modals.close('modal-pause'));
@@ -62,9 +58,13 @@ export class BattleScene extends Scene {
     const { assets } = this.game;
     this.level = levelById(levelId);
     this.battle = new Battle({ level: this.level, economy: this.game.economy });
-    this.scenery = new Scenery(assets, this.level.scenery);
+    this.stage = new BattleStage(assets, this.level.scenery);
     this.effects = new Effects(assets);
-    this.hunter = new Fighter(assets, { base: 'hunter', x: HUNTER_X, y: GROUND_Y });
+    const char = CHARACTERS[selectedCharacter(this.game.storage)];
+    this.playerName = char.name;
+    $('player-name').textContent = char.name.toUpperCase();
+    const P = LAYOUT.player;
+    this.hunter = new Fighter(assets, { base: `char/${char.id}/back`, x: P.x, y: P.y, scale: P.scale });
     this.fighters = new Map();
     this.targetUid = null;
     this.hoverUid = null;
@@ -96,6 +96,7 @@ export class BattleScene extends Scene {
   async intro() {
     this.hunter.ox = -500;
     this.tweens.to(this.hunter, { ox: 0 }, 800, Ease.outCubic);
+    this.hud.say(this.#appearText());
     await this.wait(300);
     await this.banner(`FASE ${this.level.id} — ${this.level.name.toUpperCase()}`, 1400);
     await this.banner(this.#announce(), 1000, 'danger');
@@ -109,6 +110,12 @@ export class BattleScene extends Scene {
     return `${alive.length} MONSTROS APARECERAM!`;
   }
 
+  #appearText() {
+    const alive = this.battle.alive();
+    if (alive.length === 1) return alive[0].def.boss ? `${alive[0].def.name} surgiu das sombras!` : `Um ${alive[0].def.name} selvagem apareceu!`;
+    return `${alive.map(e => e.def.name).join(', ').replace(/, ([^,]*)$/, ' e $1')} apareceram!`;
+  }
+
   banner(text, ms, cls = '') {
     return this.hud.showBanner(text, { ms, cls, wait: (t) => this.wait(t) });
   }
@@ -116,9 +123,8 @@ export class BattleScene extends Scene {
   spawnWave() {
     this.fighters.clear();
     this.battle.enemies.forEach((e, i) => {
-      const slot = e.def.boss ? BOSS_SLOT : SLOTS[i];
+      const slot = e.def.boss ? LAYOUT.boss : LAYOUT.enemySlots[i];
       const f = new Fighter(this.game.assets, { base: e.def.sprite, x: slot.x, y: slot.y, scale: e.def.scale ?? PX, flying: !!e.def.flying });
-      f.hpShown = f.hpTarget = e.hp;
       f.ox = 600 + i * 120;
       this.tweens.to(f, { ox: 0 }, 900 + i * 150, Ease.outCubic);
       this.fighters.set(e.uid, f);
@@ -126,6 +132,8 @@ export class BattleScene extends Scene {
     });
     this.game.saveProfile();
     this.hud.setWave(this.battle.waveIndex, this.level.waves.length);
+    this.hud.setEnemies(this.battle.enemies.map(e => ({ uid: e.uid, name: e.def.name, ratio: e.hp / e.maxHp, boss: !!e.def.boss, phases: e.def.phases?.length ?? 0 })));
+    this.game.audio.playMusic(this.battle.enemies.some(e => e.def.boss) ? 'chefe' : 'batalha');
     this.setTarget(this.battle.alive()[0]?.uid);
   }
 
@@ -133,6 +141,7 @@ export class BattleScene extends Scene {
     if (this.ending) return;
     this.busy = false;
     this.hud.lock(false);
+    this.hud.say(`O que ${this.playerName} vai fazer?`);
   }
 
   toast(text, iconKey) { this.ui.toasts.show(text, { iconKey }); }
@@ -146,8 +155,7 @@ export class BattleScene extends Scene {
     const weak = known.weak.filter(w => w === this.battle.weaknessOf(e));
     const resist = known.resist.filter(w => w === this.battle.resistOf(e));
     this.hud.setWeaponHints(weak, resist);
-    const many = this.battle.alive().length > 1;
-    this.hud.setTargetHint(`ALVO: ${e.def.name}${many ? ' (toque em outro para trocar)' : ''}`);
+    this.hud.setTarget(uid);
   }
 
   cycleTarget(dir) {
@@ -176,6 +184,7 @@ export class BattleScene extends Scene {
     await this.#joken(tf);
     const r = this.battle.attack(weaponId, this.targetUid);
     this.reveal = { weapon: weaponId, move: r.enemyMove, uid: r.targetUid, t: 0 };
+    this.hud.say(`${this.playerName} usou ${WEAPONS[weaponId].name}!\n${this.battle.find(r.targetUid).def.name} usou ${ENEMY_MOVES[r.enemyMove].name}!`);
     this.game.audio.play('go');
     await this.wait(600);
 
@@ -207,13 +216,14 @@ export class BattleScene extends Scene {
     this.game.audio.play('swing');
     const c = tf.center;
     if (w.projectile) {
-      await this.effects.projectile(w.projectile, { x: this.hunter.x + 100, y: this.hunter.y - 84 }, c, { ms: 220 });
+      await this.effects.projectile(w.projectile, { x: this.hunter.x + 75, y: this.hunter.y - 114 }, c, { ms: 260 });
     }
     this.effects.play(w.fx, c.x, c.y, { scale: w.id === 'estaca' ? PX : 3 });
     await this.wait(w.projectile ? 30 : 220);
 
     this.reveal = null;
-    tf.hpTarget = e.hp; // a barra só desce no impacto
+    this.hud.setEnemyHp(e.uid, e.hp / e.maxHp, e.phase); // a barra só desce no impacto
+    this.hud.say(r.effectiveness === 'weak' ? 'É super efetivo!' : r.effectiveness === 'resist' ? 'Não foi muito efetivo...' : `${e.def.name} recebeu ${r.damage} de dano!`);
     tf.flash = 1; tf.flashColor = '#ffffff';
     tf.play('hurt');
     tf.shake(320, 8);
@@ -265,8 +275,10 @@ export class BattleScene extends Scene {
       this.effects.play('fx/shield', hc.x, hc.y, { scale: 3, fps: 10 });
       this.game.audio.play('block');
       this.effects.text('BLOQUEADO!', hc.x, hc.y - 110, { color: '#6f96f0', size: 24 });
+      this.hud.say('O Amuleto bloqueou o golpe!');
     } else {
       this.hunter.play('hurt');
+      this.hud.say(`${this.playerName} recebeu ${r.playerDamage} de dano!`);
       this.hunter.flash = 1; this.hunter.flashColor = '#ff7563';
       this.hunter.shake(320, 8);
       this.game.audio.play('hurt');
@@ -280,7 +292,9 @@ export class BattleScene extends Scene {
   }
 
   async #clash(tf) {
-    const mid = { x: (this.hunter.x + tf.x) / 2, y: GROUND_Y - 110 };
+    const hc = this.hunter.center, ec = tf.center;
+    const mid = { x: (hc.x + ec.x) / 2, y: (hc.y + ec.y) / 2 };
+    this.hud.say('Empate! Os golpes se anularam.');
     this.tweens.to(this.hunter, { ox: 60 }, 140, Ease.inQuad);
     await this.tweens.to(tf, { ox: -60 }, 140, Ease.inQuad);
     this.effects.play('fx/hit', mid.x, mid.y, { scale: 3 });
@@ -312,6 +326,8 @@ export class BattleScene extends Scene {
     const e = this.battle.find(uid);
     if (!f || f.dying) return;
     f.dying = true;
+    this.hud.setEnemyHp(uid, 0);
+    this.hud.say(`${e.def.name} foi derrotado!`);
     f.play('hurt', { hold: true });
     f.flash = 1;
     await this.wait(250);
@@ -332,6 +348,9 @@ export class BattleScene extends Scene {
     this.screenShake(16);
     f.flash = 1; f.flashColor = '#ffffff';
     f.tint = PHASE_TINTS[phase] ?? null;
+    const be = this.battle.find(uid);
+    this.hud.setEnemyHp(uid, be.hp / be.maxHp, phase);
+    this.hud.say(`${be.def.name} mudou de forma! A fraqueza dele mudou.`);
     await this.banner('KASTLE MUDOU DE FORMA!', 1200, 'danger');
     this.toast('A fraqueza de Kastle mudou! Descubra a nova.', 'icon/caveira');
     this.setTarget(uid);
@@ -358,7 +377,7 @@ export class BattleScene extends Scene {
     this.hud.lock(true);
     this.hud.setCombo(0);
     this.hunter.play('win', { loop: true });
-    this.game.audio.play('win');
+    this.game.audio.playMusic('vitoria');
     await this.banner('VITÓRIA!', 1500, 'win');
     const p = this.game.profile;
     const before = p.unlocked;
@@ -377,7 +396,7 @@ export class BattleScene extends Scene {
     this.ending = true;
     this.hud.lock(true);
     this.hunter.play('ko', { hold: true });
-    this.game.audio.play('lose');
+    this.game.audio.playMusic('derrota');
     await this.banner('DERROTA...', 1600, 'lose');
     const p = this.game.profile;
     recordDefeat(p);
@@ -420,13 +439,14 @@ export class BattleScene extends Scene {
       const f = this.fighters.get(hit.uid);
       if (!f) continue;
       this.effects.play('fx/cruz', f.center.x, f.center.y, { scale: 3 });
-      f.hpTarget = this.battle.find(hit.uid)?.hp ?? 0;
+      const he = this.battle.find(hit.uid);
+      this.hud.setEnemyHp(hit.uid, he.hp / he.maxHp, he.phase);
       f.flash = 1; f.play('hurt');
       if (this.game.options.damageNumbers) this.effects.text(`-${hit.damage}`, f.center.x, f.center.y - 70, { color: '#b8d0ff', size: 32 });
     }
     if (r.hits.length) { this.game.audio.play('hit'); this.screenShake(8); }
 
-    this.toast(`${it.name} usado!`, it.icon);
+    this.hud.say(`${this.playerName} usou ${it.name}!`);
     this.hud.setStatus(p);
     this.#syncPlayer();
     await this.wait(700);
@@ -507,14 +527,10 @@ export class BattleScene extends Scene {
   // ═══════════════════════ loop ═══════════════════════
   update(dt) {
     super.update(dt);
-    this.scenery.update(dt);
+    this.stage.update(dt);
     this.effects.update(dt);
     this.hunter.update(dt);
-    for (const [uid, f] of this.fighters) {
-      f.update(dt);
-      const e = this.battle.find(uid);
-      if (e) f.hpShown += (f.hpTarget - f.hpShown) * Math.min(1, dt / 120);
-    }
+    for (const f of this.fighters.values()) f.update(dt);
     if (this.reveal) this.reveal.t += dt;
     if (this.jokenWord) this.jokenWord.t += dt;
     const cam = this.game.renderer.camera;
@@ -528,7 +544,8 @@ export class BattleScene extends Scene {
   }
 
   render(r) {
-    this.scenery.drawBack(r);
+    this.stage.drawBack(r);
+    this.stage.drawPlatforms(r);
 
     // anel no chão do alvo / do monstro sob o cursor
     for (const [uid, f] of this.fighters) {
@@ -549,9 +566,9 @@ export class BattleScene extends Scene {
     for (const a of actors) a.draw(r);
     this.effects.draw(r);
     this.particles.draw(r);
-    this.scenery.drawFront(r);
+    this.stage.drawFront(r);
 
-    this.#drawEnemyBars(r);
+    this.#drawTargetMarker(r);
     this.#drawReveal(r);
     if (this.jokenWord) {
       const k = Math.min(1, this.jokenWord.t / 120);
@@ -564,31 +581,15 @@ export class BattleScene extends Scene {
     return f.drawY - 64 * f.scale + (f.scale > PX ? 30 : 14) - 40;
   }
 
-  #drawEnemyBars(r) {
-    for (const [uid, f] of this.fighters) {
-      const e = this.battle.find(uid);
-      if (!e || f.dying || f.alpha < 0.5) continue;
-      const isTarget = uid === this.targetUid;
-      const boss = e.def.boss;
-      const w = boss ? 200 : 104;
-      const top = f.drawY - 64 * f.scale + (boss ? 30 : 14);
-      const x = f.drawX - w / 2;
-      const ratio = e.hp / e.maxHp;
-      if (isTarget || uid === this.hoverUid || boss) r.text(e.def.name, f.drawX, top - 22, { size: 16, align: 'center', color: isTarget ? '#f6d548' : '#f4f2fa' });
-      r.bar(x, top - 12, w, 10, f.hpShown / e.maxHp, { fill: hpColor(ratio) });
-      if (boss) {
-        for (let i = 0; i < e.def.phases.length; i++) r.rect(x + i * 14, top + 4, 10, 6, i <= e.phase ? '#d23a3a' : '#2f2a3d');
-      }
-      if (isTarget) {
-        const bob = Math.sin(this.time / 180) * 4;
-        r.text('▼', f.drawX, top - 44 + bob, { size: 16, align: 'center', color: '#f6d548' });
-        // a Vela mostra o próximo ataque do alvo
-        if (this.battle.revealed && !this.reveal) {
-          const mv = ENEMY_MOVES[e.intent];
-          r.sprite(mv.icon, 0, f.drawX + w / 2 + 34, top - 16 + bob, { scale: 1 });
-        }
-      }
-    }
+  /** Seta sobre o alvo e, com a Vela acesa, o próximo ataque dele. */
+  #drawTargetMarker(r) {
+    const f = this.fighters.get(this.targetUid);
+    const e = this.battle.find(this.targetUid);
+    if (!f || !e || f.dying || this.reveal) return;
+    const top = this.#topOf(f) + 20;
+    const bob = Math.sin(this.time / 180) * 4;
+    r.text('▼', f.drawX, top + bob, { size: 24, align: 'center', color: '#f6d548' });
+    if (this.battle.revealed) r.sprite(ENEMY_MOVES[e.intent].icon, 0, f.drawX + 56, top - 10 + bob, { scale: 1 });
   }
 
   #drawReveal(r) {

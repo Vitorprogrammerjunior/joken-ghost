@@ -1,7 +1,8 @@
-// Música (mp3) + efeitos sonoros 8-bit sintetizados com Web Audio.
+// Trilha (partituras Scrimshaw, ver Music.js) + efeitos sonoros 8-bit sintetizados com Web Audio.
+import { Music } from './Music.js';
 
-const MUSIC_SRC = 'assets/audio/cursed-save-slot.mp3';
 const IMPACT_SRC = 'assets/audio/impact.mp3';
+const MUSIC_GAIN = 0.9;
 
 /** Receitas dos efeitos: lista de notas [freqInicial, freqFinal, duraçãoMs, onda, atrasoMs, volume]. */
 const SFX = {
@@ -30,9 +31,8 @@ const SFX = {
 export class AudioManager {
   constructor(options) {
     this.options = options;
-    this.music = new Audio(MUSIC_SRC);
-    this.music.loop = true;
-    this.music.preload = 'auto';
+    this.music = new Music();
+    this.music.preload(['menu', 'mapa', 'batalha']);
     this.impact = new Audio(IMPACT_SRC);
     this.impact.preload = 'auto';
     this.ctx = null;
@@ -52,26 +52,27 @@ export class AudioManager {
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     }
     if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.music.attach(this.ctx);
   }
+
+  /** Pausa/retoma tudo (ex.: ao trocar de aba). */
+  suspend() { this.ctx?.suspend(); }
+  resume() { if (this.ctx?.state === 'suspended') this.ctx.resume(); }
 
   applyVolumes() {
     const o = this.options;
-    this.music.volume = (o.musicVol / 100) * 0.8;
-    this.music.muted = o.muted;
+    this.music.setVolume(o.muted ? 0 : (o.musicVol / 100) * MUSIC_GAIN);
     this.impact.volume = o.sfxVol / 100;
   }
 
-  playMusic() {
-    if (this.options.muted) return;
-    this.music.play().catch(() => {});
-  }
+  /** Troca a música de fundo (nome do arquivo em assets/music, sem extensão). */
+  playMusic(name) { this.music.play(name); }
 
-  stopMusic() { this.music.pause(); }
+  stopMusic() { this.music.stop(); }
 
   setMuted(muted) {
     this.options.muted = muted;
     this.applyVolumes();
-    if (!muted) this.playMusic();
   }
 
   play(name) {

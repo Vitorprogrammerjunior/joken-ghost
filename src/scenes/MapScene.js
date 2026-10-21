@@ -1,4 +1,5 @@
 // Mapa de fases: caminho pontilhado ligando os quatro locais.
+import { selectedCharacter } from '../config/characters.js';
 import { Scene } from '../core/Scene.js';
 import { GW, GH, PX } from '../core/Renderer.js';
 import { LEVELS } from '../config/levels.js';
@@ -27,9 +28,9 @@ export class MapScene extends Scene {
     this.unlocked = p.unlocked;
     this.focus = focus ?? Math.min(p.unlocked, LEVELS.length);
     const n = NODES[this.focus - 1];
-    this.hunter = new Fighter(this.game.assets, { base: 'hunter', x: n.x - 120, y: n.y + 60, scale: PX });
+    this.hunter = new Fighter(this.game.assets, { base: `char/${selectedCharacter(this.game.storage)}/side`, x: n.x - 120, y: n.y + 60, scale: PX });
     this.#buildNodes();
-    this.game.audio.playMusic();
+    this.game.audio.playMusic('mapa');
   }
 
   #buildNodes() {

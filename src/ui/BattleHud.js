@@ -1,4 +1,4 @@
-// Interface DOM da batalha: vida, moedas, ações, gavetas de armas e loja.
+// Interface DOM da batalha (estilo Pokémon): caixas de vida, mensagem, ações, armas e loja.
 import { $, h, icon, show, retrigger } from './dom.js';
 import { WEAPON_LIST, ENEMY_MOVES, BEATS } from '../config/weapons.js';
 import { ITEMS } from '../config/items.js';
@@ -7,7 +7,7 @@ import { hpColor } from '../core/Renderer.js';
 export class BattleHud {
   /**
    * @param {import('../core/Game.js').Game} game
-   * @param {object} handlers { attack(weaponId), buy(itemId), bestiary(), pause(), toggleMute() }
+   * @param {object} handlers { attack(weaponId), buy(itemId), bestiary(), pause(), toggleMute(), target(uid), cycleTarget() }
    */
   constructor(game, handlers) {
     this.game = game;
@@ -23,12 +23,15 @@ export class BattleHud {
     this.bannerText = $('battle-banner-text');
     this.combo = $('combo');
     this.waveTag = $('wave-tag');
-    this.targetHint = $('target-hint');
+    this.enemyBoxes = $('enemy-boxes');
+    this.logText = $('battle-log-text');
+    this.boxes = new Map();
     this.open = null;
 
     $('act-attack').addEventListener('click', () => this.toggle('attack'));
     $('act-shop').addEventListener('click', () => this.toggle('shop'));
     $('act-bestiary').addEventListener('click', () => handlers.bestiary());
+    $('act-target').addEventListener('click', () => handlers.cycleTarget());
     $('battle-pause').addEventListener('click', () => handlers.pause());
     $('battle-mute').addEventListener('click', () => handlers.toggleMute());
     document.querySelectorAll('#screen-battle [data-close-drawer]').forEach(b => b.addEventListener('click', () => this.close()));
@@ -137,8 +140,49 @@ export class BattleHud {
     if (n >= 2) { this.combo.textContent = `COMBO x${n}`; retrigger(this.combo, 'pop'); }
   }
 
-  setTargetHint(text) {
-    this.targetHint.textContent = text;
+  // ─── caixas dos monstros ──────────────────────────────────────
+  /** Monta uma caixa por monstro da onda: [{ uid, name, ratio, boss, phases }]. */
+  setEnemies(list) {
+    this.boxes.clear();
+    this.enemyBoxes.replaceChildren(...list.map((e) => {
+      const fill = h('div', { class: 'hpbar-fill' });
+      const pips = e.boss ? h('span', { class: 'boss-pips' }, ...Array.from({ length: e.phases }, () => h('i'))) : null;
+      const box = h('div', { class: 'status-box enemy-box', onclick: () => this.handlers.target(e.uid) },
+        h('div', { class: 'sb-head' }, h('span', { class: 'sb-name' }, e.name), pips),
+        h('div', { class: 'sb-hp' }, h('b', {}, 'HP'), h('div', { class: 'hpbar' }, fill)));
+      this.boxes.set(e.uid, { box, fill, pips });
+      this.#paint(fill, e.ratio);
+      return box;
+    }));
+  }
+
+  #paint(fill, ratio) {
+    fill.style.width = `${Math.max(0, ratio) * 100}%`;
+    fill.style.background = hpColor(ratio);
+  }
+
+  setEnemyHp(uid, ratio, phase = null) {
+    const b = this.boxes.get(uid);
+    if (!b) return;
+    this.#paint(b.fill, ratio);
+    b.box.classList.toggle('dead', ratio <= 0);
+    if (b.pips && phase != null) [...b.pips.children].forEach((p, i) => p.classList.toggle('on', i <= phase));
+  }
+
+  setTarget(uid) {
+    for (const [id, b] of this.boxes) b.box.classList.toggle('target', id === uid);
+  }
+
+  // ─── mensagem da batalha (máquina de escrever) ────────────────
+  say(text) {
+    clearInterval(this.typeT);
+    let i = 0;
+    this.logText.textContent = '';
+    this.typeT = setInterval(() => {
+      i += 2;
+      this.logText.textContent = text.slice(0, i);
+      if (i >= text.length) clearInterval(this.typeT);
+    }, 16);
   }
 
   /** Faixa grande no meio da tela. `wait` usa o relógio da cena (respeita a pausa). */

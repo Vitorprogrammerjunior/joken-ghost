@@ -134,8 +134,8 @@ export class Game {
     });
     // pausa automática ao trocar de aba
     document.addEventListener('visibilitychange', () => {
-      if (document.hidden) { this.audio.stopMusic(); this.bus.emit('blur'); }
-      else if (this.profile || this.scene) this.audio.playMusic();
+      if (document.hidden) { this.audio.suspend(); this.bus.emit('blur'); }
+      else this.audio.resume();
     });
   }
 }

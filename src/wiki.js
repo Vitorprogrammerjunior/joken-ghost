@@ -3,7 +3,8 @@ import { ENEMIES, ENEMY_ORDER } from './config/enemies.js';
 import { ITEMS } from './config/items.js';
 import { LEVELS } from './config/levels.js';
 import { WEAPON_LIST, WEAPONS, ENEMY_MOVES, BEATS } from './config/weapons.js';
-import { PERKS } from './config/multiplayer.js';
+import { serverUrl, leagueIcon } from './config/multiplayer.js';
+import { cardEl } from './ui/Card.js';
 import { SPRITES, FRAME_SIZE } from './config/sprites.generated.js';
 import { $, h, icon } from './ui/dom.js';
 
@@ -58,6 +59,21 @@ $('levels').replaceChildren(...LEVELS.map(l => h('article', { class: 'card' },
   ...l.waves.map((wave, i) => h('div', { class: 'chips' }, `Onda ${i + 1}: `,
     ...wave.map(id => h('span', { class: 'chip' }, ENEMIES[id].name)))))));
 
-$('perks').replaceChildren(...Object.entries(PERKS).map(([id, p]) => h('article', { class: 'card' },
-  h('h3', {}, icon(`icon/perk_${id}`, 'ico ico-lg'), p.name),
-  h('p', { class: 'muted' }, p.desc))));
+// Multiplayer: catálogo e ranking vêm do servidor
+fetch(`${serverUrl()}/api/catalog`).then(r => r.json()).then(({ cards, characters }) => {
+  $('mp-cards').replaceChildren(...cards.map(c => {
+    const wrap = h('div', { class: 'wiki-card' }, cardEl(c, { size: 'md' }), h('small', {}, icon('icon/trofeu', 'ico ico-xs'), ` ${c.trophies}`));
+    return wrap;
+  }));
+  $('mp-chars').replaceChildren(...characters.map(c => h('article', { class: 'card' },
+    animated(`char/${c.id}/side/idle`),
+    h('h3', {}, c.name),
+    h('p', { class: 'muted' }, c.passive),
+    h('div', { class: 'stat' }, icon('icon/trofeu', 'ico ico-xs'), ` ${c.trophies} troféus`))));
+}).catch(() => { $('mp-cards').replaceChildren(h('p', { class: 'lead' }, 'Servidor do multiplayer indisponível agora.')); });
+
+fetch(`${serverUrl()}/api/ranking`).then(r => r.json()).then((top) => {
+  $('mp-rank').replaceChildren(...(top.length ? top.slice(0, 10).map(p => h('li', {},
+    h('span', {}, `${p.rank}º`), icon(leagueIcon(p.league), 'ico ico-sm'), h('span', {}, p.nickname), h('b', {}, `${p.trophies} `, icon('icon/trofeu', 'ico ico-xs'))))
+    : [h('li', {}, 'Ninguém no ranking ainda. Seja o primeiro!')]));
+}).catch(() => {});

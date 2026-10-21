@@ -1,0 +1,51 @@
+title    Jo-Ken-Pô!
+composer Claude
+about    Música de batalha. Chiptune acelerado, arpejos de onda quadrada e bateria eletrônica.
+tempo    148
+beats    4
+steps    4
+reverb   0.15
+
+voice lead  chip     vol=0.8  pan=-0.1
+voice lead2 saw      vol=0.55 pan=0.2 bright=0.8
+voice arp   square   vol=0.35 pan=0.3 gate=0.6
+voice bass  synbass  vol=0.9
+voice kick  kick     vol=0.8
+voice snare snare    vol=0.55 pan=0.05
+voice hat   hat      vol=0.35 pan=0.3
+voice crash crash    vol=0.35 pan=-0.2
+
+pattern intro
+arp   | E4 G4 B4 E5 B4 G4 E4 G4 B4 E5 B4 G4 E4 G4 B4 G4 | % |
+bass  | E2- E2- E3- E2- E2- E2- E3- E2- | E2- E2- E3- E2- E2- E2- E3- B1- |
+hat   | x.x. x.x. x.x. x.x. | % |
+snare | _ | o.o. o.o. xxxx XXXX |
+
+# ------------------------------------------------ A: o tema de luta
+pattern A
+lead  | E5- E5- G5- B5- A5--- G5- F#5- | E5--- G5- C6--- B5- A5- G5- | F#5- F#5- A5- D6- C6--- B5- A5- | B5------- D#6--- F#6--- |
+lead  | E5- E5- G5- B5- A5--- G5- F#5- | G5--- C6- E6--- D6- C6- B5- | A5- C6- E6- C6- B5- D#6- F#6- D#6- | E6----------- . . . . |
+arp   | E4 G4 B4 E5 B4 G4 E4 G4 B4 E5 B4 G4 E4 G4 B4 G4 | C4 E4 G4 C5 G4 E4 C4 E4 G4 C5 G4 E4 C4 E4 G4 E4 | D4 F#4 A4 D5 A4 F#4 D4 F#4 A4 D5 A4 F#4 D4 F#4 A4 F#4 | B3 D#4 F#4 A4 F#4 D#4 B3 D#4 F#4 A4 F#4 D#4 B3 D#4 F#4 D#4 |
+arp   | E4 G4 B4 E5 B4 G4 E4 G4 B4 E5 B4 G4 E4 G4 B4 G4 | C4 E4 G4 C5 G4 E4 C4 E4 G4 C5 G4 E4 C4 E4 G4 E4 | A3 C4 E4 A4 E4 C4 A3 C4 B3 D#4 F#4 A4 F#4 D#4 B3 D#4 | E4 G4 B4 E5 B4 G4 E4 G4 B4 E5 B4 G4 E4 G4 B4 G4 |
+bass  | E2- E2- E3- E2- E2- E2- E3- E2- | C2- C2- C3- C2- C2- C2- C3- C2- | D2- D2- D3- D2- D2- D2- D3- D2- | B1- B1- B2- B1- B1- B1- B2- A1- |
+bass  | E2- E2- E3- E2- E2- E2- E3- E2- | C2- C2- C3- C2- C2- C2- C3- C2- | A1- A1- A2- A1- B1- B1- B2- B1- | E2- E2- E3- E2- E2- B1- D2- D#2- |
+kick  | x... ..x. x... ..x. | % | % | % | % | % | % | % |
+snare | .... x... .... x... | % | % | % | % | % | % | ..x. x.xx xxxx XXXX |
+hat   | x.x. x.x. x.x. x.x. | % | % | % | % | % | % | % |
+crash | X... .... .... .... | _ | _ | _ | X... .... .... .... | _ | _ | _ |
+
+# ------------------------------------------------ B: virada de jogo
+pattern B
+lead2 | C6------- B5--- A5--- | B5------- G5--- E5--- | E6------- D6--- C6--- | D6----------- A5--- |
+lead2 | C6--- E6--- A6--- G6--- | F#6--- E6--- B5--- G5--- | E6- D6- C6- B5- A5- G5- F#5- E5- | D#5------- F#5--- B5--- |
+arp   | A3 C4 E4 A4 E4 C4 A3 C4 E4 A4 E4 C4 A3 C4 E4 C4 | E4 G4 B4 E5 B4 G4 E4 G4 B4 E5 B4 G4 E4 G4 B4 G4 | C4 E4 G4 C5 G4 E4 C4 E4 G4 C5 G4 E4 C4 E4 G4 E4 | D4 F#4 A4 D5 A4 F#4 D4 F#4 A4 D5 A4 F#4 D4 F#4 A4 F#4 |
+arp   | A3 C4 E4 A4 E4 C4 A3 C4 E4 A4 E4 C4 A3 C4 E4 C4 | E4 G4 B4 E5 B4 G4 E4 G4 B4 E5 B4 G4 E4 G4 B4 G4 | C4 E4 G4 C5 G4 E4 C4 E4 G4 C5 G4 E4 C4 E4 G4 E4 | B3 D#4 F#4 A4 F#4 D#4 B3 D#4 F#4 A4 F#4 D#4 B3 D#4 F#4 D#4 |
+bass  | A1- A1- A2- A1- A1- A1- A2- A1- | E2- E2- E3- E2- E2- E2- E3- E2- | C2- C2- C3- C2- C2- C2- C3- C2- | D2- D2- D3- D2- D2- D2- D3- D2- |
+bass  | A1- A1- A2- A1- A1- A1- A2- A1- | E2- E2- E3- E2- E2- E2- E3- E2- | C2- C2- C3- C2- C2- C2- C3- C2- | B1- B1- B2- B1- B1- B1- B2- B1- |
+kick  | x.x. ..x. x.x. ..x. | % | % | % | % | % | % | % |
+snare | .... x... .... x..x | % | % | % | % | % | % | ..x. x.xx xxxx XXXX |
+hat   | xoxo xoxo xoxo xoxo | % | % | % | % | % | % | % |
+crash | X... .... .... .... | _ | _ | _ | X... .... .... .... | _ | _ | _ |
+
+play intro
+loop A B

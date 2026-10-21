@@ -21,6 +21,7 @@ export class StoryScene extends Scene {
     this.chars = 0;
     this.scenery = new Scenery(this.game.assets, ending ? 'floresta' : this.level.scenery);
     this.textEl.textContent = '';
+    this.game.audio.playMusic(ending ? 'vitoria' : 'mapa');
   }
 
   get done() { return this.chars >= this.full.length; }

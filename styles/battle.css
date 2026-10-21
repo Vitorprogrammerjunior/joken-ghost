@@ -1,45 +1,65 @@
 /* ═══════════════════════════════════════════════════════════
-   HUD da batalha
+   HUD da batalha — layout estilo Pokémon
+   monstros: caixas no alto à esquerda · caçador: caixa à direita
+   embaixo: mensagem da batalha + ações
    ═══════════════════════════════════════════════════════════ */
 
 #screen-battle { justify-content: flex-start; }
 
-/* ─── jogador (canto superior esquerdo) ─── */
-.hud-player {
-  position: absolute;
-  top: 16px;
-  left: 16px;
+/* ─── caixas de status (monstros e caçador) ─── */
+.status-box {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 420px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 20px 16px;
+  border: 2px solid transparent;
+  border-image: url('../assets/sprites/ui/panel_stone.svg') 16 fill / 24px / 0 stretch;
+  text-shadow: var(--outline);
 }
-.hud-portrait { width: 64px; height: 64px; animation: heartbeat 1.2s steps(2) infinite; }
-@keyframes heartbeat { 50% { transform: scale(0.9); } }
-.hud-player-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-.hud-player-name { display: flex; justify-content: space-between; text-shadow: var(--outline); }
-#hud-hp-text { color: var(--fog); }
-.hpbar { position: relative; height: 20px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone), 0 0 0 4px var(--ink); }
+.sb-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sb-name { font-size: 16px; }
+.sb-hp { display: flex; align-items: center; gap: 10px; }
+.sb-hp b { color: var(--gold); font-weight: normal; }
+.sb-hp .hpbar { flex: 1; }
+.sb-foot { align-self: flex-end; color: var(--fog); }
+
+.enemy-boxes { position: absolute; top: 16px; left: 16px; display: flex; flex-direction: column; gap: 8px; width: 420px; }
+.enemy-box { cursor: pointer; pointer-events: auto; transition: transform 0.12s steps(3), opacity 0.3s; animation: slide-right 0.35s steps(6) both; }
+.enemy-box .sb-name::before { content: ''; display: inline-block; width: 16px; }
+.enemy-box.target { border-image-source: url('../assets/sprites/ui/slot_active.svg'); transform: translateX(10px); }
+.enemy-box.target .sb-name { color: var(--gold); }
+.enemy-box.target .sb-name::before { content: '▶'; }
+.enemy-box:hover:not(.dead) { transform: translateX(6px); }
+.enemy-box.dead { opacity: 0.35; cursor: default; }
+.enemy-box .boss-pips { display: flex; gap: 4px; }
+.enemy-box .boss-pips i { width: 14px; height: 8px; background: var(--ink-3); box-shadow: 0 0 0 2px var(--ink); }
+.enemy-box .boss-pips i.on { background: var(--red); }
+@keyframes slide-right { from { transform: translateX(-40px); opacity: 0; } }
+
+.player-box { position: absolute; right: 24px; top: 452px; width: 420px; padding: 10px 20px 12px; gap: 4px; animation: slide-left 0.35s steps(6) both; }
+@keyframes slide-left { from { transform: translateX(40px); opacity: 0; } }
+
+.hpbar { position: relative; height: 16px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone), 0 0 0 4px var(--ink); }
 .hpbar-ghost, .hpbar-fill { position: absolute; inset: 0 auto 0 0; width: 100%; }
 .hpbar-ghost { background: var(--white); opacity: 0.7; transition: width 0.5s steps(10); }
-.hpbar-fill { background: var(--green); box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.25); transition: width 0.25s steps(5), background 0.2s; }
-.hud-status { display: flex; gap: 6px; min-height: 0; }
+.hpbar-fill { background: var(--green); box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.25); transition: width 0.35s steps(7), background 0.2s; }
+.hud-status { display: flex; gap: 4px; }
 .status-chip { display: inline-flex; padding: 2px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--gold); animation: pop 0.3s ease-out both; }
 
 /* ─── canto superior direito ─── */
 .hud-top-right { position: absolute; top: 16px; right: 16px; display: flex; align-items: center; gap: 10px; }
-.wave-tag { position: absolute; top: 96px; right: 20px; color: var(--fog); text-shadow: var(--outline); }
+.wave-tag { position: absolute; top: 92px; right: 22px; color: var(--fog); text-shadow: var(--outline); }
 
 /* ─── faixa central ─── */
 .banner {
   position: absolute;
-  top: 180px;
+  top: 200px;
   left: 0;
   right: 0;
   display: flex;
   justify-content: center;
   padding: 16px 0 20px;
-  background: rgba(14, 11, 22, 0.8);
+  background: rgba(14, 11, 22, 0.82);
   box-shadow: 0 -4px 0 var(--purple), 0 4px 0 var(--purple);
   font-size: 40px;
   line-height: 48px;
@@ -54,8 +74,8 @@
 
 .combo {
   position: absolute;
-  top: 140px;
-  left: 24px;
+  top: 360px;
+  right: 40px;
   font-size: 32px;
   line-height: 40px;
   color: var(--orange);
@@ -64,36 +84,47 @@
 }
 .combo.pop { animation: pop 0.3s ease-out both; }
 
-.target-hint {
+/* ─── parte de baixo: mensagem + ações ─── */
+.battle-bottom {
   position: absolute;
-  bottom: 112px;
   left: 0;
   right: 0;
-  text-align: center;
-  color: var(--fog);
-  text-shadow: var(--outline);
-}
-
-/* ─── barra de ações ─── */
-.actions {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
+  bottom: 0;
+  height: 160px;
   display: flex;
-  gap: 16px;
-  transform: translateX(-50%);
-  transition: transform 0.2s steps(4), opacity 0.2s;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  background: var(--ink);
+  box-shadow: 0 -4px 0 var(--ink-3);
+  pointer-events: auto;
 }
-.actions.locked { opacity: 0.6; transform: translate(-50%, 16px); }
-.btn-action { min-width: 220px; min-height: 80px; font-size: 24px; }
-.btn-action .ico { width: 48px; height: 48px; }
-.btn-action.active { border-image-source: url('../assets/sprites/ui/btn_pressed.svg'); padding-top: 18px; padding-bottom: 10px; }
+.battle-log {
+  flex: 1;
+  padding: 24px 32px;
+  border: 2px solid transparent;
+  border-image: url('../assets/sprites/ui/dialog.svg') 16 fill / 32px / 0 stretch;
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 40px;
+  white-space: pre-line;
+}
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  width: 500px;
+  transition: opacity 0.2s;
+}
+.actions.locked { opacity: 0.55; }
+.btn-action { min-height: 64px; font-size: 16px; padding: 8px 12px 12px; border-image-width: 24px; }
+.btn-action .ico { width: 32px; height: 32px; }
+.btn-action.active { border-image-source: url('../assets/sprites/ui/btn_pressed.svg'); padding-top: 12px; padding-bottom: 8px; }
 .btn-primary.btn-action.active { border-image-source: url('../assets/sprites/ui/btn_primary_pressed.svg'); }
 
 /* ─── gavetas (armas / loja) ─── */
 .drawer {
   position: absolute;
-  bottom: 116px;
+  bottom: 172px;
   left: 50%;
   width: 760px;
   padding: 24px 28px 28px;
