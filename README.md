@@ -63,7 +63,7 @@ tools/
   sprites/          gerador das sprites (pixel art desenhada em código)
   font/             gerador da fonte JokenPixel
   music/            verificador das partituras (node tools/music/check.mjs)
-server/             servidor multiplayer (Node + Socket.io, deploy no Railway)
+server/             servidor multiplayer (Node + Socket.io, deploy no Render)
 tests/              testes do domínio (node --test)
 legacy/pygame/      versão original em Python/Pygame
 ```
@@ -102,7 +102,8 @@ pesam poucos KB. Para compor ou testar, cole o arquivo no editor do
 ## Deploy
 
 - **Jogo:** Vercel, como site estático (`vercel.json`). `legacy/`, `tools/`, `tests/` e `server/` ficam fora do deploy.
-- **Multiplayer:** Railway, com a pasta `server/` como raiz. O endereço fica em `src/config/multiplayer.js`.
+- **Multiplayer:** Render (plano grátis) com banco Postgres no Neon, pasta `server/` como raiz.
+  O endereço fica em `src/config/multiplayer.js`. Detalhes em [server/README.md](server/README.md).
 
 ## Licença
 

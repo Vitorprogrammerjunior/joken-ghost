@@ -19,19 +19,25 @@ Testes (regras, troféus, banco e uma partida de verdade com dois clientes):
 npm test
 ```
 
-## Deploy no Railway
+## Deploy (Render + Neon, ambos gratuitos)
 
-1. No projeto do Railway que já existe, clique em **New → Database → PostgreSQL**.
-   O Railway cria a variável `DATABASE_URL`; em **Variables** do serviço do jogo, adicione uma referência a ela.
-2. **Root Directory** continua `server`.
-3. Variáveis:
-   - `DATABASE_URL` — do Postgres (o servidor cria a tabela `players` sozinho)
-   - `CORS_ORIGIN` — `*` ou a URL da Vercel
-   - `PORT` — o Railway define
-4. Deploy.
+Em produção: `https://joken-ghost.onrender.com`.
 
-Sem Postgres também funciona com arquivo: crie um **Volume** montado em `/data` e defina
-`DATA_FILE=/data/players.json`. Sem volume, o ranking zera a cada deploy.
+1. **Banco:** crie um projeto no [Neon](https://neon.com) (região AWS US East 2 / Ohio) e copie a
+   connection string (`postgresql://...?sslmode=require`). O servidor cria a tabela `players` sozinho.
+2. **Servidor:** no [Render](https://render.com), **New → Web Service** ligado a este repositório:
+   - Language **Node**, Branch `web-game`, Region **Ohio**, Root Directory `server`
+   - Build `npm ci --omit=dev`, Start `npm start`, Instance **Free**
+   - Variáveis: `DATABASE_URL` (do Neon) e `CORS_ORIGIN` (`*` ou a URL da Vercel)
+   - Health Check Path: `/health`
+3. Cada push no branch faz um deploy novo automaticamente.
+
+No plano grátis o Render dorme depois de 15 minutos sem ninguém e leva cerca de 1 minuto para acordar.
+O jogo chama `/health` antes de conectar e mostra "Acordando o servidor..." enquanto isso.
+Para ele não dormir, dá para usar um monitor gratuito (ex.: UptimeRobot) chamando `/health` a cada 10 minutos.
+
+Sem `DATABASE_URL`, o servidor usa um arquivo JSON (`DATA_FILE`); no Render grátis esse arquivo
+se perde a cada reinício, então use o Neon.
 
 ## Endpoints HTTP
 

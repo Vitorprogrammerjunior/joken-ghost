@@ -43,6 +43,7 @@ export class LobbyScene extends Scene {
     net.on('match_resume', (d) => this.#toDuel(d));
     net.on('error_msg', (d) => { if (here()) { this.#status(d.message); ui.toasts.show(d.message, { force: true }); } });
     net.on('disconnected', () => here() && this.#status('Conexão perdida. Tentando reconectar...'));
+    net.on('waking', ({ seconds }) => here() && !net.connected && this.#status(`Acordando o servidor... ${seconds}s (pode levar até 1 minuto na primeira vez)`));
     game.bus.on('arena-reconnect', () => here() && this.#connect());
   }
 

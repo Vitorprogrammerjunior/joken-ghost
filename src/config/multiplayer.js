@@ -1,12 +1,12 @@
 // Multiplayer: endereço do servidor e como desenhar cartas/ligas.
 // As regras (cartas, personagens, troféus) vêm do servidor no 'welcome'.
 
-/** Servidor Socket.io (Railway). Pode ser trocado na URL: ?server=https://outro-servidor */
+/** Servidor Socket.io (Render, plano grátis). Pode ser trocado na URL: ?server=https://outro-servidor */
 export function serverUrl() {
   const override = new URLSearchParams(location.search).get('server');
   if (override) return override;
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return 'http://localhost:3001';
-  return 'https://joken-ghost-production.up.railway.app';
+  return 'https://joken-ghost.onrender.com';
 }
 
 export const RARITY = {

@@ -3,6 +3,7 @@ import { serverUrl } from '../config/multiplayer.js';
 import { EventBus } from '../core/EventBus.js';
 
 const TOKEN_KEY = 'jokenghost_mp_token';
+const WAKE_LIMIT_MS = 120000; // o plano grátis do Render dorme e leva ~1 min para acordar
 
 const SERVER_EVENTS = [
   'welcome', 'profile', 'lobby', 'ranking', 'queue_state',
@@ -24,10 +25,29 @@ export class MultiplayerClient extends EventBus {
 
   get connected() { return !!this.socket?.connected && !!this.profile; }
 
+  /**
+   * Acorda o servidor (se estiver dormindo) chamando /health até ele responder.
+   * Emite 'waking' com os segundos de espera para a tela mostrar o progresso.
+   */
+  async wake() {
+    const start = performance.now();
+    for (let attempt = 0; performance.now() - start < WAKE_LIMIT_MS; attempt++) {
+      try {
+        const res = await fetch(`${serverUrl()}/health`, { cache: 'no-store', signal: AbortSignal.timeout(15000) });
+        if (res.ok) return;
+      } catch { /* ainda acordando */ }
+      if (attempt === 0) this.emit('waking', { seconds: 0 });
+      await new Promise(r => setTimeout(r, 3000));
+      this.emit('waking', { seconds: Math.round((performance.now() - start) / 1000) });
+    }
+    throw new Error('Servidor não respondeu');
+  }
+
   /** Conecta e se identifica (cria conta anônima na primeira vez). */
-  connect(nickname) {
-    if (this.connected) return Promise.resolve(this.profile);
-    if (typeof window.io !== 'function') return Promise.reject(new Error('Socket.io não carregou'));
+  async connect(nickname) {
+    if (this.connected) return this.profile;
+    if (typeof window.io !== 'function') throw new Error('Socket.io não carregou');
+    await this.wake();
     return new Promise((resolve, reject) => {
       this.socket?.close();
       const s = window.io(serverUrl(), { transports: ['websocket', 'polling'], reconnection: true, timeout: 8000 });

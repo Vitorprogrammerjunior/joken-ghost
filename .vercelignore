@@ -1,4 +1,4 @@
-# Só o jogo web vai para a Vercel (o servidor multiplayer roda no Railway)
+# Só o jogo web vai para a Vercel (o servidor multiplayer roda no Render)
 legacy/
 tools/
 tests/
