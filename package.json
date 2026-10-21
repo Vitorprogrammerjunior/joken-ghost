@@ -1,0 +1,11 @@
+{
+  "name": "jokenghost",
+  "private": true,
+  "type": "module",
+  "description": "JokenGhost — Caçada em Turnos (jogo web estático).",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "assets": "cd tools && npm install && npm run build",
+    "dev": "python tools/devserver.py 5173"
+  }
+}

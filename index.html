@@ -5,363 +5,255 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0e0b16">
+  <meta name="description" content="JokenGhost — Caçada em Turnos: um RPG de pedra, papel e tesoura contra fantasmas.">
   <title>JokenGhost - Caçada em Turnos</title>
-  <link rel="stylesheet" href="game.css">
+  <link rel="icon" type="image/svg+xml" href="assets/sprites/icons/caveira.svg">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/screens.css">
+  <link rel="stylesheet" href="styles/battle.css">
+  <link rel="stylesheet" href="styles/multiplayer.css">
 </head>
 <body>
 
-  <!-- Background music -->
-  <audio id="bgm" src="Cursed_Save_Slot.mp3" loop preload="auto"></audio>
-  <audio id="sfx-hit" src="data_pion-sfx10-impact-324522.mp3" preload="auto"></audio>
+  <div id="game-root">
+    <canvas id="game-canvas" width="1280" height="720"></canvas>
 
-  <!-- Portrait-mode overlay (hidden on desktop / landscape) -->
-  <div id="rotate-overlay">
-    <span class="rotate-icon">📱</span>
-    <p>Gire o celular<br>para jogar!</p>
+    <div id="ui">
+
+      <!-- ═══════════════ CARREGANDO ═══════════════ -->
+      <section id="screen-loading" class="screen">
+        <img class="ico ico-xl float" src="assets/sprites/icons/caveira.svg" alt="">
+        <p class="loading-text">CARREGANDO...</p>
+        <div class="loading-bar"><div id="loading-fill"></div></div>
+      </section>
+
+      <!-- ═══════════════ MENU ═══════════════ -->
+      <section id="screen-menu" class="screen hidden">
+        <div class="logo">
+          <h1 class="logo-title">JOKEN<span>GHOST</span></h1>
+          <p class="logo-sub">Caçada em Turnos</p>
+        </div>
+        <nav class="menu">
+          <button class="btn btn-primary btn-lg" id="menu-play"><img class="ico" src="assets/sprites/icons/jogar.svg" alt="">JOGAR</button>
+          <button class="btn" id="menu-mp"><img class="ico" src="assets/sprites/icons/duelo.svg" alt="">MULTIPLAYER</button>
+          <button class="btn" id="menu-saves"><img class="ico" src="assets/sprites/icons/disquete.svg" alt="">ARQUIVOS</button>
+          <button class="btn" id="menu-options"><img class="ico" src="assets/sprites/icons/engrenagem.svg" alt="">OPÇÕES</button>
+          <a class="btn" href="wiki.html" target="_blank" rel="noopener"><img class="ico" src="assets/sprites/icons/pergaminho.svg" alt="">WIKI</a>
+        </nav>
+        <p class="menu-foot">Use o mouse, o toque ou as teclas 1 · 2 · 3</p>
+      </section>
+
+      <!-- ═══════════════ MAPA DE FASES ═══════════════ -->
+      <section id="screen-map" class="screen hidden">
+        <header class="topbar">
+          <button class="btn btn-icon" id="map-back" title="Menu"><img class="ico" src="assets/sprites/icons/casa.svg" alt="Menu"></button>
+          <h2 class="screen-title">MAPA DA CAÇADA</h2>
+          <div class="topbar-right">
+            <button class="btn btn-icon" id="map-bestiary" title="Monstruário"><img class="ico" src="assets/sprites/icons/livro.svg" alt="Monstruário"></button>
+            <div class="coin-pill"><img class="ico ico-sm" src="assets/sprites/icons/moeda.svg" alt=""><span class="coin-value">0</span></div>
+          </div>
+        </header>
+        <div id="map-nodes"></div>
+        <p class="screen-hint" id="map-hint">Escolha uma fase</p>
+      </section>
+
+      <!-- ═══════════════ HISTÓRIA (carta) ═══════════════ -->
+      <section id="screen-story" class="screen hidden">
+        <div class="parchment story-card">
+          <img class="ico ico-lg story-seal" src="assets/sprites/icons/caveira.svg" alt="">
+          <p id="story-text"></p>
+        </div>
+        <p class="screen-hint blink">▼ Toque ou pressione ESPAÇO</p>
+      </section>
+
+      <!-- ═══════════════ DIÁLOGO ═══════════════ -->
+      <section id="screen-dialogue" class="screen hidden">
+        <div class="speech" id="speech">
+          <span class="speech-name" id="speech-name">CAÇADOR</span>
+          <p class="speech-text" id="speech-text"></p>
+          <span class="speech-next blink" id="speech-next">▼</span>
+          <span class="speech-tail" id="speech-tail"></span>
+        </div>
+        <button class="btn btn-sm skip-btn" id="dialogue-skip">PULAR ▶</button>
+      </section>
+
+      <!-- ═══════════════ BATALHA ═══════════════ -->
+      <section id="screen-battle" class="screen hidden">
+        <div class="hud-player panel-stone">
+          <img class="hud-portrait" src="assets/sprites/icons/coracao.svg" alt="">
+          <div class="hud-player-info">
+            <div class="hud-player-name">CAÇADOR <span id="hud-hp-text">100/100</span></div>
+            <div class="hpbar"><div class="hpbar-ghost" id="hud-hp-ghost"></div><div class="hpbar-fill" id="hud-hp-fill"></div></div>
+            <div class="hud-status" id="hud-status"></div>
+          </div>
+        </div>
+
+        <div class="hud-top-right">
+          <div class="coin-pill"><img class="ico ico-sm" src="assets/sprites/icons/moeda.svg" alt=""><span class="coin-value">0</span></div>
+          <button class="btn btn-icon" id="battle-mute" title="Som"><img class="ico" id="battle-mute-ico" src="assets/sprites/icons/som_on.svg" alt="Som"></button>
+          <button class="btn btn-icon" id="battle-pause" title="Pausar (ESC)"><img class="ico" src="assets/sprites/icons/pausa.svg" alt="Pausar"></button>
+        </div>
+
+        <div class="wave-tag" id="wave-tag">ONDA 1/2</div>
+        <div class="banner hidden" id="battle-banner"><span id="battle-banner-text"></span></div>
+        <div class="combo hidden" id="combo">COMBO x2</div>
+        <p class="target-hint" id="target-hint">Toque num monstro para mirar</p>
+
+        <div class="actions" id="actions">
+          <button class="btn btn-primary btn-action" id="act-attack"><img class="ico" src="assets/sprites/icons/espadas.svg" alt="">ATACAR</button>
+          <button class="btn btn-action" id="act-shop"><img class="ico" src="assets/sprites/icons/sacola.svg" alt="">LOJA</button>
+          <button class="btn btn-action" id="act-bestiary"><img class="ico" src="assets/sprites/icons/livro.svg" alt="">MONSTROS</button>
+        </div>
+
+        <div class="drawer hidden" id="attack-drawer">
+          <div class="drawer-head">
+            <span>ESCOLHA SUA ARMA</span>
+            <button class="btn btn-icon btn-icon-sm" data-close-drawer title="Fechar"><img class="ico ico-sm" src="assets/sprites/icons/fechar.svg" alt="Fechar"></button>
+          </div>
+          <div class="weapon-grid" id="weapon-grid"></div>
+        </div>
+
+        <div class="drawer hidden" id="shop-drawer">
+          <div class="drawer-head">
+            <span>LOJA DO CAÇADOR</span>
+            <button class="btn btn-icon btn-icon-sm" data-close-drawer title="Fechar"><img class="ico ico-sm" src="assets/sprites/icons/fechar.svg" alt="Fechar"></button>
+          </div>
+          <div class="shop-grid" id="shop-grid"></div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ RESULTADO ═══════════════ -->
+      <section id="screen-result" class="screen hidden">
+        <div class="panel result-card">
+          <h2 class="result-title" id="result-title">VITÓRIA!</h2>
+          <div class="stars" id="result-stars"></div>
+          <ul class="result-stats" id="result-stats"></ul>
+          <p class="result-note" id="result-note"></p>
+          <div class="result-actions" id="result-actions"></div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ MULTIPLAYER ═══════════════ -->
+      <section id="screen-mp" class="screen hidden">
+        <div class="mp-view" id="mp-lobby">
+          <h2 class="screen-title">MULTIPLAYER</h2>
+          <p class="mp-sub">Caçador vs Monstro — melhor de 3</p>
+          <div class="panel mp-form">
+            <label class="field-label" for="mp-nick">SEU NOME</label>
+            <input class="field" id="mp-nick" type="text" maxlength="16" placeholder="Nickname" autocomplete="off">
+            <label class="field-label" for="mp-code">CÓDIGO DA SALA</label>
+            <input class="field field-code" id="mp-code" type="text" maxlength="8" placeholder="JGH-XXXX" autocomplete="off">
+            <div class="row">
+              <button class="btn btn-primary" id="mp-create">CRIAR SALA</button>
+              <button class="btn" id="mp-join">ENTRAR</button>
+            </div>
+            <p class="mp-status" id="mp-status">Pronto</p>
+          </div>
+          <button class="btn btn-sm" id="mp-back"><img class="ico ico-sm" src="assets/sprites/icons/casa.svg" alt="">VOLTAR</button>
+        </div>
+
+        <div class="mp-view hidden" id="mp-waiting">
+          <h2 class="screen-title">SALA</h2>
+          <p class="mp-code" id="mp-room-code">JGH-????</p>
+          <p class="mp-role" id="mp-role">CAÇADOR</p>
+          <p class="mp-sub blink" id="mp-waiting-msg">Aguardando oponente...</p>
+          <button class="btn btn-sm" id="mp-copy">COPIAR LINK</button>
+          <button class="btn btn-sm" id="mp-cancel">CANCELAR</button>
+        </div>
+
+        <div class="mp-view hidden" id="mp-battle">
+          <div class="mp-score panel-stone">
+            <div class="mp-side"><span>CAÇADOR</span><b id="mp-score-h">0</b></div>
+            <div class="mp-mid"><span id="mp-round">RODADA 1</span><small>3 pontos vencem</small></div>
+            <div class="mp-side"><span>MONSTRO</span><b id="mp-score-m">0</b></div>
+          </div>
+          <div class="mp-phase"><span id="mp-phase-title">ESCOLHA SEU PERK</span><div class="mp-timer"><div id="mp-timer-fill"></div></div></div>
+          <div class="mp-choices" id="mp-choices"></div>
+          <p class="mp-status" id="mp-battle-status"></p>
+        </div>
+
+        <div class="mp-view hidden" id="mp-result">
+          <div class="panel result-card">
+            <h2 class="result-title" id="mp-result-title">VITÓRIA!</h2>
+            <p class="result-note" id="mp-result-detail"></p>
+            <div class="result-actions">
+              <button class="btn btn-primary" id="mp-again">NOVA SALA</button>
+              <button class="btn" id="mp-menu">MENU</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ MODAIS ═══════════════ -->
+      <div class="modal hidden" id="modal-saves">
+        <div class="panel modal-card">
+          <h2 class="modal-title">ARQUIVOS</h2>
+          <div class="save-list" id="save-list"></div>
+          <button class="btn btn-sm" data-close-modal>FECHAR</button>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-options">
+        <div class="panel modal-card">
+          <h2 class="modal-title">OPÇÕES</h2>
+          <div class="opt-group">
+            <label class="opt"><span>MÚSICA</span><input type="range" min="0" max="100" data-opt="musicVol"><b data-val="musicVol"></b></label>
+            <label class="opt"><span>EFEITOS</span><input type="range" min="0" max="100" data-opt="sfxVol"><b data-val="sfxVol"></b></label>
+            <div class="opt"><span>TREMER TELA</span><button class="btn btn-toggle" data-toggle="shake"></button></div>
+            <div class="opt"><span>NÚMEROS DE DANO</span><button class="btn btn-toggle" data-toggle="damageNumbers"></button></div>
+            <div class="opt"><span>NOTIFICAÇÕES</span><button class="btn btn-toggle" data-toggle="toasts"></button></div>
+            <div class="opt"><span>PIXEL PERFEITO</span><button class="btn btn-toggle" data-toggle="pixelPerfect"></button></div>
+            <div class="opt"><span>TELA CHEIA</span><button class="btn btn-toggle" id="opt-fullscreen"></button></div>
+          </div>
+          <button class="btn btn-sm" data-close-modal>FECHAR</button>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-bestiary">
+        <div class="book">
+          <div class="book-tabs" id="bestiary-tabs"></div>
+          <div class="book-pages parchment" id="bestiary-page"></div>
+          <button class="btn btn-icon btn-icon-sm book-close" data-close-modal title="Fechar"><img class="ico ico-sm" src="assets/sprites/icons/fechar.svg" alt="Fechar"></button>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-pause">
+        <div class="panel modal-card">
+          <h2 class="modal-title">PAUSADO</h2>
+          <div class="menu">
+            <button class="btn btn-primary" id="pause-resume"><img class="ico" src="assets/sprites/icons/jogar.svg" alt="">CONTINUAR</button>
+            <button class="btn" id="pause-options"><img class="ico" src="assets/sprites/icons/engrenagem.svg" alt="">OPÇÕES</button>
+            <button class="btn" id="pause-retry"><img class="ico" src="assets/sprites/icons/repetir.svg" alt="">RECOMEÇAR</button>
+            <button class="btn btn-danger" id="pause-quit"><img class="ico" src="assets/sprites/icons/casa.svg" alt="">SAIR DA FASE</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-confirm">
+        <div class="panel modal-card modal-sm">
+          <p class="confirm-text" id="confirm-text">Tem certeza?</p>
+          <div class="row">
+            <button class="btn btn-danger" id="confirm-yes">SIM</button>
+            <button class="btn" id="confirm-no">NÃO</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="toasts"></div>
+    </div>
+
+    <div id="fade"></div>
   </div>
 
-  <!-- Root container: always 1280×720 internally, scaled by JS to fit any screen -->
-  <div id="game-root">
+  <div id="rotate-hint">
+    <img class="ico ico-xl" src="assets/sprites/icons/repetir.svg" alt="">
+    <p>Gire o celular para jogar melhor!</p>
+    <button class="btn btn-sm" id="rotate-dismiss">JOGAR ASSIM</button>
+  </div>
 
-    <!-- Canvas: background rendering (scenes, sprites, effects) -->
-    <canvas id="gameCanvas" width="1280" height="720"></canvas>
-
-    <!-- ═══════════════════ MENU SCREEN ═══════════════════ -->
-    <div id="screen-menu" class="screen active">
-      <h1 class="game-title">JOKENGHOST</h1>
-      <p class="game-subtitle">Caçada em Turnos</p>
-      <div class="menu-buttons">
-        <button class="btn-primary" id="btn-play">JOGAR</button>
-        <button class="btn-secondary menu-btn" id="btn-multiplayer">MULTIPLAYER</button>
-        <button class="btn-secondary menu-btn" id="btn-saves">ARQUIVOS</button>
-        <button class="btn-secondary menu-btn" id="btn-options">OPCOES</button>
-        <a class="btn-secondary menu-btn" href="wiki.html" target="_blank">WIKI</a>
-      </div>
-    </div>
-
-    <!-- ═════════════════════ OPTIONS MODAL ═════════════════════ -->
-    <div id="options-modal" class="modal-overlay hidden">
-      <div id="options-panel">
-        <h2 class="options-title">OPCOES</h2>
-
-        <div class="opt-section">
-          <div class="opt-section-label">AUDIO</div>
-
-          <div class="opt-row">
-            <label class="opt-label" for="opt-bgm-vol">MUSICA</label>
-            <input class="opt-slider" type="range" id="opt-bgm-vol" min="0" max="100" value="45">
-            <span class="opt-val" id="opt-bgm-val">45</span>
-          </div>
-
-          <div class="opt-row">
-            <label class="opt-label" for="opt-sfx-vol">EFEITOS SONOROS</label>
-            <input class="opt-slider" type="range" id="opt-sfx-vol" min="0" max="100" value="100">
-            <span class="opt-val" id="opt-sfx-val">100</span>
-          </div>
-        </div>
-
-        <div class="opt-section">
-          <div class="opt-section-label">EFEITOS VISUAIS</div>
-
-          <div class="opt-row">
-            <label class="opt-label" for="opt-shake">TREPIDACAO DE TELA</label>
-            <button class="opt-toggle" id="opt-shake" data-on="true">ATIVO</button>
-          </div>
-
-          <div class="opt-row">
-            <label class="opt-label" for="opt-coins">MOEDAS FLUTUANTES</label>
-            <button class="opt-toggle" id="opt-coins" data-on="true">ATIVO</button>
-          </div>
-
-          <div class="opt-row">
-            <label class="opt-label" for="opt-toast">NOTIFICACOES</label>
-            <button class="opt-toggle" id="opt-toast" data-on="true">ATIVO</button>
-          </div>
-        </div>
-
-        <div class="opt-section">
-          <div class="opt-section-label">TELA</div>
-
-          <div class="opt-row">
-            <label class="opt-label">ESCALA</label>
-            <div class="opt-scale-btns">
-              <button class="opt-scale-btn" data-scale="0.75">75%</button>
-              <button class="opt-scale-btn active" data-scale="fit">FIT</button>
-              <button class="opt-scale-btn" data-scale="1">100%</button>
-            </div>
-          </div>
-
-          <div class="opt-row">
-            <label class="opt-label" for="opt-fullscreen">TELA CHEIA</label>
-            <button class="opt-toggle" id="opt-fullscreen" data-on="false">INATIVO</button>
-          </div>
-        </div>
-
-        <button class="btn-secondary saves-close" id="btn-options-close">FECHAR</button>
-      </div>
-    </div>
-
-    <!-- ═══════════════════ SAVES MODAL ═══════════════════ -->
-    <div id="saves-modal" class="modal-overlay hidden">
-      <div id="saves-panel">
-        <h2 class="saves-title">SELECIONAR ARQUIVO</h2>
-        <div id="saves-list"></div>
-        <button class="btn-secondary saves-close" id="btn-saves-close">✕ FECHAR</button>
-      </div>
-    </div>
-
-    <!-- ═══════════════════ LEVEL SELECT ═══════════════════ -->
-    <div id="screen-level-select" class="screen hidden">
-      <div id="level-map-wrap">
-        <img id="level-map-img" src="level_select.png" alt="Mapa de Fases" draggable="false">
-        <!-- Nós clicáveis sobrepostos à imagem -->
-        <button class="level-node active"  id="lvl-node-1" data-level="1" title="Floresta Maldita">
-          <span class="node-ring"></span>
-          <span class="node-label">1</span>
-        </button>
-        <button class="level-node locked" id="lvl-node-2" data-level="2" title="Pátio da Mansão" disabled>
-          <span class="node-label">2</span>
-          <span class="node-lock">🔒</span>
-        </button>
-        <button class="level-node locked" id="lvl-node-3" data-level="3" title="Interior da Mansão" disabled>
-          <span class="node-label">3</span>
-          <span class="node-lock">🔒</span>
-        </button>
-        <button class="level-node locked" id="lvl-node-4" data-level="4" title="Câmara do Mal" disabled>
-          <span class="node-label">4</span>
-          <span class="node-lock">🔒</span>
-        </button>
-      </div>
-      <p class="level-select-hint">Clique em uma fase para jogar</p>
-    </div>
-
-    <!-- ═══════════════════ INTRO SCREEN ═══════════════════ -->
-    <div id="screen-intro" class="screen hidden">
-      <div class="intro-box">
-        <img id="intro-card" src="Assests/Sprites/Scenes/card_inicial.png" alt="Carta Misteriosa" onerror="this.style.display='none'">
-        <div class="intro-text-area">
-          <p id="intro-text"></p>
-        </div>
-        <button class="btn-secondary" id="btn-intro-continue">▼ Pressione ESPAÇO para continuar</button>
-      </div>
-    </div>
-
-    <!-- ═══════════════════ TRANSITION OVERLAY ═══════════════════ -->
-    <div id="screen-transition" class="screen hidden">
-      <div id="transition-overlay"></div>
-      <p id="transition-text" class="hidden">UM GHOST APARECEU!</p>
-    </div>
-
-    <!-- ═══════════════════ DIALOGUE / COMIC SCENE ═══════════════════ -->
-    <div id="screen-dialogue" class="screen hidden">
-      <div class="dlg-layout">
-        <!-- Speech bubble (right side, player talks) -->
-        <div class="dlg-bubble-col">
-          <div class="dlg-speaker-tag" id="dialogue-speaker">CAÇADOR</div>
-          <div class="dlg-bubble-wrap">
-            <img class="dlg-balloon-img"
-                 src="Assests/Sprites/Scenes/Ballon.png"
-                 alt=""
-                 draggable="false"
-                 onerror="this.style.opacity='0'">
-            <div class="dlg-text-layer">
-              <p id="dialogue-text" class="dlg-text"></p>
-            </div>
-            <span class="dlg-hint" id="dialogue-hint">▼ toque para continuar</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═══════════════════ BATTLE HUD ═══════════════════ -->
-    <div id="hud" class="hidden">
-
-      <!-- Player HP bar (bottom-left) -->
-      <div id="hp-player-box" class="hp-box hp-player">
-        <span class="hp-name">VOCE</span>
-        <div class="hp-bar-bg">
-          <div id="hp-player-fill" class="hp-bar-fill" style="width:100%"></div>
-        </div>
-      </div>
-
-      <!-- Enemy HP bars (top-right area, rendered per-enemy) -->
-      <div id="enemy-hp-area"></div>
-
-      <!-- Coin HUD (top-right corner) -->
-      <div id="coin-hud">
-        <button id="btn-mute" title="Mute/Unmute"><img id="mute-img" src="desmutado.png" width="22" height="22" alt="som"></button>
-        <img src="dinheiro.png" class="coin-icon-img" width="22" height="22" alt="moedas">
-        <span id="coin-amount">0</span>
-      </div>
-
-      <!-- Battle message box (center-bottom) -->
-      <div id="battle-msg-box" class="hidden">
-        <p id="battle-msg-player"></p>
-        <p id="battle-msg-enemy"></p>
-      </div>
-
-      <!-- Round result flash -->
-      <div id="round-result" class="hidden">
-        <span id="round-result-text"></span>
-      </div>
-
-      <!-- Main action buttons (bottom bar) -->
-      <div id="battle-actions">
-        <button class="btn-action" id="btn-attacks">ATAQUES</button>
-        <button class="btn-action" id="btn-shop">LOJA</button>
-        <button class="btn-action" id="btn-bestiary">MONSTRUARIO</button>
-      </div>
-
-    </div><!-- /hud -->
-
-    <!-- ═══════════════════ ATTACK PANEL (slides up) ═══════════════════ -->
-    <div id="attack-panel" class="panel hidden">
-      <div class="panel-header">
-        <span class="panel-title">ESCOLHA SEU ATAQUE</span>
-        <button class="btn-close" id="btn-close-attack">✕</button>
-      </div>
-      <div class="panel-body attack-grid">
-        <button class="btn-attack" data-choice="pedra">
-          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Estaca.png" alt="Estaca" onerror="this.style.display='none'"></div>
-          <span class="attack-name">ESTACA</span>
-          <span class="attack-desc">Pedra</span>
-        </button>
-        <button class="btn-attack" data-choice="papel">
-          <div class="attack-icon"><img src="Assests/Sprites/Ballons/aspirador.png" alt="Aspirador" onerror="this.style.display='none'"></div>
-          <span class="attack-name">ASPIRADOR</span>
-          <span class="attack-desc">Papel • +$25</span>
-        </button>
-        <button class="btn-attack" data-choice="tesoura">
-          <div class="attack-icon"><img src="Assests/Sprites/Ballons/Cruz.png" alt="Cruz" onerror="this.style.display='none'"></div>
-          <span class="attack-name">CRUZ</span>
-          <span class="attack-desc">Tesoura</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- ═══════════════════ SHOP PANEL (slides up) ═══════════════════ -->
-    <div id="shop-panel" class="panel hidden">
-      <div class="panel-header">
-        <span class="panel-title">LOJA</span>
-        <button class="btn-close" id="btn-close-shop">✕</button>
-      </div>
-      <div class="panel-body shop-grid" id="shop-items-container">
-        <!-- populated by JS -->
-      </div>
-    </div>
-
-    <!-- ═══════════════════ BESTIARY MODAL ═══════════════════ -->
-    <div id="bestiary-modal" class="modal-overlay hidden" id="bestiary-overlay">
-      <div class="bestiary-book">
-        <img class="bestiary-bg-img" src="Assests/Sprites/molders/Monstruario.png" alt="" onerror="this.style.display='none'">
-        <div class="bestiary-inner">
-          <h2 class="bestiary-title">MONSTRUÁRIO</h2>
-          <div id="bestiary-content"></div>
-          <div class="bestiary-nav hidden" id="bestiary-nav">
-            <button id="btn-bst-prev">◀ Anterior</button>
-            <span id="bst-page-label">1/1</span>
-            <button id="btn-bst-next">Próximo ▶</button>
-          </div>
-          <p class="bestiary-hint">Toque fora do livro ou pressione ESC para fechar</p>
-        </div>
-        <button class="btn-close bestiary-close-btn" id="btn-close-bestiary">✕</button>
-      </div>
-    </div>
-
-    <!-- ═══════════════════ TOAST NOTIFICATION ═══════════════════ -->
-    <div id="toast" class="hidden"></div>
-
-    <!-- ═══════════════════ RESULT SCREEN ═══════════════════ -->
-    <div id="screen-result" class="screen hidden">
-      <div class="result-box">
-        <h2 id="result-title">RESULTADO</h2>
-        <p id="result-coins-text"></p>
-        <button class="btn-primary" id="btn-restart">NOVO JOGO</button>
-      </div>
-    </div>
-
-    <div id="screen-fade-overlay"></div>
-
-    <!-- ═══════════════════ MULTIPLAYER LOBBY ═══════════════════ -->
-    <div id="screen-mp-lobby" class="screen hidden">
-      <h2 class="mp-screen-title">MULTIPLAYER</h2>
-      <p class="mp-screen-sub">Cacador vs Monstro — Melhor de 3</p>
-      <p id="mp-conn-status" class="mp-conn-status">Pronto</p>
-      <div class="mp-lobby-form">
-        <label class="mp-label" for="mp-nickname">SEU NOME</label>
-        <input class="mp-input" id="mp-nickname" type="text" maxlength="16" placeholder="Nickname" autocomplete="off">
-        <label class="mp-label" for="mp-join-code">CODIGO DA SALA (entrar)</label>
-        <input class="mp-input mp-code-input" id="mp-join-code" type="text" maxlength="8" placeholder="JGH-XXXX" autocomplete="off">
-        <div class="mp-lobby-actions">
-          <button class="btn-primary" id="btn-mp-create">CRIAR SALA</button>
-          <button class="btn-secondary" id="btn-mp-join">ENTRAR</button>
-        </div>
-        <button class="btn-secondary mp-back-btn" id="btn-mp-back-menu">VOLTAR</button>
-      </div>
-      <p class="mp-hint">Compartilhe o codigo com um amigo ou use o link: <span class="mp-hint-code">?room=JGH-XXXX</span></p>
-    </div>
-
-    <!-- ═══════════════════ MULTIPLAYER WAITING ═══════════════════ -->
-    <div id="screen-mp-waiting" class="screen hidden">
-      <h2 class="mp-screen-title">SALA</h2>
-      <p id="mp-waiting-code" class="mp-room-code">JGH-????</p>
-      <p id="mp-role-badge" class="mp-role-badge role-hunter">CACADOR</p>
-      <p id="mp-waiting-msg" class="mp-waiting-msg">Aguardando oponente...</p>
-      <p id="mp-share-link" class="mp-share-link"></p>
-      <p class="mp-hint">Envie o codigo ou link para seu amigo</p>
-      <button class="btn-secondary mp-back-btn" id="btn-mp-cancel-wait">CANCELAR</button>
-    </div>
-
-    <!-- ═══════════════════ MULTIPLAYER BATTLE ═══════════════════ -->
-    <div id="screen-mp-battle" class="screen hidden mp-battle-screen">
-      <div class="mp-battle-hud">
-        <div class="mp-scoreboard">
-          <div class="mp-score-side">
-            <span class="mp-score-label">CACADOR</span>
-            <span id="mp-score-hunter" class="mp-score-val">0</span>
-          </div>
-          <div class="mp-score-mid">
-            <span id="mp-round-label" class="mp-round-label">Rodada 1</span>
-            <span class="mp-rounds-hint">/ 3 para vencer</span>
-          </div>
-          <div class="mp-score-side">
-            <span class="mp-score-label">MONSTRO</span>
-            <span id="mp-score-monster" class="mp-score-val">0</span>
-          </div>
-        </div>
-        <div class="mp-phase-bar">
-          <span id="mp-phase-title" class="mp-phase-title">ESCOLHA SEU PERK</span>
-          <span id="mp-timer" class="mp-timer"></span>
-        </div>
-      </div>
-
-      <div class="mp-battle-panel">
-        <div id="mp-perks-grid" class="mp-perks-grid hidden"></div>
-        <div id="mp-attacks-grid" class="mp-attacks-grid hidden"></div>
-        <div id="mp-reveal-box" class="mp-reveal-box hidden">
-          <p id="mp-reveal-text" class="mp-reveal-text"></p>
-        </div>
-        <p id="mp-status-msg" class="mp-status-msg"></p>
-      </div>
-    </div>
-
-    <!-- ═══════════════════ MULTIPLAYER RESULT ═══════════════════ -->
-    <div id="screen-mp-result" class="screen hidden">
-      <div class="mp-result-box">
-        <h2 id="mp-result-title" class="mp-result-title">RESULTADO</h2>
-        <p id="mp-result-detail" class="mp-result-detail"></p>
-        <div class="mp-result-actions">
-          <button class="btn-primary" id="btn-mp-result-rematch">NOVA SALA</button>
-          <button class="btn-secondary" id="btn-mp-result-menu">MENU</button>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /game-root -->
-
-  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-  <script src="multiplayer-config.js?v=1"></script>
-  <script src="game.js?v=7"></script>
-  <script src="multiplayer.js?v=1"></script>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js" defer></script>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

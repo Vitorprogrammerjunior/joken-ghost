@@ -1,0 +1,175 @@
+/* ═══════════════════════════════════════════════════════════
+   HUD da batalha
+   ═══════════════════════════════════════════════════════════ */
+
+#screen-battle { justify-content: flex-start; }
+
+/* ─── jogador (canto superior esquerdo) ─── */
+.hud-player {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 420px;
+}
+.hud-portrait { width: 64px; height: 64px; animation: heartbeat 1.2s steps(2) infinite; }
+@keyframes heartbeat { 50% { transform: scale(0.9); } }
+.hud-player-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.hud-player-name { display: flex; justify-content: space-between; text-shadow: var(--outline); }
+#hud-hp-text { color: var(--fog); }
+.hpbar { position: relative; height: 20px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone), 0 0 0 4px var(--ink); }
+.hpbar-ghost, .hpbar-fill { position: absolute; inset: 0 auto 0 0; width: 100%; }
+.hpbar-ghost { background: var(--white); opacity: 0.7; transition: width 0.5s steps(10); }
+.hpbar-fill { background: var(--green); box-shadow: inset 0 4px 0 rgba(255, 255, 255, 0.25); transition: width 0.25s steps(5), background 0.2s; }
+.hud-status { display: flex; gap: 6px; min-height: 0; }
+.status-chip { display: inline-flex; padding: 2px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--gold); animation: pop 0.3s ease-out both; }
+
+/* ─── canto superior direito ─── */
+.hud-top-right { position: absolute; top: 16px; right: 16px; display: flex; align-items: center; gap: 10px; }
+.wave-tag { position: absolute; top: 96px; right: 20px; color: var(--fog); text-shadow: var(--outline); }
+
+/* ─── faixa central ─── */
+.banner {
+  position: absolute;
+  top: 180px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 20px;
+  background: rgba(14, 11, 22, 0.8);
+  box-shadow: 0 -4px 0 var(--purple), 0 4px 0 var(--purple);
+  font-size: 40px;
+  line-height: 48px;
+  color: var(--white);
+  text-shadow: var(--outline), 0 6px 0 var(--ink);
+}
+.banner.show { animation: banner-in 0.35s steps(6) both; }
+.banner.danger { box-shadow: 0 -4px 0 var(--red), 0 4px 0 var(--red); color: var(--red-2); }
+.banner.win { box-shadow: 0 -4px 0 var(--gold), 0 4px 0 var(--gold); color: var(--gold); font-size: 64px; line-height: 72px; }
+.banner.lose { box-shadow: 0 -4px 0 var(--stone), 0 4px 0 var(--stone); color: var(--mist); font-size: 64px; line-height: 72px; }
+@keyframes banner-in { from { transform: scaleY(0); } }
+
+.combo {
+  position: absolute;
+  top: 140px;
+  left: 24px;
+  font-size: 32px;
+  line-height: 40px;
+  color: var(--orange);
+  text-shadow: var(--outline), 0 4px 0 var(--ink);
+  transform: rotate(-4deg);
+}
+.combo.pop { animation: pop 0.3s ease-out both; }
+
+.target-hint {
+  position: absolute;
+  bottom: 112px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: var(--fog);
+  text-shadow: var(--outline);
+}
+
+/* ─── barra de ações ─── */
+.actions {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  display: flex;
+  gap: 16px;
+  transform: translateX(-50%);
+  transition: transform 0.2s steps(4), opacity 0.2s;
+}
+.actions.locked { opacity: 0.6; transform: translate(-50%, 16px); }
+.btn-action { min-width: 220px; min-height: 80px; font-size: 24px; }
+.btn-action .ico { width: 48px; height: 48px; }
+.btn-action.active { border-image-source: url('../assets/sprites/ui/btn_pressed.svg'); padding-top: 18px; padding-bottom: 10px; }
+.btn-primary.btn-action.active { border-image-source: url('../assets/sprites/ui/btn_primary_pressed.svg'); }
+
+/* ─── gavetas (armas / loja) ─── */
+.drawer {
+  position: absolute;
+  bottom: 116px;
+  left: 50%;
+  width: 760px;
+  padding: 24px 28px 28px;
+  border: 2px solid transparent;
+  border-image: url('../assets/sprites/ui/panel.svg') 16 fill / 32px / 0 stretch;
+  transform: translateX(-50%);
+  pointer-events: auto;
+}
+.drawer.slide-in { animation: drawer-in 0.2s steps(4) both; }
+@keyframes drawer-in { from { transform: translate(-50%, 40px); opacity: 0; } }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: var(--gold); text-shadow: var(--outline); }
+#shop-drawer { width: 1000px; }
+
+.weapon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.weapon-card, .shop-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px 18px;
+  border: 2px solid transparent;
+  border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 24px / 0 stretch;
+  background: none;
+  color: var(--white);
+  font: inherit;
+  text-shadow: var(--outline);
+  cursor: pointer;
+}
+.weapon-card:hover, .shop-card:hover, .weapon-card:focus-visible, .shop-card:focus-visible {
+  border-image-source: url('../assets/sprites/ui/slot_active.svg');
+  outline: none;
+}
+.weapon-card:hover .ico-lg, .shop-card:hover .ico-lg { animation: float 0.8s ease-in-out infinite; }
+.weapon-card .ico-lg { width: 96px; height: 96px; }
+.weapon-name { font-size: 24px; line-height: 32px; }
+.weapon-beats { display: flex; align-items: center; gap: 6px; color: var(--fog); }
+.key {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+  text-align: center;
+  background: var(--ink-3);
+  color: var(--fog);
+  box-shadow: 0 0 0 2px var(--stone);
+}
+.weapon-tag { position: absolute; top: 10px; right: 10px; padding: 2px 8px; animation: pop 0.3s ease-out both; }
+.weapon-tag.good { background: var(--green); }
+.weapon-tag.bad { background: #8e1a2e; }
+
+.shop-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.shop-card {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  grid-template-rows: auto 1fr auto;
+  column-gap: 14px;
+  align-items: start;
+  text-align: left;
+  padding: 14px 16px 16px;
+}
+.shop-card .ico-lg { grid-row: 1 / 4; align-self: center; }
+.shop-name { color: var(--white); }
+.shop-desc { font-size: 16px; line-height: 24px; color: var(--fog); }
+.shop-price { display: flex; align-items: center; gap: 6px; color: var(--gold); font-size: 24px; line-height: 32px; }
+.shop-card.poor { opacity: 0.55; }
+.shop-card.poor .shop-price { color: var(--red-2); }
+
+/* ─── vida baixa: borda vermelha pulsando ─── */
+#screen-battle.danger::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 8px rgba(210, 58, 58, 0.6), inset 0 0 80px rgba(210, 58, 58, 0.35);
+  animation: blink 1s steps(2) infinite;
+  pointer-events: none;
+}

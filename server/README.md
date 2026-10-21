@@ -24,7 +24,7 @@ Servidor em `http://localhost:3001`.
 
 ## Configurar o frontend (Vercel)
 
-Edite `multiplayer-config.js` na raiz do projeto:
+Edite `src/config/multiplayer.js` (função `serverUrl`):
 
 ```js
 return 'https://SUA-URL.up.railway.app';
@@ -55,6 +55,6 @@ Ou passe na URL: `?server=https://SUA-URL.up.railway.app`
 ## Testar com 2 abas
 
 1. `npm start` no `server/`
-2. Abra `index.html` via servidor local (ex: `npx serve .` na raiz)
+2. Na raiz do projeto, rode `npm run dev` e abra `http://localhost:5173`
 3. Aba 1: Multiplayer → Criar sala
 4. Aba 2: Multiplayer → Entrar com codigo `JGH-XXXX`

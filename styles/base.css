@@ -1,0 +1,151 @@
+/* ═══════════════════════════════════════════════════════════
+   JokenGhost — base: fonte, cores, raiz 1280x720 e utilitários
+   ═══════════════════════════════════════════════════════════ */
+
+@font-face {
+  font-family: 'JokenPixel';
+  src: url('../assets/fonts/jokenpixel.otf') format('opentype');
+  font-display: block;
+}
+
+:root {
+  --ink: #0e0b16;
+  --ink-2: #1c1729;
+  --ink-3: #2f2a3d;
+  --stone: #4a4559;
+  --mist: #9b98ab;
+  --fog: #c9c7d4;
+  --white: #f4f2fa;
+  --gold: #f6d548;
+  --gold-2: #cf9a22;
+  --orange: #f08c2a;
+  --red: #d23a3a;
+  --red-2: #ff7563;
+  --green: #5fb24a;
+  --green-2: #a8e070;
+  --cyan: #7cf0dc;
+  --blue: #6f96f0;
+  --purple: #6a34a3;
+  --purple-2: #a35fd9;
+  --wood: #6b4029;
+  --parchment: #ecc58a;
+
+  /* contorno de 1 pixel de arte (2px) para textos */
+  --outline: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink),
+             2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink);
+  color: var(--white);
+  font-family: 'JokenPixel', monospace;
+  font-size: 16px;
+  line-height: 24px;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+img { image-rendering: pixelated; }
+
+/* ─── raiz do jogo: sempre 1280x720, escalada via JS ─── */
+#game-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 720px;
+  overflow: hidden;
+  transform-origin: 0 0;
+  background: #000;
+}
+
+#game-canvas {
+  position: absolute;
+  inset: 0;
+  width: 1280px;
+  height: 720px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* a camada de UI só captura cliques nos elementos interativos */
+#ui { position: absolute; inset: 0; pointer-events: none; }
+#ui button, #ui a, #ui input, #ui label, #ui .modal, #ui .interactive { pointer-events: auto; }
+
+.screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  animation: fade-in 0.3s ease both;
+}
+
+.hidden { display: none !important; }
+
+#fade {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms steps(6);
+  z-index: 100;
+}
+
+/* ─── ícones (sprites 64x64) ─── */
+.ico { width: 32px; height: 32px; flex: none; image-rendering: pixelated; }
+.ico-xs { width: 16px; height: 16px; vertical-align: -2px; }
+.ico-sm { width: 24px; height: 24px; }
+.ico-lg { width: 64px; height: 64px; }
+.ico-xl { width: 128px; height: 128px; }
+
+/* ─── animações utilitárias ─── */
+.blink { animation: blink 1s steps(2) infinite; }
+.float { animation: float 1.6s ease-in-out infinite; }
+
+@keyframes blink { 50% { opacity: 0; } }
+@keyframes float { 50% { transform: translateY(-8px); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+
+/* ─── celular em pé ─── */
+#rotate-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px;
+  background: var(--ink);
+  text-align: center;
+}
+#rotate-hint .ico-xl { animation: spin 2s steps(8) infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+body.portrait:not(.rotate-dismissed) #rotate-hint { display: flex; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

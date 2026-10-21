@@ -1,0 +1,113 @@
+// As quatro fases da campanha, com história, cenário e ondas de inimigos.
+
+export const LEVELS = [
+  {
+    id: 1,
+    name: 'Floresta Maldita',
+    scenery: 'floresta',
+    location: 'tile/loc_floresta',
+    intro: [
+      '1ª Fase — A Mansão na Colina',
+      '',
+      'O caçador recebe uma carta misteriosa sobre',
+      'estranhos acontecimentos em uma antiga mansão.',
+      '',
+      'Ele segue pela floresta à noite, armado com',
+      'suas três armas espirituais:',
+      'Estaca, Aspirador e Cruz,',
+      '',
+      'determinado a investigar os relatos...',
+    ],
+    dialogue: [
+      { who: 'hunter', text: '...Que floresta mais estranha.\nSinto calafrios só de caminhar por aqui.' },
+      { who: 'hunter', text: 'Espera — sinto uma presença!\nIsso é energia sobrenatural!' },
+      { who: 'hunter', text: 'São fantasmas. SÃO FANTASMAS!\nComo fui parar nessa maldita floresta?!' },
+      { who: 'hunter', text: 'Respira fundo... você treinou pra isso.\nEstaca vence Maldição, Aspirador vence\nPossessão e Cruz vence Assombração.' },
+      { who: 'hunter', text: 'Muito bem, seus malditos espíritos —\nquem vai ser o primeiro?!' },
+    ],
+    waves: [['fantasma'], ['fantasma', 'fogo_fatuo']],
+  },
+  {
+    id: 2,
+    name: 'Pátio da Mansão',
+    scenery: 'patio',
+    location: 'tile/loc_patio',
+    intro: [
+      '2ª Fase — Os Portões de Ferro',
+      '',
+      'Ao sair da floresta, o caçador encontra',
+      'os portões enferrujados da mansão.',
+      '',
+      'Morcegos rondam as janelas acesas',
+      'e as estátuas do jardim parecem...',
+      '',
+      '...observar cada um de seus passos.',
+    ],
+    dialogue: [
+      { who: 'hunter', text: 'Então essa é a mansão da carta.\nAlguém deixou as luzes acesas...' },
+      { who: 'hunter', text: 'Essas gárgulas... eu podia jurar\nque aquela ali estava virada pro outro lado.' },
+      { who: 'hunter', text: 'Dica de caçador: abra o Monstruário.\nCada criatura tem uma fraqueza!' },
+    ],
+    waves: [['morcego', 'morcego'], ['gargula', 'morcego']],
+  },
+  {
+    id: 3,
+    name: 'Interior da Mansão',
+    scenery: 'mansao',
+    location: 'tile/loc_mansao',
+    intro: [
+      '3ª Fase — O Salão Principal',
+      '',
+      'A porta range e se fecha sozinha.',
+      '',
+      'Lá dentro, velas se acendem por conta própria,',
+      'retratos acompanham o caçador com o olhar',
+      'e um brinquedo antigo começa a cantar.',
+      '',
+      'Não há mais volta.',
+    ],
+    dialogue: [
+      { who: 'hunter', text: 'Que lugar... esses retratos\nestão me encarando?' },
+      { who: 'hunter', text: 'Uma boneca? Aqui?\nEla... ela está sorrindo pra mim.' },
+      { who: 'hunter', text: 'E essa armadura se mexeu.\nPerfeito. Simplesmente perfeito.' },
+    ],
+    waves: [['boneca', 'fantasma'], ['armadura', 'boneca']],
+  },
+  {
+    id: 4,
+    name: 'Câmara do Mal',
+    scenery: 'camara',
+    location: 'tile/loc_camara',
+    intro: [
+      '4ª Fase — A Câmara do Mal',
+      '',
+      'No porão da mansão, um círculo de runas',
+      'brilha em vermelho sob tochas tremulantes.',
+      '',
+      'Uma risada ecoa pelas paredes de pedra.',
+      '',
+      'O dono da mansão finalmente se revela...',
+    ],
+    dialogue: [
+      { who: 'hunter', text: 'Então é aqui que tudo começa.\nEsse círculo é a fonte dos fantasmas!' },
+      { who: 'kastle', text: 'HA HA HA! Um visitante!\nBem-vindo ao meu humilde espetáculo!' },
+      { who: 'kastle', text: 'Eu sou KASTLE, o Bobo da Corte!\nVamos brincar de pedra, papel... e MORTE!' },
+      { who: 'hunter', text: 'Brincadeira acabou, palhaço.\nSeu show termina hoje!' },
+    ],
+    waves: [['morcego', 'fantasma', 'fogo_fatuo'], ['kastle']],
+  },
+];
+
+export const ENDING = [
+  'Com um último grito, Kastle se desfaz em fumaça.',
+  '',
+  'O círculo de runas se apaga e, um a um,',
+  'os espíritos da mansão finalmente descansam.',
+  '',
+  'O caçador sai pelos portões ao amanhecer,',
+  'com a mochila vazia e o coração cheio.',
+  '',
+  'FIM... por enquanto.',
+];
+
+export const levelById = (id) => LEVELS.find(l => l.id === id);

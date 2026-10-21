@@ -150,3 +150,6 @@ debug.log
 
 # Node multiplayer server
 server/node_modules/
+
+# Ferramentas de build de assets
+tools/node_modules/
