@@ -56,7 +56,7 @@ export function desenhaCruz(m) {
   m.paint((g) => { g.rect(15, 10, 2, 2, 'r3'); g.set(15, 10, 'r5'); });
 }
 export const cruz = () => icone((m) => {
-  m.backdrop((g) => raios(g, 16, 13, 14, 'y4', 8));
+  m.backdrop((g) => raios(g, 16, 14, 13, 'y4', 8));
   desenhaCruz(m);
 });
 
@@ -227,14 +227,19 @@ const sacola = () => icone((m) => {
   });
 });
 
-const espadas = () => icone((m) => {
-  for (const s of [-1, 1]) {
-    const x0 = s < 0 ? 4 : 28, x1 = s < 0 ? 26 : 6;
-    m.part(PRATA, 'cylinder', (p) => p.stroke(x0, 3, x1 + s * 0, 23, 3, 'x'));
-    m.part(OURO, 'hcylinder', (p) => p.stroke(x1 - s * 3, 20, x1 + s * 3, 26, 2, 'x'));
-    m.part(MADEIRA, 'cylinder', (p) => p.stroke(x1 + s * 1, 24, x1 + s * 4, 28, 2, 'x'));
-  }
-});
+/** Uma espada na diagonal: ponta em cima à direita, cabo embaixo à esquerda (`flip` espelha). */
+function espada(m, flip) {
+  const fx = (x) => (flip ? 31 - x : x);
+  m.part(PRATA, 'cylinder', (p) => {
+    p.stroke(fx(10), 21, fx(24), 7, 3, 'x');
+    p.poly([[fx(22), 6], [fx(25), 9], [fx(28), 3]], 'x');           // ponta
+  });
+  m.part(OURO, 'cylinder', (p) => p.stroke(fx(6), 18, fx(13), 25, 2, 'x'));   // guarda
+  m.part(MADEIRA, 'cylinder', (p) => p.stroke(fx(9), 23, fx(5), 27, 2, 'x'));  // cabo
+  m.part(OURO, 'sphere', (p) => p.circle(fx(4), 28, 1.5, 'x'));                 // pomo
+  m.paint((g) => g.line(fx(12), 18, fx(23), 7, 't5'));                            // fio da lâmina
+}
+const espadas = () => icone((m) => { espada(m, false); espada(m, true); });
 
 const pausa = () => icone((m) => {
   m.part(BRANCO, 'cylinder', (p) => { p.rect(8, 5, 6, 22, 'x'); p.rect(18, 5, 6, 22, 'x'); });
@@ -416,7 +421,7 @@ const perkResistencia = () => icone((m) => {
 });
 
 const perkSorte = () => icone((m) => {
-  m.part(VERDE_ESCURO, 'cylinder', (p) => p.stroke(16, 16, 22, 30, 2, 'x'));
+  m.part(VERDE_ESCURO, 'cylinder', (p) => p.stroke(16, 16, 21, 28, 2, 'x'));
   m.part(VERDE, 'sphere', (p) => {
     for (const [x, y] of [[11, 10], [21, 10], [11, 19], [21, 19]]) p.circle(x, y, 5.5, 'x');
   });
@@ -463,7 +468,7 @@ const perkFuria = () => icone((m) => {
 });
 
 const perkEscudoSagrado = () => icone((m) => {
-  m.part(OURO, 'flat', (p) => { p.ring(16, 4, 5, 2, 'x'); }, { edge: false });
+  m.part(OURO, 'flat', (p) => { p.ring(16, 6, 5, 2, 'x'); }, { edge: false });
   escudo(BRANCO, OURO)(m);
   m.overlay((g) => { faisca(g, 3, 9, 'y4'); faisca(g, 29, 9, 'y4'); g.set(4, 22, 'y4'); g.set(28, 22, 'y4'); });
 });
@@ -484,7 +489,7 @@ function liga(cor, coroa = false) {
       pts.push([16 + Math.cos(a) * r, 17 + Math.sin(a) * r]);
     }
     m.part(mat(cor), 'sphere', (p) => p.poly(pts, 'x'), { light: 2, edge: false });
-    if (coroa) m.part(OURO, 'cylinder', (p) => p.poly([[8, 7], [24, 7], [25, 1], [21, 4], [16, 0], [11, 4], [7, 1]], 'x'));
+    if (coroa) m.part(OURO, 'cylinder', (p) => p.poly([[8, 8], [24, 8], [25, 2], [21, 5], [16, 1], [11, 5], [7, 2]], 'x'));
   });
 }
 

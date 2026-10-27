@@ -7,6 +7,7 @@ import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { toSVG } from './lib/export.mjs';
+import { cutFrames } from './lib/grid.mjs';
 import { characterSheets } from './art/hunter.mjs';
 import { cardSheets } from './art/cards.mjs';
 import { enemySheets } from './art/enemies.mjs';
@@ -22,6 +23,15 @@ import { editorIconSheets } from './art/editor.mjs';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'assets', 'sprites');
 const FRAME = 64;
+
+// Ícones e inimigos (estilo de volume) não podem sair do quadro: confere antes de gerar qualquer arquivo.
+const enemies = { ...enemySheets(), ...enemySheets2() };
+const icons = { ...iconSheets(), ...arenaIconSheets(), ...editorIconSheets() };
+const cuts = [
+  ...Object.entries(icons).map(([name, g]) => [`icon/${name}`, g]),
+  ...Object.entries(enemies).flatMap(([enemy, anims]) => Object.entries(anims).map(([anim, g]) => [`enemy/${enemy}/${anim}`, g])),
+].flatMap(([key, g]) => cutFrames(g).map(({ frame, sides }) => `  ${key} (frame ${frame}): cortado em ${sides.join(', ')}`));
+if (cuts.length) throw new Error(`Sprites saindo do quadro:\n${cuts.join('\n')}`);
 
 rmSync(OUT, { recursive: true, force: true });
 
@@ -48,10 +58,10 @@ for (const [id, views] of Object.entries(characterSheets())) {
   }
 }
 for (const [name, g] of Object.entries(cardSheets())) emit(`card/${name}`, `cards/${name}`, g);
-for (const [enemy, anims] of Object.entries({ ...enemySheets(), ...enemySheets2() })) {
+for (const [enemy, anims] of Object.entries(enemies)) {
   for (const [anim, g] of Object.entries(anims)) emit(`enemy/${enemy}/${anim}`, `enemies/${enemy}/${anim}`, g);
 }
-for (const [name, g] of Object.entries({ ...iconSheets(), ...arenaIconSheets(), ...editorIconSheets() })) emit(`icon/${name}`, `icons/${name}`, g);
+for (const [name, g] of Object.entries(icons)) emit(`icon/${name}`, `icons/${name}`, g);
 for (const [name, g] of Object.entries(fxSheets())) emit(`fx/${name}`, `fx/${name}`, g);
 for (const [name, g] of Object.entries({ ...uiSheets(), ...frameSheets() })) emit(`ui/${name}`, `ui/${name}`, g);
 for (const [name, g] of Object.entries({ ...tileSheets(), ...tileSheets2() })) emit(`tile/${name}`, `tiles/${name}`, g);

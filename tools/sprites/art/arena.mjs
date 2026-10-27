@@ -15,7 +15,7 @@ const estacaPrata = () => icone((m) => {
 });
 
 const aspiradorTurbo = () => icone((m) => {
-  m.backdrop((g) => { for (const y of [6, 12, 18, 24]) g.line(0, y, 5, y, 'v5'); raios(g, 26, 8, 6, 'v5', 8); });
+  m.backdrop((g) => { for (const y of [6, 12, 18, 24]) g.line(1, y, 4, y, 'v5'); raios(g, 26, 7, 4, 'v5', 8); });
   desenhaAspirador(m, { visor: 'v5', brilho: 'w' });
   m.overlay((g) => { faisca(g, 29, 4, 'v6'); faisca(g, 24, 2, 'v5'); });
 });
@@ -36,7 +36,7 @@ const provocacao = () => icone((m) => {
 });
 
 const disfarce = () => icone((m) => {
-  m.part(MADEIRA, 'cylinder', (p) => p.stroke(25, 19, 29, 30, 2, 'x'));
+  m.part(MADEIRA, 'cylinder', (p) => p.stroke(25, 19, 28, 28, 2, 'x'));
   m.part(ROXO, 'hcylinder', (p) => {
     p.ellipse(16, 15, 13, 7, 'x');
     p.poly([[3, 15], [8, 9], [6, 19]], 'x');
@@ -111,7 +111,7 @@ const ecto = () => icone((m) => {
 /** Taça de torneio: bojo largo e alças grandes. */
 const taca = () => icone((m) => {
   for (const side of [-1, 1]) {
-    m.part(OURO, 'sphere', (p) => { p.ring(16 + side * 11, 10, 4, 2, 'x'); p.erase((x) => (side < 0 ? x > 7 : x < 25)); }, { edge: false });
+    m.part(OURO, 'sphere', (p) => { p.ring(16 + side * 10, 10, 4, 2, 'x'); p.erase((x) => (side < 0 ? x > 8 : x < 24)); }, { edge: false });
   }
   m.part(OURO, 'cylinder', (p) => { p.poly([[6, 4], [26, 4], [24, 13], [8, 13]], 'x'); p.ellipse(16, 13, 8, 5, 'x'); });
   m.part(OURO, 'cylinder', (p) => p.rect(14, 18, 5, 6, 'x'));
@@ -121,11 +121,11 @@ const taca = () => icone((m) => {
 
 /** Coroa do Rei da Arena. */
 const coroa = () => icone((m) => {
-  m.part(OURO, 'cylinder', (p) => p.poly([[4, 25], [28, 25], [29, 9], [22, 16], [16, 6], [10, 16], [3, 9]], 'x'));
-  m.part(OURO, 'hcylinder', (p) => p.rect(4, 24, 25, 4, 'x'));
+  m.part(OURO, 'cylinder', (p) => p.poly([[5, 25], [27, 25], [28, 9], [22, 16], [16, 6], [10, 16], [4, 9]], 'x'));
+  m.part(OURO, 'hcylinder', (p) => p.rect(5, 24, 23, 4, 'x'));
   m.part(VERMELHO, 'sphere', (p) => p.circle(16, 19, 2, 'x'));
   m.part(mat('c4', { line: 'c1' }), 'sphere', (p) => { p.circle(9, 20, 1.5, 'x'); p.circle(23, 20, 1.5, 'x'); });
-  m.part(AMARELO, 'sphere', (p) => { p.circle(16, 5, 2, 'x'); p.circle(3, 8, 2, 'x'); p.circle(29, 8, 2, 'x'); });
+  m.part(AMARELO, 'sphere', (p) => { p.circle(16, 5, 2, 'x'); p.circle(4, 8, 2, 'x'); p.circle(28, 8, 2, 'x'); });
 });
 
 /** Olho (assistir uma partida). */

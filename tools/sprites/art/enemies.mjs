@@ -24,8 +24,8 @@ function fantasma({ dx = 0, dy = 0, wave = 0, mood = 'idle' } = {}) {
     p.poly([[X - 9, Y + 9], [X + 9, Y + 9], [X + 8, Y + 15], [X + 11, Y + 18 + w], [X + 13, Y + 22 + w], [X + 9, Y + 21],
       [X + 5, Y + 18 - w], [X + 1, Y + 20 - w], [X - 3, Y + 17 + w], [X - 7, Y + 19], [X - 9, Y + 14]], 'x');
   });
-  const reach = mood === 'attack' ? 4 : 0;
-  m.part(ECTO, 'sphere', (p) => p.ellipse(X - 9 - reach, Y + 12 - reach / 2, 3 + reach / 2, 2, 'x'));
+  const reach = mood === 'attack' ? 2 : 0;
+  m.part(ECTO, 'sphere', (p) => p.ellipse(X - 9 - reach, Y + 12 - reach / 2, 3, 2, 'x'));
   m.paint((g) => {
     const ex = X - 4, ey = Y + 7;   // olho grande, olhando para a esquerda
     if (mood === 'hurt') {
@@ -61,7 +61,7 @@ function fogoFatuo({ dx = 0, dy = 0, lick = 0, stretch = 0, mood = 'idle' } = {}
     if (mood === 'attack') g.ellipse(X - 1, Y + 4, 2, 1, 'c1'); else g.rect(X - 2, Y + 4, 3, 1, 'c2');
   });
   m.overlay((g) => {
-    for (const [x, y] of [[X - 7 - lick, Y - 13], [X + 6, Y - 15 + lick], [X - 1, Y - 18 - stretch]]) g.set(x, y, 'c4');
+    for (const [x, y] of [[X - 7 - lick, Y - 13], [X + 6, Y - 15 + lick], [X - 1, Y - 17 - stretch]]) g.set(x, Math.max(1, y), 'c4');
   });
   return m.render();
 }
@@ -77,7 +77,7 @@ function morcego({ dx = 0, dy = 0, wing = 0, mood = 'idle' } = {}) {
   for (const side of [-1, 1]) {
     m.part(ASA, 'flat', (p) => {
       const sx = X + side * 3;
-      p.poly([[sx, Y - 2], [sx + side * 13, Y + tip], [sx + side * 11, Y + tip + 4], [sx + side * 7, Y + 3], [sx + side * 4, Y + 6], [sx, Y + 4]], 'x');
+      p.poly([[sx, Y - 2], [sx + side * 10, Y + tip], [sx + side * 9, Y + tip + 4], [sx + side * 6, Y + 3], [sx + side * 3, Y + 6], [sx, Y + 4]], 'x');
     });
   }
   m.part(ROXO, 'sphere', (p) => {
@@ -103,7 +103,7 @@ function gargula({ dx = 0, dy = 0, reach = 0, mood = 'idle' } = {}) {
   const m = new Model();
   const X = 16 + dx, Y = dy;
   // asa de pedra atrás
-  m.part(PEDRA_ESCURA, 'flat', (p) => p.poly([[X + 3, 14 + Y], [X + 14, 2 + Y], [X + 13, 10 + Y], [X + 10, 15 + Y], [X + 8, 20 + Y]], 'x'));
+  m.part(PEDRA_ESCURA, 'flat', (p) => p.poly([[X + 3, 14 + Y], [X + 12, 2 + Y], [X + 12, 10 + Y], [X + 10, 15 + Y], [X + 8, 20 + Y]], 'x'));
   // corpo agachado e perna de trás
   m.part(PEDRA, 'sphere', (p) => { p.ellipse(X + 3, 20 + Y, 9, 7, 'x'); p.rect(X + 4, 22, 8, 7, 'x'); });
   // cabeça com chifres
@@ -112,7 +112,7 @@ function gargula({ dx = 0, dy = 0, reach = 0, mood = 'idle' } = {}) {
     p.ellipse(hx, hy, 5, 5, 'x');
     p.poly([[hx - 1, hy - 3], [hx + 1, hy - 9], [hx + 3, hy - 3]], 'x');
     p.poly([[hx + 3, hy - 2], [hx + 7, hy - 7], [hx + 6, hy - 1]], 'x');
-    p.rect(hx - 8, hy, 5, 4, 'x');   // focinho
+    p.rect(hx - 7, hy, 4, 4, 'x');   // focinho
   });
   // braço / garra da frente
   m.part(PEDRA, 'cylinder', (p) => { p.stroke(X - 1, 19 + Y, X - 4 - reach * 2, 26 - reach, 3, 'x'); p.rect(X - 7 - reach * 2, 26 - reach, 5, 3, 'x'); });
@@ -120,8 +120,8 @@ function gargula({ dx = 0, dy = 0, reach = 0, mood = 'idle' } = {}) {
   m.paint((g) => {
     if (mood === 'hurt') g.rect(hx - 4, hy - 1, 3, 1, 'k');
     else { g.rect(hx - 4, hy - 2, 3, 2, 'y3'); g.set(hx - 4, hy - 2, 'y4'); }
-    if (mood === 'attack') { g.rect(hx - 8, hy + 2, 4, 2, 'k'); g.set(hx - 7, hy + 2, 'w'); g.set(hx - 5, hy + 2, 'w'); }
-    else g.rect(hx - 8, hy + 3, 4, 1, 't1');
+    if (mood === 'attack') { g.rect(hx - 7, hy + 2, 4, 2, 'k'); g.set(hx - 6, hy + 2, 'w'); g.set(hx - 4, hy + 2, 'w'); }
+    else g.rect(hx - 7, hy + 3, 4, 1, 't1');
     g.line(X + 1, 17 + Y, X + 5, 23 + Y, 't2');   // rachadura
   });
   return m.render();
@@ -141,7 +141,7 @@ function boneca({ dx = 0, dy = 0, arm = 0, mood = 'idle' } = {}) {
   // vestido com babado
   m.part(VESTIDO, 'cylinder', (p) => p.poly([[X - 4, 13 + Y], [X + 4, 13 + Y], [X + 8, 24], [X - 8, 24]], 'x'));
   // braço (estica no ataque)
-  m.part(OSSO, 'cylinder', (p) => p.stroke(X - 5, 15 + Y, X - 8 - arm * 4, 20 + Y - arm * 4, 2, 'x'));
+  m.part(OSSO, 'cylinder', (p) => p.stroke(X - 5, 15 + Y, X - 8 - arm * 3, 20 + Y - arm * 4, 2, 'x'));
   // cabelo atrás, rosto, maria-chiquinha
   m.part(CABELO, 'sphere', (p) => p.ellipse(X, 7 + Y, 7, 6, 'x'));
   m.part(OSSO, 'sphere', (p) => p.ellipse(X - 1, 9 + Y, 5, 5, 'x'));
@@ -167,8 +167,8 @@ function armadura({ dx = 0, dy = 0, sword = 'down', mood = 'idle' } = {}) {
   const X = 16 + dx, Y = dy;
   // espada
   if (sword === 'down') m.part(PRATA, 'cylinder', (p) => { p.rect(X - 9, 15 + Y, 2, 14, 'x'); });
-  if (sword === 'up') m.part(PRATA, 'cylinder', (p) => p.rect(X - 9, 1 + Y, 2, 14, 'x'));
-  if (sword === 'thrust') m.part(PRATA, 'hcylinder', (p) => p.rect(X - 22, 17 + Y, 14, 2, 'x'));
+  if (sword === 'up') m.part(PRATA, 'cylinder', (p) => p.rect(X - 9, 2 + Y, 2, 13, 'x'));
+  if (sword === 'thrust') m.part(PRATA, 'hcylinder', (p) => p.rect(X - 15, 17 + Y, 7, 2, 'x'));
   // pernas
   m.part(METAL, 'cylinder', (p) => { p.rect(X - 4, 21, 3, 8, 'x'); p.rect(X + 1, 21, 3, 8, 'x'); });
   // tronco
@@ -179,7 +179,7 @@ function armadura({ dx = 0, dy = 0, sword = 'down', mood = 'idle' } = {}) {
   m.part(METAL, 'cylinder', (p) => p.stroke(X - 5, 13 + Y, hand[0], hand[1], 3, 'x'));
   m.part(OURO, 'hcylinder', (p) => (sword === 'thrust' ? p.rect(X - 9, 16 + Y, 2, 4, 'x') : p.rect(hand[0] - 2, hand[1] - 1, 6, 2, 'x')));
   // elmo com pluma
-  m.part(VERMELHO, 'sphere', (p) => p.poly([[X + 1, 2 + Y], [X + 7, 0 + Y], [X + 9, 4 + Y], [X + 3, 4 + Y]], 'x'));
+  m.part(VERMELHO, 'sphere', (p) => p.poly([[X + 1, 3 + Y], [X + 7, 1 + Y], [X + 9, 5 + Y], [X + 3, 5 + Y]], 'x'));
   m.part(PRATA, 'cylinder', (p) => { p.rect(X - 4, 3 + Y, 9, 9, 'x'); p.ellipse(X, 4 + Y, 4, 2, 'x'); });
   m.paint((g) => {
     g.rect(X - 4, 7 + Y, 8, 2, 'k');
@@ -205,22 +205,22 @@ function kastle({ dx = 0, dy = 0, mouth = 0, bells = 0, arms = 0, mood = 'idle' 
   m.part(AMARELO, 'cylinder', (p) => { p.poly([[X, 14 + Y], [X + 4, 18 + Y], [X, 23], [X - 4, 18 + Y]], 'x'); }, { edge: false });
   // braços (sobem no ataque)
   for (const s of [-1, 1]) {
-    m.part(s < 0 ? AMARELO : ROXO, 'cylinder', (p) => p.stroke(X + s * 7, 16 + Y, X + s * (10 + arms), 21 + Y - arms * 4, 3, 'x'));
-    m.part(BRANCO, 'sphere', (p) => p.circle(X + s * (10 + arms), 21 + Y - arms * 4, 2, 'x'));
+    m.part(s < 0 ? AMARELO : ROXO, 'cylinder', (p) => p.stroke(X + s * 7, 16 + Y, X + s * (9 + arms / 2), 21 + Y - arms * 4, 3, 'x'));
+    m.part(BRANCO, 'sphere', (p) => p.circle(X + s * (9 + arms / 2), 21 + Y - arms * 4, 2, 'x'));
   }
   // gola de babados
   m.part(BRANCO, 'hcylinder', (p) => { for (let i = -3; i <= 3; i++) p.circle(X + i * 2.3, 14 + Y, 2, 'x'); });
   // cabeça escura
   m.part(SOMBRA, 'sphere', (p) => p.ellipse(X, 9 + Y, 7, 6, 'x'));
   // chapéu de três pontas com guizos: duas abas ciano caídas para os lados e a do meio roxa
-  const tips = [[X - 13, 5 + Y + bells], [X, -1 + Y - bells], [X + 13, 5 + Y - bells]];
+  const tips = [[X - 11, 5 + Y + bells], [X, 2 + Y], [X + 11, 5 + Y - bells]];
   m.part(CHAPEU, 'sphere', (p) => {
     p.poly([[X - 7, 7 + Y], [X - 1, 7 + Y], [X - 3, 2 + Y], [X - 8, 1 + Y], tips[0]], 'x');
     p.poly([[X + 1, 7 + Y], [X + 7, 7 + Y], tips[2], [X + 8, 1 + Y], [X + 3, 2 + Y]], 'x');
   });
   m.part(ROXO, 'sphere', (p) => p.poly([[X - 4, 7 + Y], [X + 4, 7 + Y], [X + 2, 2 + Y], tips[1], [X - 2, 2 + Y]], 'x'));
   m.part(AMARELO, 'hcylinder', (p) => p.rect(X - 7, 6 + Y, 15, 2, 'x'));
-  m.part(LILAS, 'sphere', (p) => { for (const [tx, ty] of tips) p.circle(tx, ty, 1.6, 'x'); });
+  m.part(LILAS, 'sphere', (p) => { for (const [tx, ty] of tips) p.circle(tx, ty, 1.5, 'x'); });
   m.paint((g) => {
     if (mood === 'hurt') { g.line(X - 5, 9 + Y, X - 2, 10 + Y, 'p4'); g.line(X + 1, 10 + Y, X + 4, 9 + Y, 'p4'); }
     else { g.rect(X - 5, 9 + Y, 2, 2, 'p5'); g.rect(X + 1, 9 + Y, 2, 2, 'p5'); g.set(X - 5, 9 + Y, 'w'); }
@@ -240,7 +240,7 @@ export function enemySheets() {
   return {
     fantasma: folhas(fantasma, {
       idle: [{}, { dy: -1, wave: 1 }, { dy: -1 }, { wave: 1 }],
-      attack: [{ dx: 1 }, { dx: -2, mood: 'attack' }, { dx: -3, mood: 'attack', wave: 1 }, { dx: -1 }],
+      attack: [{ dx: 1 }, { dx: -1, mood: 'attack' }, { dx: -1, mood: 'attack', wave: 1 }, { dx: -1 }],
       hurt: [{ dx: 2, mood: 'hurt' }, { dx: 1, mood: 'hurt', wave: 1 }],
     }),
     fogo_fatuo: folhas(fogoFatuo, {
@@ -250,28 +250,28 @@ export function enemySheets() {
     }),
     morcego: folhas(morcego, {
       idle: [{ wing: -1 }, { wing: 0, dy: 1 }, { wing: 1, dy: 2 }, { wing: 0, dy: 1 }],
-      attack: [{ wing: -1, dx: 1 }, { wing: 1, dx: -3, dy: 2, mood: 'attack' }, { wing: 1, dx: -5, dy: 3, mood: 'attack' }, { wing: 0, dx: -1 }],
-      hurt: [{ wing: 1, dx: 2, dy: 2, mood: 'hurt' }, { wing: 1, dx: 1, dy: 3, mood: 'hurt' }],
+      attack: [{ wing: -1, dx: 1 }, { wing: 1, dx: -1, dy: 2, mood: 'attack' }, { wing: 1, dx: -2, dy: 3, mood: 'attack' }, { wing: 0, dx: -1 }],
+      hurt: [{ wing: 1, dx: 1, dy: 2, mood: 'hurt' }, { wing: 1, dx: 1, dy: 3, mood: 'hurt' }],
     }),
     gargula: folhas(gargula, {
       idle: [{}, { dy: 1 }, { dy: 1 }, {}],
-      attack: [{ dx: 1 }, { reach: 1, dx: -1, mood: 'attack' }, { reach: 2, dx: -2, mood: 'attack' }, { reach: 1 }],
-      hurt: [{ dx: 2, mood: 'hurt' }, { dx: 1, mood: 'hurt' }],
+      attack: [{ dx: 1 }, { reach: 1, mood: 'attack' }, { reach: 1.5, dx: -1, mood: 'attack' }, { reach: 1 }],
+      hurt: [{ dx: 1, mood: 'hurt' }, { dx: 1, mood: 'hurt' }],
     }),
     boneca: folhas(boneca, {
       idle: [{}, { dy: 1 }, { dy: 1, arm: 0.3 }, {}],
-      attack: [{ dx: 1 }, { arm: 1, dx: -1, mood: 'attack' }, { arm: 1.6, dx: -2, mood: 'attack' }, { arm: 0.5 }],
+      attack: [{ dx: 1 }, { arm: 1, mood: 'attack' }, { arm: 1.6, dx: -1, mood: 'attack' }, { arm: 0.5 }],
       hurt: [{ dx: 2, mood: 'hurt' }, { dx: 1, mood: 'hurt' }],
     }),
     armadura: folhas(armadura, {
       idle: [{}, { dy: 1 }, { dy: 1 }, {}],
-      attack: [{ sword: 'up' }, { sword: 'up', dy: -1 }, { sword: 'thrust', dx: -2, mood: 'attack' }, { dx: -1 }],
-      hurt: [{ dx: 2, mood: 'hurt' }, { dx: 1, mood: 'hurt' }],
+      attack: [{ sword: 'up', dy: 1 }, { sword: 'up' }, { sword: 'thrust', mood: 'attack' }, { dx: -1 }],
+      hurt: [{ dx: 2, dy: 1, mood: 'hurt' }, { dx: 1, dy: 1, mood: 'hurt' }],
     }),
     kastle: folhas(kastle, {
       idle: [{}, { bells: 1, dy: -1 }, { bells: 1 }, { dy: -1 }],
-      attack: [{ arms: 1, dx: 1 }, { arms: 2, mouth: 1, dx: -1, bells: 1 }, { arms: 2, mouth: 1, dx: -3, dy: 1, bells: 1 }, { arms: 1 }],
-      hurt: [{ dx: 2, mood: 'hurt' }, { dx: 1, mood: 'hurt', bells: 1 }],
+      attack: [{ arms: 1, dx: 1 }, { arms: 2, mouth: 1, bells: 1 }, { arms: 2, mouth: 1, dx: -1, dy: 1, bells: 1 }, { arms: 1 }],
+      hurt: [{ dx: 1, mood: 'hurt' }, { dx: 1, mood: 'hurt', bells: 1 }],
     }),
   };
 }

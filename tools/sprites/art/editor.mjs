@@ -36,7 +36,7 @@ const contaGotas = () => icone((m) => {
   m.part(VIDRO, 'cylinder', (p) => p.stroke(22, 10, 9, 23, 4, 'x'));
   m.part(VERMELHO, 'sphere', (p) => p.circle(25, 7, 4, 'x'));
   m.part(CINZA_ESCURO, 'cylinder', (p) => p.stroke(9, 23, 5, 27, 2, 'x'));
-  m.part(AZUL, 'sphere', (p) => p.ellipse(4, 30, 1, 1, 'x'));
+  m.part(AZUL, 'sphere', (p) => p.ellipse(4, 29, 1, 1, 'x'));
 });
 
 /** Espelho: desenha dos dois lados de uma vez. */

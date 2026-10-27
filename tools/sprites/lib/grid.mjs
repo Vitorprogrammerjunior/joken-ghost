@@ -232,6 +232,27 @@ export function rng(seed = 1) {
   };
 }
 
+/**
+ * Lados em que o desenho de cada frame foi cortado pela borda do quadro: uma cor que não é
+ * o contorno na primeira/última linha ou coluna (o contorno pode encostar, o desenho não).
+ * Retorna [{ frame, sides }] só dos frames cortados.
+ */
+export function cutFrames(sheetGrid, size = 64, outline = 'k') {
+  const out = [];
+  for (let f = 0; f < sheetGrid.w / size; f++) {
+    const x0 = f * size, sides = new Set();
+    const cut = (x, y) => { const c = sheetGrid.get(x, y); return c != null && c !== outline; };
+    for (let i = 0; i < size; i++) {
+      if (cut(x0 + i, 0)) sides.add('cima');
+      if (cut(x0 + i, size - 1)) sides.add('baixo');
+      if (cut(x0, i)) sides.add('esquerda');
+      if (cut(x0 + size - 1, i)) sides.add('direita');
+    }
+    if (sides.size) out.push({ frame: f, sides: [...sides] });
+  }
+  return out;
+}
+
 /** Monta uma folha horizontal de frames 64x64. */
 export function sheet(frames) {
   const fw = frames[0].w, fh = frames[0].h;
