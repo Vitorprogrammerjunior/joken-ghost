@@ -779,6 +779,10 @@ export const SPRITES = {
     "src": "assets/sprites/icons/nota.svg",
     "frames": 1
   },
+  "icon/nota_off": {
+    "src": "assets/sprites/icons/nota_off.svg",
+    "frames": 1
+  },
   "icon/pincel": {
     "src": "assets/sprites/icons/pincel.svg",
     "frames": 1

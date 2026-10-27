@@ -4,6 +4,7 @@ const KEY = 'jokenghost_options';
 
 export const DEFAULT_OPTIONS = {
   musicVol: 45,
+  musicOn: true,          // botão de música do canto (desliga só a trilha)
   sfxVol: 80,
   shake: true,
   damageNumbers: true,

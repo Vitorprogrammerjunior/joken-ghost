@@ -14,7 +14,7 @@ export class NowPlaying {
   /** Vinhetas que tocam uma vez só (vitória, derrota) não ganham aviso. */
   show({ title, loops }) {
     const o = this.game.options;
-    if (!loops || !o.nowPlaying || o.muted || !o.musicVol) return;
+    if (!loops || !o.nowPlaying || o.muted || !o.musicOn || !o.musicVol) return;
     this.el.replaceChildren(icon('icon/nota', 'ico ico-xs'), h('span', {}, 'Tocando'), h('b', {}, title));
     show(this.el, true);
     this.el.classList.remove('out');

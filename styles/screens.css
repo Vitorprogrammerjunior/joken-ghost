@@ -42,9 +42,9 @@
 /* ─── barra superior (mapa) ─── */
 .topbar {
   position: absolute;
-  top: 20px;
+  top: 16px;
   left: 24px;
-  right: 24px;
+  right: var(--corner-reserve);
   display: flex;
   align-items: center;
   justify-content: space-between;

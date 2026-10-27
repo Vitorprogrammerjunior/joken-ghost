@@ -180,6 +180,11 @@
 @keyframes np-in { from { transform: translateX(-24px); opacity: 0; } }
 @keyframes np-out { to { transform: translateX(-24px); opacity: 0; } }
 
+/* ─── botão de música (o mesmo em todas as telas, abaixo das janelas) ─── */
+.music-toggle { position: absolute; top: 16px; right: 16px; z-index: 45; }
+.music-toggle.off { border-image-source: url('../assets/sprites/ui/btn_disabled.svg'); }
+.music-toggle.off:hover { border-image-source: url('../assets/sprites/ui/btn_hover.svg'); }
+
 /* ─── campos ─── */
 .field-label { align-self: flex-start; color: var(--gold); text-shadow: var(--outline); }
 .field {

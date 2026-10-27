@@ -66,7 +66,7 @@ export class AudioManager {
 
   applyVolumes() {
     const o = this.options;
-    this.music.setVolume(o.muted ? 0 : (o.musicVol / 100) * MUSIC_GAIN);
+    this.music.setVolume(o.muted || !o.musicOn ? 0 : (o.musicVol / 100) * MUSIC_GAIN);
     this.impact.volume = o.sfxVol / 100;
   }
 

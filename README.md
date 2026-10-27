@@ -114,7 +114,8 @@ pesam poucos KB. Para compor ou testar, cole o arquivo no editor do
 
 Cada tela diz a sua trilha (`music()` em `scenes/`); o jogo troca ao entrar na tela e mostra um aviso
 discreto "Tocando: nome da música" (dá para desligar em Opções). Janelas com trilha própria, como o
-Ateliê, tocam por cima da tela e devolvem a música dela ao fechar.
+Ateliê, tocam por cima da tela e devolvem a música dela ao fechar. O botão de nota no canto de cima à
+direita, presente em todas as telas, liga e desliga só a música (a escolha fica salva).
 
 | Arquivo | Onde toca |
 |---------|-----------|

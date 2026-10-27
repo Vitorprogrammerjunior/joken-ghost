@@ -1,4 +1,4 @@
-// Ícones do Ateliê (editor de avatar em pixel art) e a nota do aviso de música.
+// Ícones do Ateliê (editor de avatar em pixel art) e as notas do aviso e do botão de música.
 import { Grid } from '../lib/grid.mjs';
 
 const finish = (g, { shade = true } = {}) => {
@@ -14,14 +14,21 @@ function bar(g, x0, y0, x1, y1, w, c) {
   g.poly([[x0 + nx, y0 + ny], [x1 + nx, y1 + ny], [x1 - nx, y1 - ny], [x0 - nx, y0 - ny]], c);
 }
 
-/** Colcheia: a música que está tocando. */
-function nota() {
+/** Colcheia: a música que está tocando. Desligada, ela fica cinza e riscada. */
+function nota({ off = false } = {}) {
   const g = new Grid();
-  g.ellipse(22, 48, 9, 7, 'c4');
-  g.rect(28, 12, 4, 37, 'c4');
-  g.poly([[30, 12], [48, 20], [48, 30], [32, 22]], 'c4');
+  const c = off ? 'g4' : 'c4';
+  g.ellipse(22, 48, 9, 7, c);
+  g.rect(28, 12, 4, 37, c);
+  g.poly([[30, 12], [48, 20], [48, 30], [32, 22]], c);
   g.shade({ depth: 2 });
   g.px([[18, 45], [19, 44]], 'w');
+  if (off) {
+    const X = new Grid();
+    X.stroke(10, 10, 54, 54, 5, 'r3');
+    X.shade();
+    g.blit(X);
+  }
   return finish(g, { shade: false });
 }
 
@@ -114,7 +121,7 @@ function grade() {
 
 export function editorIconSheets() {
   return {
-    nota: nota(), pincel: pincel(), borracha: borracha(), balde: balde(), conta_gotas: contaGotas(),
+    nota: nota(), nota_off: nota({ off: true }), pincel: pincel(), borracha: borracha(), balde: balde(), conta_gotas: contaGotas(),
     espelho: espelho(), desfazer: seta('undo'), refazer: seta('redo'), lixeira: lixeira(), grade: grade(),
   };
 }

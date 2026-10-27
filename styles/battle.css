@@ -45,7 +45,7 @@
 .status-chip { display: inline-flex; padding: 2px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--gold); animation: pop 0.3s ease-out both; }
 
 /* ─── canto superior direito ─── */
-.hud-top-right { position: absolute; top: 16px; right: 16px; display: flex; align-items: center; gap: 10px; }
+.hud-top-right { position: absolute; top: 16px; right: var(--corner-reserve); display: flex; align-items: center; gap: 10px; }
 .wave-tag { position: absolute; top: 92px; right: 22px; color: var(--fog); text-shadow: var(--outline); }
 
 /* ─── faixa central ─── */

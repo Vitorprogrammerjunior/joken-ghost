@@ -31,6 +31,9 @@
   --parchment: #ecc58a;
 
   /* contorno de 1 pixel de arte (2px) para textos */
+  /* canto de cima à direita reservado para o botão de música (64px + folga) */
+  --corner-reserve: 88px;
+
   --outline: 2px 0 0 var(--ink), -2px 0 0 var(--ink), 0 2px 0 var(--ink), 0 -2px 0 var(--ink),
              2px 2px 0 var(--ink), -2px 2px 0 var(--ink), 2px -2px 0 var(--ink), -2px -2px 0 var(--ink);
 }
