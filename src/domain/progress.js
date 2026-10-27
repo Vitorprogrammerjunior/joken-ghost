@@ -15,6 +15,12 @@ export function newProfile(slot) {
     coins: 0,
     unlocked: 1,
     stars: {},
+    starsHard: {},      // estrelas do modo Pesadelo
+    upgrades: {},       // níveis comprados na oficina
+    skin: null,         // visual do Caçador liberado pelas estrelas
+    hard: false,        // jogar no modo Pesadelo
+    endless: { best: 0, runs: 0 },   // Noite Sem Fim: recorde de ondas
+    daily: { day: null, best: 0 },   // Desafio do Dia: melhor pontuação do dia
     bestiary: {},
     stats: { battlesWon: 0, battlesLost: 0, turns: 0 },
     finished: false,
@@ -73,9 +79,10 @@ export class SaveManager {
   }
 }
 
-/** Registra uma fase vencida: estrelas, desbloqueio e estatísticas. */
-export function recordVictory(profile, levelId, stars, totalLevels) {
-  profile.stars[levelId] = Math.max(profile.stars[levelId] || 0, stars);
+/** Registra uma fase vencida: estrelas (do modo normal ou Pesadelo), desbloqueio e estatísticas. */
+export function recordVictory(profile, levelId, stars, totalLevels, { hard = false } = {}) {
+  const book = hard ? profile.starsHard : profile.stars;
+  book[levelId] = Math.max(book[levelId] || 0, stars);
   profile.unlocked = Math.min(totalLevels, Math.max(profile.unlocked, levelId + 1));
   profile.stats.battlesWon++;
   if (levelId === totalLevels) profile.finished = true;

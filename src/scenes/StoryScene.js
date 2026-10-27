@@ -1,7 +1,7 @@
 // Carta/narração antes de cada fase (e o final da campanha).
 import { Scene } from '../core/Scene.js';
 import { GW, GH } from '../core/Renderer.js';
-import { ENDING, levelById } from '../config/levels.js';
+import { ENDINGS, levelById } from '../config/levels.js';
 import { Scenery } from '../world/Scenery.js';
 import { $ } from '../ui/dom.js';
 
@@ -14,14 +14,15 @@ export class StoryScene extends Scene {
     this.el.addEventListener('click', () => this.advance());
   }
 
-  enter({ levelId, ending = false }) {
-    this.ending = ending;
-    this.level = levelById(levelId ?? 4);
-    this.full = (ending ? ENDING : this.level.intro).join('\n');
+  /** Abre a carta de uma fase (`levelId`) ou um final (`ending`, chave de ENDINGS). */
+  enter({ levelId, ending = null }) {
+    this.ending = ending ? ENDINGS[ending] : null;
+    this.level = levelId ? levelById(levelId) : null;
+    this.full = (this.ending ? this.ending.lines : this.level.intro).join('\n');
     this.chars = 0;
-    this.scenery = new Scenery(this.game.assets, ending ? 'floresta' : this.level.scenery);
+    this.scenery = new Scenery(this.game.assets, this.ending ? this.ending.scenery : this.level.scenery);
     this.textEl.textContent = '';
-    this.game.audio.playMusic(ending ? 'vitoria' : 'mapa');
+    this.game.audio.playMusic(this.ending ? this.ending.music : 'mapa');
   }
 
   get done() { return this.chars >= this.full.length; }
@@ -29,7 +30,7 @@ export class StoryScene extends Scene {
   advance() {
     if (this.game.transitioning) return;
     if (!this.done) { this.chars = this.full.length; this.textEl.textContent = this.full; return; }
-    if (this.ending) this.game.go('map', { focus: 4 });
+    if (this.ending) this.game.go('map', { focus: this.ending.focus });
     else this.game.go('dialogue', { levelId: this.level.id });
   }
 

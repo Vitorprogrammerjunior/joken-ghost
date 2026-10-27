@@ -3,72 +3,139 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const duel = require('../src/duel');
 const { trophyDelta, applyResult, FarmGuard } = require('../src/trophies');
-const { unlockedCards, unlockedCharacters, leagueOf, RULES } = require('../src/catalog');
+const { unlockedCards, unlockedCharacters, leagueOf, validateDeck, defaultDeck, deckOf, RULES } = require('../src/catalog');
 
 const player = (over = {}) => ({ id: Math.random().toString(16).slice(2), nickname: 'X', trophies: 0, best: 0, wins: 0, losses: 0, character: 'cacador', ...over });
 const fixed = (v) => () => v;
+const allCards = () => ['escudo', 'cura', 'golpe_duplo'];
+const duo = (a = player(), b = player(), rng = fixed(0.9)) => duel.createDuel([[a], [b]], allCards, rng);
+const hp = (d, side) => d.sides[side].hp;
 
-/** Joga uma rodada completa com cartas e armas definidas. */
-function round(d, [cardA, weaponA], [cardB, weaponB]) {
+/** Joga uma rodada completa com cartas e armas definidas para cada lutador. */
+function round(d, ...plays) {
   duel.startRound(d);
-  d.fighters[0].hand.push(...[cardA].filter(Boolean));
-  d.fighters[1].hand.push(...[cardB].filter(Boolean));
-  duel.pickCard(d, 0, cardA ?? null);
-  duel.pickCard(d, 1, cardB ?? null);
+  plays.forEach(([card], i) => { if (card) d.fighters[i].hand.push(card); duel.pickCard(d, i, card ?? null); });
   duel.startWeaponPhase(d);
-  duel.pickWeapon(d, 0, weaponA);
-  duel.pickWeapon(d, 1, weaponB);
+  plays.forEach(([, weapon], i) => { if (weapon) duel.pickWeapon(d, i, weapon); });
   return duel.resolveRound(d);
 }
 
 test('jokenpô: estaca vence cruz e o perdedor toma dano base', () => {
-  const d = duel.createDuel(player(), player(), fixed(0.9));
+  const d = duo();
   const r = round(d, [null, 'estaca'], [null, 'cruz']);
-  assert.equal(r.outcome, 0);
-  assert.equal(d.fighters[1].hp, RULES.baseHp - RULES.baseDamage);
-  assert.equal(d.fighters[0].hp, RULES.baseHp);
+  assert.equal(r.lanes[0].outcome, 'a');
+  assert.equal(hp(d, 1), RULES.baseHp - RULES.baseDamage);
+  assert.equal(hp(d, 0), RULES.baseHp);
 });
 
 test('cartas: golpe duplo, escudo, espinhos e vampirismo', () => {
-  let d = duel.createDuel(player(), player(), fixed(0.9));
+  let d = duo();
   round(d, ['golpe_duplo', 'aspirador'], [null, 'estaca']);
-  assert.equal(d.fighters[1].hp, 100 - 40);
+  assert.equal(hp(d, 1), 100 - 40);
 
-  d = duel.createDuel(player(), player(), fixed(0.9));
+  d = duo();
   round(d, [null, 'aspirador'], ['escudo', 'estaca']);
-  assert.equal(d.fighters[1].hp, 100);
+  assert.equal(hp(d, 1), 100);
 
-  d = duel.createDuel(player(), player(), fixed(0.9));
+  d = duo();
   round(d, [null, 'aspirador'], ['espinhos', 'estaca']);
-  assert.equal(d.fighters[1].hp, 80);
-  assert.equal(d.fighters[0].hp, 88);
+  assert.equal(hp(d, 1), 80);
+  assert.equal(hp(d, 0), 88);
 
-  d = duel.createDuel(player(), player(), fixed(0.9));
-  d.fighters[0].hp = 50;
+  d = duo();
+  d.sides[0].hp = 50;
   round(d, ['vampirismo', 'cruz'], [null, 'aspirador']);
-  assert.equal(d.fighters[0].hp, 60);
+  assert.equal(hp(d, 0), 60);
+});
+
+test('cartas novas: arma, disfarce, juízo com risco e escudo sagrado com cura', () => {
+  let d = duo();
+  round(d, ['cruz_flamejante', 'cruz'], [null, 'aspirador']);
+  assert.equal(hp(d, 1), 100 - 20 - RULES.weaponCardBonus);
+
+  d = duo();
+  round(d, ['cruz_flamejante', 'estaca'], [null, 'cruz']); // venceu com outra arma: sem bônus
+  assert.equal(hp(d, 1), 80);
+
+  d = duo();
+  round(d, ['disfarce', 'estaca'], [null, 'cruz']);
+  assert.equal(hp(d, 1), 70);
+
+  d = duo();
+  round(d, ['juizo', 'estaca'], [null, 'aspirador']); // perdeu segurando o Juízo
+  assert.equal(hp(d, 0), 100 - 20 - 10);
+
+  d = duo();
+  d.sides[1].hp = 80;
+  round(d, [null, 'estaca'], ['escudo_sagrado', 'cruz']);
+  assert.equal(hp(d, 1), 90);
+});
+
+test('provocação proíbe repetir a arma e o tempo esgotado repete a última', () => {
+  const d = duo();
+  round(d, [null, 'estaca'], [null, 'cruz']);
+  duel.startRound(d);
+  d.fighters[1].hand.push('provocacao');
+  duel.pickCard(d, 0, null);
+  duel.pickCard(d, 1, 'provocacao');
+  duel.startWeaponPhase(d);
+  assert.equal(d.fighters[0].forbidden, 'estaca');
+  assert.equal(duel.pickWeapon(d, 0, 'estaca'), false);
+  assert.notEqual(duel.autoWeapon(d, 0), 'estaca');
+  const r = duel.resolveRound(d);
+  assert.notEqual(r.fighters[0].weapon, 'estaca');
+
+  const e = duo();
+  round(e, [null, 'aspirador'], [null, 'cruz']);
+  const r2 = round(e, [null, null], [null, 'estaca']); // ninguém escolheu: repete Aspirador
+  assert.equal(r2.fighters[0].weapon, 'aspirador');
+});
+
+test('visão: o oponente tem menos tempo e o disfarce mostra uma arma falsa', () => {
+  const d = duo();
+  duel.startRound(d);
+  d.fighters[0].hand.push('visao');
+  d.fighters[1].hand.push('disfarce');
+  duel.pickCard(d, 0, 'visao');
+  duel.pickCard(d, 1, 'disfarce');
+  duel.startWeaponPhase(d);
+  assert.equal(duel.weaponTime(d, 1), RULES.visionWeaponMs);
+  assert.equal(duel.weaponTime(d, 0), RULES.weaponPhaseMs);
+  duel.pickWeapon(d, 1, 'cruz');
+  assert.notEqual(duel.visionOf(d, 1), 'cruz');
 });
 
 test('personagens: passiva de arma, vida extra e esquiva', () => {
-  const d = duel.createDuel(player({ character: 'luna' }), player({ character: 'ze' }), fixed(0.9));
-  assert.equal(d.fighters[1].maxHp, 120);
+  const d = duo(player({ character: 'luna' }), player({ character: 'ze' }));
+  assert.equal(d.sides[1].maxHp, 120);
   round(d, [null, 'aspirador'], [null, 'estaca']);
-  assert.equal(d.fighters[1].hp, 120 - 25);
+  assert.equal(hp(d, 1), 120 - 25);
 
-  const e = duel.createDuel(player(), player({ character: 'sombra' }), fixed(0.01)); // rng baixo = esquiva
+  const e = duo(player(), player({ character: 'sombra' }), fixed(0.01)); // rng baixo = esquiva
   const r = round(e, [null, 'estaca'], [null, 'cruz']);
   assert.equal(r.fighters[1].dodged, true);
-  assert.equal(e.fighters[1].hp, 100);
+  assert.equal(hp(e, 1), 100);
+});
+
+test('2x2: duas pistas, vida somada por lado', () => {
+  const d = duel.createDuel([[player(), player()], [player(), player()]], allCards, fixed(0.9));
+  assert.equal(d.sides[0].maxHp, 150); // 2 × 100 × 75%
+  assert.equal(duel.laneOpponent(d, 0), 2);
+  assert.equal(duel.laneOpponent(d, 3), 1);
+  const r = round(d, [null, 'estaca'], [null, 'cruz'], [null, 'cruz'], [null, 'estaca']);
+  // pista 1: estaca vence cruz (lado 1 toma 20); pista 2: estaca vence cruz (lado 0 toma 20)
+  assert.deepEqual(r.lanes.map(l => l.outcome), ['a', 'b']);
+  assert.deepEqual(r.hp, [130, 130]);
 });
 
 test('cartas usadas não voltam para a mão e mão vazia pula a escolha', () => {
-  const d = duel.createDuel(player(), player(), Math.random);
+  const d = duel.createDuel([[player()], [player()]], allCards, Math.random);
   duel.startRound(d);
   const first = d.fighters[0].hand[0];
   duel.pickCard(d, 0, first);
   duel.startWeaponPhase(d);
   duel.resolveRound(d);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 2; i++) {
     duel.startRound(d);
     assert.ok(!d.fighters[0].hand.includes(first));
     duel.startWeaponPhase(d);
@@ -82,7 +149,7 @@ test('cartas usadas não voltam para a mão e mão vazia pula a escolha', () => 
 });
 
 test('não aceita carta fora da mão nem arma inválida', () => {
-  const d = duel.createDuel(player(), player(), Math.random);
+  const d = duo(player(), player(), Math.random);
   duel.startRound(d);
   assert.equal(duel.pickCard(d, 0, 'juizo'), false);
   duel.startWeaponPhase(d);
@@ -90,11 +157,23 @@ test('não aceita carta fora da mão nem arma inválida', () => {
 });
 
 test('a partida termina quando a vida zera', () => {
-  const d = duel.createDuel(player(), player(), fixed(0.9));
+  const d = duo();
   let r;
   for (let i = 0; i < 10 && !(r && r.winner != null); i++) r = round(d, [null, 'cruz'], [null, 'aspirador']);
   assert.equal(r.winner, 0);
-  assert.equal(d.fighters[1].hp, 0);
+  assert.equal(hp(d, 1), 0);
+});
+
+test('deck: 8 cartas, no máximo 1 lendária e 2 épicas', () => {
+  assert.equal(validateDeck(['escudo', 'cura'], 0).ok, true);
+  assert.equal(validateDeck(['juizo'], 0).ok, false);                       // bloqueada
+  assert.equal(validateDeck(['juizo', 'escudo_sagrado'], 5000).ok, false);  // 2 lendárias
+  assert.equal(validateDeck(['visao', 'furia', 'vampirismo'], 5000).ok, false);
+  const auto = defaultDeck(5000);
+  assert.equal(auto.length, 8);
+  assert.equal(validateDeck(auto, 5000).ok, true);
+  assert.deepEqual(defaultDeck(0), ['golpe_duplo', 'escudo', 'cura']);
+  assert.deepEqual(deckOf(player({ best: 5000, deck: ['juizo', 'escudo_sagrado'] })), auto); // inválido: usa o automático
 });
 
 test('troféus: vencer alguém mais forte vale mais e ninguém fica negativo', () => {

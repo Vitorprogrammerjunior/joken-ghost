@@ -1,0 +1,47 @@
+title    A Valsa da Rainha
+composer Claude
+about    Tema de Morgana. Uma valsa macabra em si menor: órgão de tubos, coro, sinos e tímpanos.
+tempo    132
+beats    3
+steps    4
+reverb   0.5
+
+voice lead  saw       vol=0.55 pan=-0.15 bright=0.5
+voice organ pipe      vol=0.7  pan=0.1
+voice choir choir     vol=0.55 pan=0.2  center=G4
+voice bell  bell      vol=0.4  pan=0.35
+voice timp  timpani   vol=0.8
+voice snare snare     vol=0.4  pan=0.1
+voice crash crash     vol=0.35 pan=-0.2
+
+pattern intro
+choir | [Bm]----------- | [F#]----------- |
+organ | B2----------- | F#2----------- |
+timp  | B2 . . . . . . . B2 . B2 . | F#2 . . . F#2 . F#2 . F#2! F#2! F#2!! . |
+bell  | B5----------- | _ |
+
+# ------------------------------------------------ A: a dança da rainha
+pattern A
+lead  | B5--- D6--- F#6--- | E6--- D6--- C#6--- | D6--- B5--- G5--- | F#5----------- |
+lead  | B5--- D6--- F#6--- | G6--- F#6--- E6--- | D6- E6- F#6- E6- C#6--- | B5----------- |
+organ | B2--- [Bm]--- [Bm]--- | A2--- [A]--- [A]--- | G2--- [G]--- [G]--- | F#2--- [F#]--- [F#]--- |
+organ | B2--- [Bm]--- [Bm]--- | E2--- [Em]--- [Em]--- | F#2--- [F#]--- [F#]--- | B2--- [Bm]--- [Bm]--- |
+timp  | B2 . . . . . . . . . . . | A2 . . . . . . . . . . . | G2 . . . . . . . . . . . | F#2 . . . F#2 . . . F#2 . F#2 . |
+timp  | B2 . . . . . . . . . . . | E2 . . . . . . . . . . . | F#2 . . . F#2 . F#2 . F#2! F#2! F#2!! . | B2 . . . . . . . . . . . |
+snare | .... x... x... | % | % | % | % | % | % | xxxx XXXX XXXX |
+crash | X........... | _ | _ | _ | X........... | _ | _ | _ |
+bell  | B5----------- | _ | _ | _ | B5----------- | _ | _ | _ |
+
+# ------------------------------------------------ B: o coro dos lamentos
+pattern B
+organ | G5--- B5--- D6--- | F#5--- A5--- C#6--- | E5--- G5--- B5--- | F#5----------- |
+organ | G5- A5- B5- C#6- D6--- | E6--- D6--- C#6--- | D6--- C#6--- A#5--- | B5----------- |
+choir | [G]----------- | [F#]----------- | [Em]----------- | [F#]----------- |
+choir | [G]----------- | [A]----------- | [F#]----------- | [Bm]----------- |
+timp  | G2 . . . . . . . . . . . | F#2 . . . . . . . . . . . | E2 . . . . . . . . . . . | F#2 . . . F#2 . . . F#2 . F#2 . |
+timp  | G2 . . . . . . . . . . . | A2 . . . . . . . . . . . | F#2 . . . F#2 . F#2 . F#2! F#2! F#2!! . | B2 . . . . . . . . . . . |
+snare | .... x... x... | % | % | % | % | % | % | xxxx XXXX XXXX |
+bell  | G5----------- | _ | _ | _ | D6----------- | _ | _ | _ |
+
+play intro
+loop A B

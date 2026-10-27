@@ -51,12 +51,26 @@
           <button class="btn btn-icon" id="map-back" title="Menu"><img class="ico" src="assets/sprites/icons/casa.svg" alt="Menu"></button>
           <h2 class="screen-title">MAPA DA CAÇADA</h2>
           <div class="topbar-right">
+            <button class="btn btn-icon" id="map-workshop" title="Oficina"><img class="ico" src="assets/sprites/icons/martelo.svg" alt="Oficina"></button>
+            <button class="btn btn-icon" id="map-rewards" title="Recompensas"><img class="ico" src="assets/sprites/icons/estrela.svg" alt="Recompensas"></button>
             <button class="btn btn-icon" id="map-bestiary" title="Monstruário"><img class="ico" src="assets/sprites/icons/livro.svg" alt="Monstruário"></button>
             <div class="coin-pill"><img class="ico ico-sm" src="assets/sprites/icons/moeda.svg" alt=""><span class="coin-value">0</span></div>
           </div>
         </header>
+        <div class="map-act">
+          <button class="btn btn-icon btn-icon-sm hidden" id="map-act-prev" title="Ato anterior"><img class="ico ico-sm" src="assets/sprites/icons/seta_esq.svg" alt="Ato anterior"></button>
+          <span id="map-act-title">ATO I</span>
+          <button class="btn btn-icon btn-icon-sm hidden" id="map-act-next" title="Próximo ato"><img class="ico ico-sm" src="assets/sprites/icons/seta_dir.svg" alt="Próximo ato"></button>
+        </div>
         <div id="map-nodes"></div>
-        <p class="screen-hint" id="map-hint">Escolha uma fase</p>
+        <div class="map-bottom">
+          <button class="star-pill" id="map-stars" title="Recompensas"><img class="ico ico-sm" src="assets/sprites/icons/estrela.svg" alt=""><b id="map-star-count">0</b><span id="map-next-reward"></span></button>
+          <div class="map-modes">
+            <button class="btn btn-sm" id="map-endless" title="Ondas infinitas com relíquias"><img class="ico ico-sm" src="assets/sprites/icons/caveira.svg" alt="">NOITE SEM FIM</button>
+            <button class="btn btn-sm" id="map-daily" title="A mesma corrida para todo mundo, com ranking"><img class="ico ico-sm" src="assets/sprites/icons/trofeu.svg" alt="">DESAFIO DO DIA</button>
+          </div>
+          <button class="btn btn-toggle hidden" id="map-hard" title="Monstros mais fortes, mais moedas e estrelas próprias"><img class="ico ico-sm" src="assets/sprites/icons/caveira.svg" alt="">PESADELO</button>
+        </div>
       </section>
 
       <!-- ═══════════════ HISTÓRIA (carta) ═══════════════ -->
@@ -84,7 +98,7 @@
         <div class="enemy-boxes" id="enemy-boxes"></div>
 
         <div class="hud-top-right">
-          <div class="coin-pill"><img class="ico ico-sm" src="assets/sprites/icons/moeda.svg" alt=""><span class="coin-value">0</span></div>
+          <div class="coin-pill"><img class="ico ico-sm" src="assets/sprites/icons/moeda.svg" alt=""><span id="battle-coins">0</span></div>
           <button class="btn btn-icon" id="battle-mute" title="Som"><img class="ico" id="battle-mute-ico" src="assets/sprites/icons/som_on.svg" alt="Som"></button>
           <button class="btn btn-icon" id="battle-pause" title="Pausar (ESC)"><img class="ico" src="assets/sprites/icons/pausa.svg" alt="Pausar"></button>
         </div>
@@ -93,6 +107,7 @@
         <div class="banner hidden" id="battle-banner"><span id="battle-banner-text"></span></div>
         <div class="combo hidden" id="combo">COMBO x2</div>
 
+        <div class="relic-strip hidden" id="relic-strip" title="Relíquias desta corrida"></div>
         <div class="status-box player-box" id="player-box">
           <div class="sb-head"><span class="sb-name" id="player-name">CAÇADOR</span><span class="hud-status" id="hud-status"></span></div>
           <div class="sb-hp"><b>HP</b><div class="hpbar"><div class="hpbar-ghost" id="hud-hp-ghost"></div><div class="hpbar-fill" id="hud-hp-fill"></div></div></div>
@@ -120,6 +135,7 @@
         <div class="drawer hidden" id="shop-drawer">
           <div class="drawer-head">
             <span>LOJA DO CAÇADOR</span>
+            <span class="bag-pill" id="shop-bag" title="Itens que ainda dá para usar nesta onda (a bolsa enche de novo a cada onda)"><img class="ico ico-sm" src="assets/sprites/icons/bolsa.svg" alt="Bolsa"><b id="shop-bag-count">3/3</b></span>
             <button class="btn btn-icon btn-icon-sm" data-close-drawer title="Fechar"><img class="ico ico-sm" src="assets/sprites/icons/fechar.svg" alt="Fechar"></button>
           </div>
           <div class="shop-grid" id="shop-grid"></div>
@@ -147,25 +163,36 @@
 
         <div class="lobby-grid">
           <div class="panel lobby-profile">
-            <canvas id="lb-avatar" class="lb-avatar" width="64" height="64"></canvas>
+            <div class="lb-avatar-wrap">
+              <canvas id="lb-avatar" class="lb-avatar" width="64" height="64"></canvas>
+              <img class="lb-frame hidden" id="lb-frame" src="" alt="">
+            </div>
             <button class="lp-name" id="lp-name" title="Editar perfil"><span id="lp-nick">...</span> <small>✎</small></button>
             <div class="lp-trophies"><img class="ico" id="lp-league-ico" src="assets/sprites/icons/liga_bronze.svg" alt=""><b id="lp-trophies">0</b><img class="ico" src="assets/sprites/icons/trofeu.svg" alt="troféus"></div>
             <div class="lp-league" id="lp-league">Liga Bronze</div>
             <div class="lp-record" id="lp-record">0 vitórias · 0 derrotas</div>
+            <div class="lp-wallet"><img class="ico ico-sm" src="assets/sprites/icons/ecto.svg" alt=""><b id="lp-ecto">0</b><span>Ecto</span><img class="ico ico-sm" src="assets/sprites/icons/taca.svg" alt=""><b id="lp-cups">0</b></div>
+            <div class="lp-season" id="lp-season"></div>
             <div class="lp-next" id="lp-next"></div>
           </div>
 
           <div class="lobby-actions">
-            <button class="btn btn-primary btn-lg" id="lb-quick"><img class="ico" src="assets/sprites/icons/espadas.svg" alt="">PARTIDA RÁPIDA</button>
-            <button class="btn" id="lb-room"><img class="ico" src="assets/sprites/icons/cadeado.svg" alt="">CRIAR SALA PRIVADA</button>
-            <div class="row lb-join-row">
+            <button class="btn btn-primary btn-lg" id="lb-quick"><img class="ico" src="assets/sprites/icons/trofeu.svg" alt="">RANQUEADA</button>
+            <div class="lb-row">
+              <button class="btn" id="lb-casual"><img class="ico" src="assets/sprites/icons/espadas.svg" alt="">CASUAL</button>
+              <button class="btn" id="lb-modes"><img class="ico" src="assets/sprites/icons/coroa.svg" alt="">MAIS MODOS</button>
+            </div>
+            <div class="lb-row lb-join-row">
+              <button class="btn btn-sm" id="lb-room" title="Criar sala privada"><img class="ico ico-sm" src="assets/sprites/icons/cadeado.svg" alt="">SALA</button>
               <input class="field field-code" id="lb-code" type="text" maxlength="8" placeholder="JGH-XXXX" autocomplete="off">
-              <button class="btn" id="lb-join">ENTRAR</button>
+              <button class="btn btn-sm" id="lb-join">ENTRAR</button>
             </div>
             <div class="lobby-tabs">
               <button class="btn btn-sm" id="lb-chars"><img class="ico ico-sm" src="assets/sprites/icons/duelo.svg" alt="">CAÇADORES</button>
-              <button class="btn btn-sm" id="lb-cards"><img class="ico ico-sm" src="assets/sprites/icons/perk_escudo.svg" alt="">CARTAS</button>
+              <button class="btn btn-sm" id="lb-cards"><img class="ico ico-sm" src="assets/sprites/icons/perk_escudo.svg" alt="">DECK</button>
               <button class="btn btn-sm" id="lb-rank"><img class="ico ico-sm" src="assets/sprites/icons/trofeu.svg" alt="">RANKING</button>
+              <button class="btn btn-sm" id="lb-missions"><img class="ico ico-sm" src="assets/sprites/icons/pergaminho.svg" alt="">MISSÕES<i class="badge hidden" id="lb-missions-badge"></i></button>
+              <button class="btn btn-sm" id="lb-shop"><img class="ico ico-sm" src="assets/sprites/icons/ecto.svg" alt="">LOJA</button>
             </div>
             <p class="mp-status" id="lb-status">Conectando...</p>
           </div>
@@ -179,9 +206,27 @@
         <div class="lobby-overlay hidden" id="lb-searching">
           <div class="panel overlay-card">
             <img class="ico ico-xl float" src="assets/sprites/icons/alvo.svg" alt="">
-            <h3>PROCURANDO OPONENTE</h3>
+            <h3 id="lb-search-title">PROCURANDO OPONENTE</h3>
             <p class="blink" id="lb-search-time">0:00</p>
+            <p class="mp-sub" id="lb-search-note"></p>
             <button class="btn btn-sm" id="lb-search-cancel">CANCELAR</button>
+          </div>
+        </div>
+        <div class="lobby-overlay hidden" id="lb-tournament">
+          <div class="panel overlay-card tour-card">
+            <h3><img class="ico" src="assets/sprites/icons/taca.svg" alt=""> TORNEIO RELÂMPAGO</h3>
+            <p class="mp-sub" id="tour-status"></p>
+            <div class="bracket" id="tour-bracket"></div>
+            <button class="btn btn-sm" id="tour-leave">SAIR</button>
+          </div>
+        </div>
+        <div class="lobby-overlay hidden" id="lb-king">
+          <div class="panel overlay-card king-card">
+            <h3><img class="ico" src="assets/sprites/icons/coroa.svg" alt=""> REI DA ARENA</h3>
+            <div class="king-throne" id="king-throne"></div>
+            <p class="mp-sub" id="king-status"></p>
+            <ol class="king-line" id="king-line"></ol>
+            <button class="btn btn-sm" id="king-leave">SAIR DA ARENA</button>
           </div>
         </div>
         <div class="lobby-overlay hidden" id="lb-room-wait">
@@ -202,10 +247,12 @@
         <div class="status-box enemy-box duel-opp" id="duel-opp-box">
           <div class="sb-head"><span class="sb-name" id="duel-opp-name">OPONENTE</span><span class="sb-trophies"><img class="ico ico-xs" id="duel-opp-league" src="assets/sprites/icons/liga_bronze.svg" alt=""><span id="duel-opp-trophies">0</span></span></div>
           <div class="sb-hp"><b>HP</b><div class="hpbar"><div class="hpbar-fill" id="duel-opp-hp"></div></div></div>
-          <div class="sb-foot" id="duel-opp-hp-text">100/100</div>
+          <div class="sb-foot"><span class="duel-history" id="duel-opp-history" title="Últimas armas do adversário"></span><span id="duel-opp-hp-text">100/100</span></div>
         </div>
         <div class="hud-top-right">
+          <div class="duel-spect hidden" id="duel-spect" title="Espectadores"><img class="ico ico-sm" src="assets/sprites/icons/assistir.svg" alt=""><span id="duel-spect-n">0</span></div>
           <div class="duel-round" id="duel-round">RODADA 1</div>
+          <button class="btn btn-icon" id="duel-emote" title="Expressões"><img class="ico" src="assets/sprites/icons/emote_risada.svg" alt=""></button>
           <button class="btn btn-icon" id="duel-mute" title="Som"><img class="ico" id="duel-mute-ico" src="assets/sprites/icons/som_on.svg" alt="Som"></button>
           <button class="btn btn-icon btn-danger" id="duel-forfeit" title="Desistir"><img class="ico" src="assets/sprites/icons/fechar.svg" alt="Desistir"></button>
         </div>
@@ -214,6 +261,7 @@
           <div class="sb-hp"><b>HP</b><div class="hpbar"><div class="hpbar-fill" id="duel-me-hp"></div></div></div>
           <div class="sb-foot" id="duel-me-hp-text">100/100</div>
         </div>
+        <div class="emote-bar hidden" id="emote-bar"></div>
         <div class="played-card opp hidden" id="duel-opp-card"></div>
         <div class="played-card me hidden" id="duel-my-card"></div>
         <div class="banner hidden" id="duel-banner"><span id="duel-banner-text"></span></div>
@@ -232,12 +280,42 @@
         <div class="lobby-overlay hidden" id="duel-result">
           <div class="panel overlay-card result-card">
             <h2 class="result-title" id="dr-title">VITÓRIA!</h2>
-            <div class="dr-trophies"><img class="ico ico-lg" src="assets/sprites/icons/trofeu.svg" alt=""><b id="dr-count">0</b><span id="dr-delta"></span></div>
+            <div class="dr-trophies" id="dr-trophies"><img class="ico ico-lg" src="assets/sprites/icons/trofeu.svg" alt=""><b id="dr-count">0</b><span id="dr-delta"></span></div>
             <p class="result-note" id="dr-note"></p>
             <div class="dr-unlocks" id="dr-unlocks"></div>
+            <div class="result-actions" id="dr-actions"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ CHEFE COOPERATIVO ═══════════════ -->
+      <section id="screen-raid" class="screen hidden">
+        <div class="status-box enemy-box raid-boss" id="raid-boss-box">
+          <div class="sb-head"><span class="sb-name" id="raid-boss-name">CHEFE</span><span class="boss-pips" id="raid-pips"></span></div>
+          <div class="sb-hp"><b>HP</b><div class="hpbar"><div class="hpbar-fill" id="raid-boss-hp"></div></div></div>
+          <div class="sb-foot" id="raid-boss-hp-text">0/0</div>
+        </div>
+        <div class="hud-top-right">
+          <div class="duel-round" id="raid-round">RODADA 1</div>
+          <button class="btn btn-icon" id="raid-emote" title="Expressões"><img class="ico" src="assets/sprites/icons/emote_risada.svg" alt=""></button>
+          <button class="btn btn-icon btn-danger" id="raid-leave" title="Sair"><img class="ico" src="assets/sprites/icons/fechar.svg" alt=""></button>
+        </div>
+        <div class="emote-bar hidden" id="raid-emote-bar"></div>
+        <div class="raid-hunters" id="raid-hunters"></div>
+        <div class="banner hidden" id="raid-banner"><span id="raid-banner-text"></span></div>
+        <div class="battle-bottom">
+          <div class="duel-timer"><div id="raid-timer-fill"></div></div>
+          <div class="battle-log"><p id="raid-log"></p></div>
+          <div class="actions duel-actions" id="raid-actions"></div>
+        </div>
+        <div class="lobby-overlay hidden" id="raid-result">
+          <div class="panel overlay-card result-card">
+            <h2 class="result-title" id="rr-title">VITÓRIA!</h2>
+            <div class="dr-trophies" id="rr-reward"><img class="ico ico-lg" src="assets/sprites/icons/ecto.svg" alt=""><b id="rr-ecto">+0</b></div>
+            <p class="result-note" id="rr-note"></p>
             <div class="result-actions">
-              <button class="btn btn-primary" id="dr-again"><img class="ico" src="assets/sprites/icons/espadas.svg" alt="">JOGAR DE NOVO</button>
-              <button class="btn" id="dr-lobby"><img class="ico" src="assets/sprites/icons/casa.svg" alt="">LOBBY</button>
+              <button class="btn btn-primary" id="rr-again"><img class="ico" src="assets/sprites/icons/caveira.svg" alt="">JOGAR DE NOVO</button>
+              <button class="btn" id="rr-lobby"><img class="ico" src="assets/sprites/icons/casa.svg" alt="">LOBBY</button>
             </div>
           </div>
         </div>
@@ -288,11 +366,90 @@
         </div>
       </div>
 
+      <div class="modal hidden" id="modal-workshop">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">OFICINA DO CAÇADOR</h2>
+          <p class="modal-sub">Melhorias permanentes deste arquivo. Valem em todas as fases.</p>
+          <div class="workshop-grid" id="workshop-grid"></div>
+          <div class="row">
+            <div class="coin-pill"><img class="ico ico-sm" src="assets/sprites/icons/moeda.svg" alt=""><span class="coin-value">0</span></div>
+            <button class="btn btn-sm" data-close-modal>FECHAR</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-rewards">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">RECOMPENSAS</h2>
+          <p class="modal-sub" id="rewards-sub"></p>
+          <ul class="reward-list" id="reward-list"></ul>
+          <button class="btn btn-sm" data-close-modal>FECHAR</button>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-daily">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">DESAFIO DO DIA</h2>
+          <p class="modal-sub" id="daily-sub"></p>
+          <p class="daily-me" id="daily-me"></p>
+          <ol class="rank-list" id="daily-list"></ol>
+          <div class="row">
+            <button class="btn btn-primary" id="daily-play"><img class="ico" src="assets/sprites/icons/jogar.svg" alt="">JOGAR</button>
+            <button class="btn" data-close-modal>FECHAR</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-relics">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">ESCOLHA UMA RELÍQUIA</h2>
+          <p class="modal-sub">Ela vale até o fim da corrida. Algumas podem ser escolhidas de novo e somam.</p>
+          <div class="relic-grid" id="relic-grid"></div>
+        </div>
+      </div>
+
       <div class="modal hidden" id="modal-cards">
         <div class="panel modal-card modal-wide">
-          <h2 class="modal-title">SUAS CARTAS</h2>
-          <p class="modal-sub">Ganhe troféus para desbloquear novas cartas. Passe o mouse (ou toque) para ler.</p>
-          <div class="card-grid" id="cards-grid"></div>
+          <h2 class="modal-title">SEU DECK</h2>
+          <p class="modal-sub" id="deck-rules"></p>
+          <div class="deck-slots" id="deck-slots"></div>
+          <p class="deck-label">COLEÇÃO <small>clique numa carta para pôr ou tirar do deck · passe o mouse para ler</small></p>
+          <div class="card-grid deck-collection" id="cards-grid"></div>
+          <div class="row">
+            <button class="btn btn-sm btn-primary" id="deck-save">SALVAR DECK</button>
+            <button class="btn btn-sm" id="deck-auto" title="As melhores cartas liberadas, montadas sozinhas">AUTOMÁTICO</button>
+            <button class="btn btn-sm" data-close-modal>FECHAR</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-modes">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">MODOS DA ARENA</h2>
+          <div class="modes-grid" id="modes-grid"></div>
+          <button class="btn btn-sm" data-close-modal>FECHAR</button>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-missions">
+        <div class="panel modal-card">
+          <h2 class="modal-title">MISSÕES DE HOJE</h2>
+          <p class="modal-sub" id="missions-sub">Novas missões todo dia à meia-noite.</p>
+          <ul class="mission-list" id="mission-list"></ul>
+          <button class="btn btn-sm" data-close-modal>FECHAR</button>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-shop">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">LOJA DE ECTO</h2>
+          <p class="modal-sub" id="shop-sub"></p>
+          <div class="shop-body">
+            <h3 class="shop-section">MOLDURAS</h3>
+            <div class="shop-items" id="shop-frames"></div>
+            <h3 class="shop-section">EXPRESSÕES</h3>
+            <div class="shop-items" id="shop-emotes"></div>
+          </div>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>

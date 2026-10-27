@@ -1,4 +1,4 @@
-import { selectedCharacter } from '../config/characters.js';
+import { hunterBase } from '../world/hunterLook.js';
 import { Scene } from '../core/Scene.js';
 import { GW } from '../core/Renderer.js';
 import { Scenery, GROUND_Y } from '../world/Scenery.js';
@@ -18,7 +18,7 @@ export class MenuScene extends Scene {
 
   enter() {
     this.scenery ??= new Scenery(this.game.assets, 'floresta');
-    this.hunter = new Fighter(this.game.assets, { base: `char/${selectedCharacter(this.game.storage)}/side`, x: 250, y: GROUND_Y + 40 });
+    this.hunter = new Fighter(this.game.assets, { base: hunterBase(this.game, 'side'), x: 250, y: GROUND_Y + 40 });
     this.ghosts = [0, 1, 2].map(i => Object.assign(
       new Fighter(this.game.assets, { base: ['enemy/fantasma', 'enemy/fogo_fatuo', 'enemy/fantasma'][i], x: 0, y: 0, flying: true }),
       { lane: i, alpha: 0.75 },

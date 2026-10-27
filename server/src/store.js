@@ -1,6 +1,7 @@
 'use strict';
-// Persistência dos jogadores (contas anônimas, troféus, ranking).
-//   DATABASE_URL definida -> Postgres (Railway)
+// Persistência: jogadores (contas anônimas, troféus, deck, cosméticos, missões),
+// pontuações do Desafio do Dia e dados gerais (temporada atual).
+//   DATABASE_URL definida -> Postgres (Neon)
 //   senão                 -> arquivo JSON (DATA_FILE, padrão ./data/players.json)
 const crypto = require('crypto');
 const fs = require('fs');
@@ -15,10 +16,41 @@ function cleanNickname(raw) {
   return nick.length >= 2 ? nick : `Caçador${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+/** Campos salvos de cada jogador. Os de JSON_FIELDS são listas/objetos. */
+const FIELDS = [
+  'id', 'nickname', 'trophies', 'best', 'wins', 'losses', 'character',
+  'deck', 'ecto', 'cosmetics', 'equipped', 'cups', 'season', 'seasonBest', 'missions',
+  'createdAt', 'updatedAt',
+];
+const JSON_FIELDS = ['deck', 'cosmetics', 'equipped', 'missions'];
+
 function blankPlayer(nickname) {
   const now = new Date().toISOString();
-  return { id: newId(), nickname: cleanNickname(nickname), trophies: 0, best: 0, wins: 0, losses: 0, character: 'cacador', createdAt: now, updatedAt: now };
+  return {
+    id: newId(), nickname: cleanNickname(nickname), trophies: 0, best: 0, wins: 0, losses: 0, character: 'cacador',
+    deck: null,              // null = deck padrão (todas as cartas liberadas até o limite)
+    ecto: 0,                 // moeda dos cosméticos (missões, torneios, temporadas)
+    cosmetics: [],           // ids de molduras e expressões compradas ou ganhas
+    equipped: { frame: null },
+    cups: 0,                 // torneios vencidos
+    season: 0,               // última temporada aplicada a este jogador
+    seasonBest: 0,           // maior número de troféus nesta temporada
+    missions: null,          // { day, list: [{ id, progress, claimed }] }
+    createdAt: now, updatedAt: now,
+  };
 }
+
+function pick(p) {
+  const o = {};
+  for (const k of FIELDS) if (p[k] !== undefined) o[k] = p[k];
+  delete o.id; delete o.createdAt;
+  return o;
+}
+function strip(p) { const o = {}; for (const k of FIELDS) o[k] = p[k]; return o; }
+function rankOrder(a, b) {
+  return b.trophies - a.trophies || b.wins - a.wins || String(a.createdAt).localeCompare(String(b.createdAt));
+}
+const dailyOrder = (a, b) => b.score - a.score || String(a.updatedAt).localeCompare(String(b.updatedAt));
 
 // ═══════════════════════ JSON ═══════════════════════
 class JsonStore {
@@ -26,13 +58,21 @@ class JsonStore {
     this.file = file;
     this.players = new Map();   // id -> player (com tokenHash)
     this.byToken = new Map();   // tokenHash -> id
+    this.daily = new Map();     // `${day}|${playerId}` -> { day, playerId, score, waves, updatedAt }
+    this.meta = {};
     this.timer = null;
   }
 
   async init() {
     try {
       const data = JSON.parse(fs.readFileSync(this.file, 'utf8'));
-      for (const p of data.players || []) { this.players.set(p.id, p); this.byToken.set(p.tokenHash, p.id); }
+      for (const raw of data.players || []) {
+        const p = { ...blankPlayer(raw.nickname), ...raw };
+        this.players.set(p.id, p);
+        this.byToken.set(p.tokenHash, p.id);
+      }
+      for (const d of data.daily || []) this.daily.set(`${d.day}|${d.playerId}`, d);
+      this.meta = data.meta || {};
     } catch { /* arquivo ainda não existe */ }
     return this;
   }
@@ -46,10 +86,11 @@ class JsonStore {
     clearTimeout(this.timer);
     fs.mkdirSync(path.dirname(this.file), { recursive: true });
     const tmp = `${this.file}.tmp`;
-    fs.writeFileSync(tmp, JSON.stringify({ players: [...this.players.values()] }));
+    fs.writeFileSync(tmp, JSON.stringify({ players: [...this.players.values()], daily: [...this.daily.values()], meta: this.meta }));
     fs.renameSync(tmp, this.file);
   }
 
+  // ─── jogadores ───
   async create(nickname) {
     const token = newToken();
     const p = { ...blankPlayer(nickname), tokenHash: hashToken(token) };
@@ -64,10 +105,15 @@ class JsonStore {
     return id ? strip(this.players.get(id)) : null;
   }
 
+  async getById(id) {
+    const p = this.players.get(id);
+    return p ? strip(p) : null;
+  }
+
   async save(player) {
     const cur = this.players.get(player.id);
     if (!cur) return;
-    Object.assign(cur, pick(player), { updatedAt: new Date().toISOString() });
+    Object.assign(cur, structuredClone(pick(player)), { updatedAt: new Date().toISOString() });
     this.#persist();
   }
 
@@ -82,6 +128,40 @@ class JsonStore {
   }
 
   async count() { return this.players.size; }
+
+  /** Fim de temporada: quem passou de `threshold` troféus perde metade do excedente. */
+  async trimTrophies(threshold) {
+    for (const p of this.players.values()) {
+      if (p.trophies > threshold) p.trophies = threshold + Math.floor((p.trophies - threshold) / 2);
+    }
+    this.#persist();
+  }
+
+  // ─── Desafio do Dia ───
+  /** Guarda a pontuação se for a melhor do jogador no dia. Retorna a melhor. */
+  async submitDaily(day, playerId, score, waves) {
+    const key = `${day}|${playerId}`;
+    const cur = this.daily.get(key);
+    if (!cur || score > cur.score) this.daily.set(key, { day, playerId, score, waves, updatedAt: new Date().toISOString() });
+    this.#persist();
+    return this.daily.get(key).score;
+  }
+
+  async dailyTop(day, limit = 20) {
+    return [...this.daily.values()].filter(d => d.day === day).sort(dailyOrder).slice(0, limit)
+      .map(d => ({ ...d, nickname: this.players.get(d.playerId)?.nickname ?? '?', character: this.players.get(d.playerId)?.character ?? 'cacador' }));
+  }
+
+  async dailyRank(day, playerId) {
+    const list = [...this.daily.values()].filter(d => d.day === day).sort(dailyOrder);
+    const i = list.findIndex(d => d.playerId === playerId);
+    return { rank: i >= 0 ? i + 1 : null, total: list.length, score: i >= 0 ? list[i].score : null };
+  }
+
+  // ─── dados gerais ───
+  async getMeta(key) { return this.meta[key] ?? null; }
+  async setMeta(key, value) { this.meta[key] = value; this.#persist(); }
+
   async close() { this.flush(); }
 }
 
@@ -104,14 +184,36 @@ class PgStore {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )`);
+    // colunas novas (bancos criados antes delas ganham as colunas aqui)
+    for (const [col, type] of [
+      ['deck', "TEXT"], ['ecto', 'INTEGER NOT NULL DEFAULT 0'], ['cosmetics', "TEXT NOT NULL DEFAULT '[]'"],
+      ['equipped', "TEXT NOT NULL DEFAULT '{\"frame\":null}'"], ['cups', 'INTEGER NOT NULL DEFAULT 0'],
+      ['season', 'INTEGER NOT NULL DEFAULT 0'], ['season_best', 'INTEGER NOT NULL DEFAULT 0'], ['missions', 'TEXT'],
+    ]) {
+      await this.pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS ${col} ${type}`);
+    }
     await this.pool.query('CREATE INDEX IF NOT EXISTS players_rank ON players (trophies DESC, wins DESC)');
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS daily_scores (
+        day TEXT NOT NULL,
+        player_id TEXT NOT NULL,
+        score INTEGER NOT NULL,
+        waves INTEGER NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (day, player_id)
+      )`);
+    await this.pool.query('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
     return this;
   }
 
   static row(r) {
-    return r && {
-      id: r.id, nickname: r.nickname, trophies: r.trophies, best: r.best, wins: r.wins, losses: r.losses,
-      character: r.character, createdAt: new Date(r.created_at).toISOString(), updatedAt: new Date(r.updated_at).toISOString(),
+    if (!r) return null;
+    const parse = (v, fallback) => (v == null ? fallback : JSON.parse(v));
+    return {
+      id: r.id, nickname: r.nickname, trophies: r.trophies, best: r.best, wins: r.wins, losses: r.losses, character: r.character,
+      deck: parse(r.deck, null), ecto: r.ecto ?? 0, cosmetics: parse(r.cosmetics, []), equipped: parse(r.equipped, { frame: null }),
+      cups: r.cups ?? 0, season: r.season ?? 0, seasonBest: r.season_best ?? 0, missions: parse(r.missions, null),
+      createdAt: new Date(r.created_at).toISOString(), updatedAt: new Date(r.updated_at).toISOString(),
     };
   }
 
@@ -127,13 +229,22 @@ class PgStore {
 
   async getByToken(token) {
     const { rows } = await this.pool.query('SELECT * FROM players WHERE token_hash = $1', [hashToken(token)]);
-    return PgStore.row(rows[0]) || null;
+    return PgStore.row(rows[0]);
+  }
+
+  async getById(id) {
+    const { rows } = await this.pool.query('SELECT * FROM players WHERE id = $1', [id]);
+    return PgStore.row(rows[0]);
   }
 
   async save(p) {
+    const json = (v) => (v == null ? null : JSON.stringify(v));
     await this.pool.query(
-      'UPDATE players SET nickname=$2, trophies=$3, best=$4, wins=$5, losses=$6, character=$7, updated_at=NOW() WHERE id=$1',
-      [p.id, p.nickname, p.trophies, p.best, p.wins, p.losses, p.character],
+      `UPDATE players SET nickname=$2, trophies=$3, best=$4, wins=$5, losses=$6, character=$7,
+        deck=$8, ecto=$9, cosmetics=$10, equipped=$11, cups=$12, season=$13, season_best=$14, missions=$15, updated_at=NOW()
+       WHERE id=$1`,
+      [p.id, p.nickname, p.trophies, p.best, p.wins, p.losses, p.character,
+        json(p.deck), p.ecto, json(p.cosmetics ?? []), json(p.equipped ?? { frame: null }), p.cups, p.season, p.seasonBest, json(p.missions)],
     );
   }
 
@@ -155,14 +266,58 @@ class PgStore {
     return rows[0].n;
   }
 
-  async close() { await this.pool.end(); }
-}
+  async trimTrophies(threshold) {
+    await this.pool.query(
+      'UPDATE players SET trophies = $1::int + (trophies - $1::int) / 2, updated_at = NOW() WHERE trophies > $1::int',
+      [threshold],
+    );
+  }
 
-const FIELDS = ['id', 'nickname', 'trophies', 'best', 'wins', 'losses', 'character', 'createdAt', 'updatedAt'];
-function pick(p) { const o = {}; for (const k of FIELDS) if (p[k] !== undefined) o[k] = p[k]; delete o.id; delete o.createdAt; return o; }
-function strip(p) { const o = {}; for (const k of FIELDS) o[k] = p[k]; return o; }
-function rankOrder(a, b) {
-  return b.trophies - a.trophies || b.wins - a.wins || String(a.createdAt).localeCompare(String(b.createdAt));
+  async submitDaily(day, playerId, score, waves) {
+    await this.pool.query(
+      `INSERT INTO daily_scores (day, player_id, score, waves) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (day, player_id) DO UPDATE SET score = EXCLUDED.score, waves = EXCLUDED.waves, updated_at = NOW()
+       WHERE daily_scores.score < EXCLUDED.score`,
+      [day, playerId, score, waves],
+    );
+    const { rows } = await this.pool.query('SELECT score FROM daily_scores WHERE day = $1 AND player_id = $2', [day, playerId]);
+    return rows[0].score;
+  }
+
+  async dailyTop(day, limit = 20) {
+    const { rows } = await this.pool.query(
+      `SELECT d.day, d.player_id, d.score, d.waves, d.updated_at, p.nickname, p.character
+       FROM daily_scores d JOIN players p ON p.id = d.player_id
+       WHERE d.day = $1 ORDER BY d.score DESC, d.updated_at ASC LIMIT $2`,
+      [day, limit],
+    );
+    return rows.map(r => ({ day: r.day, playerId: r.player_id, score: r.score, waves: r.waves, nickname: r.nickname, character: r.character }));
+  }
+
+  async dailyRank(day, playerId) {
+    const { rows } = await this.pool.query('SELECT score, updated_at FROM daily_scores WHERE day = $1 AND player_id = $2', [day, playerId]);
+    const { rows: [{ total }] } = await this.pool.query('SELECT COUNT(*)::int AS total FROM daily_scores WHERE day = $1', [day]);
+    if (!rows[0]) return { rank: null, total, score: null };
+    const { rows: [{ ahead }] } = await this.pool.query(
+      'SELECT COUNT(*)::int AS ahead FROM daily_scores WHERE day = $1 AND (score > $2 OR (score = $2 AND updated_at < $3))',
+      [day, rows[0].score, rows[0].updated_at],
+    );
+    return { rank: ahead + 1, total, score: rows[0].score };
+  }
+
+  async getMeta(key) {
+    const { rows } = await this.pool.query('SELECT value FROM meta WHERE key = $1', [key]);
+    return rows[0] ? JSON.parse(rows[0].value) : null;
+  }
+
+  async setMeta(key, value) {
+    await this.pool.query(
+      'INSERT INTO meta (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+      [key, JSON.stringify(value)],
+    );
+  }
+
+  async close() { await this.pool.end(); }
 }
 
 async function createStore(env = process.env) {
@@ -174,4 +329,4 @@ async function createStore(env = process.env) {
   return new JsonStore(env.DATA_FILE || path.join(__dirname, '..', 'data', 'players.json')).init();
 }
 
-module.exports = { createStore, JsonStore, PgStore, cleanNickname, hashToken };
+module.exports = { createStore, JsonStore, PgStore, cleanNickname, hashToken, blankPlayer };

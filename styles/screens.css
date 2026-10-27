@@ -53,6 +53,53 @@
 
 /* ─── mapa ─── */
 #screen-map { justify-content: flex-end; padding-bottom: 24px; }
+.map-act {
+  position: absolute;
+  top: 92px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transform: translateX(-50%);
+  color: var(--fog);
+  text-shadow: var(--outline);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+#screen-map.hard .screen-title, #screen-map.hard .map-act { color: var(--red-2); }
+.map-node.bonus .node-num { background: var(--purple-2); box-shadow: inset -4px -4px 0 var(--purple), inset 4px 4px 0 #d9a8ff, 0 0 0 2px var(--ink); }
+.map-bottom {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 0 24px;
+}
+.map-bottom .star-pill { justify-self: start; }
+.map-modes { display: flex; gap: 10px; }
+.map-modes .btn { padding-inline: 14px; }
+.map-bottom #map-hard { justify-self: end; }
+.star-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 16px 0 10px;
+  border: 2px solid transparent;
+  border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 24px / 0 stretch;
+  background: none;
+  color: var(--gold);
+  font: inherit;
+  text-shadow: var(--outline);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.star-pill b { font-weight: normal; font-size: 24px; }
+.star-pill { max-width: 100%; min-width: 0; }
+.star-pill span { overflow: hidden; color: var(--fog); text-overflow: ellipsis; white-space: nowrap; }
+.star-pill:hover, .star-pill:focus-visible { border-image-source: url('../assets/sprites/ui/slot_active.svg'); outline: none; }
 #map-nodes { position: absolute; inset: 0; pointer-events: none; }
 .map-node {
   position: absolute;

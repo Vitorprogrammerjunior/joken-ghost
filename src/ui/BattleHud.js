@@ -2,6 +2,7 @@
 import { $, h, icon, show, retrigger } from './dom.js';
 import { WEAPON_LIST, ENEMY_MOVES, BEATS } from '../config/weapons.js';
 import { ITEMS } from '../config/items.js';
+import { relicById } from '../config/relics.js';
 import { hpColor } from '../core/Renderer.js';
 
 export class BattleHud {
@@ -28,6 +29,9 @@ export class BattleHud {
     this.boxes = new Map();
     this.open = null;
 
+    this.economy = null;
+    this.unbindEconomy = null;
+
     $('act-attack').addEventListener('click', () => this.toggle('attack'));
     $('act-shop').addEventListener('click', () => this.toggle('shop'));
     $('act-bestiary').addEventListener('click', () => handlers.bestiary());
@@ -38,7 +42,17 @@ export class BattleHud {
 
     this.#buildWeapons();
     this.#buildShop();
-    game.bus.on('coins', () => this.refreshShop());
+  }
+
+  /** As moedas da batalha vêm do modo (o Desafio do Dia tem carteira própria). null desliga. */
+  bindEconomy(economy) {
+    this.unbindEconomy?.();
+    this.economy = economy;
+    this.unbindEconomy = economy?.onChange((coins) => {
+      $('battle-coins').textContent = coins;
+      this.refreshShop();
+    }) ?? null;
+    if (economy) $('battle-coins').textContent = economy.coins;
   }
 
   #buildWeapons() {
@@ -68,8 +82,17 @@ export class BattleHud {
   refreshShop() {
     for (const btn of this.shopBtns) {
       const it = ITEMS.find(i => i.id === btn.dataset.item);
-      btn.classList.toggle('poor', !this.game.economy.canAfford(it.price));
+      btn.classList.toggle('poor', !this.economy?.canAfford(it.price));
+      btn.classList.toggle('no-bag', this.bagLeft === 0);
     }
+  }
+
+  /** Quantos itens ainda dá para usar nesta fase. */
+  setBag(left, total) {
+    this.bagLeft = left;
+    $('shop-bag-count').textContent = `${left}/${total}`;
+    $('shop-bag').classList.toggle('empty', left === 0);
+    this.refreshShop();
   }
 
   /** Marca nas armas o que o jogador já sabe sobre o alvo. */
@@ -130,9 +153,20 @@ export class BattleHud {
     this.status.replaceChildren(...chips);
   }
 
-  setWave(i, total) {
-    this.waveTag.textContent = total > 1 ? `ONDA ${i + 1}/${total}` : '';
-    show(this.waveTag, total > 1);
+  setWaveLabel(text) {
+    this.waveTag.textContent = text;
+    show(this.waveTag, !!text);
+  }
+
+  /** Relíquias da corrida (repetidas aparecem uma vez, com a quantidade). */
+  setRelics(ids) {
+    const counts = new Map();
+    for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
+    $('relic-strip').replaceChildren(...[...counts].map(([id, n]) => {
+      const relic = relicById(id);
+      return h('span', { class: 'relic-chip', title: `${relic.name}: ${relic.desc}` }, icon(relic.icon, 'ico'), n > 1 ? h('b', {}, n) : null);
+    }));
+    show($('relic-strip'), ids.length > 0);
   }
 
   setCombo(n) {

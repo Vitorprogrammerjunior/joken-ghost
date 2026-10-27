@@ -73,6 +73,8 @@
         <a class="btn" href="#monstros">MONSTROS</a>
         <a class="btn" href="#itens">ITENS</a>
         <a class="btn" href="#fases">FASES</a>
+        <a class="btn" href="#progresso">OFICINA</a>
+        <a class="btn" href="#corridas">CORRIDAS</a>
         <a class="btn" href="#multiplayer">MULTIPLAYER</a>
       </nav>
     </header>
@@ -80,14 +82,18 @@
     <section id="sobre">
       <h2><img class="ico" src="assets/sprites/icons/pergaminho.svg" alt="">SOBRE</h2>
       <p class="lead">JokenGhost é um RPG por turnos em que cada golpe é decidido no pedra, papel e tesoura.
-        Você é o Caçador: atravesse a floresta, invada a mansão e derrote Kastle, o Bobo da Corte das trevas.
-        Descubra as fraquezas e os hábitos de cada monstro no Monstruário para vencer com estratégia.</p>
+        Você é o Caçador: atravesse a floresta, invada a mansão, derrote Kastle e depois enfrente o Reino das Sombras
+        até chegar em Morgana, a Rainha Banshee. Descubra as fraquezas, os hábitos e as pistas de cada monstro
+        no Monstruário para vencer com estratégia.</p>
     </section>
 
     <section id="regras">
       <h2><img class="ico" src="assets/sprites/icons/espadas.svg" alt="">REGRAS DO JOKEN</h2>
-      <p class="lead">A cada turno você e o monstro escolhem um ataque ao mesmo tempo. Quem vencer o jokenpô acerta o outro.
-        Empate não causa dano, mas também não quebra o seu combo.</p>
+      <p class="lead">A cada turno você e os monstros escolhem um ataque ao mesmo tempo. Você troca golpes com o alvo:
+        quem vencer o jokenpô acerta o outro. Os outros monstros também jogam: quem vencer a sua arma acerta meio golpe,
+        então escolha uma arma que vença o alvo sem perder para os outros. Empate não causa dano nem quebra o combo.</p>
+      <p class="lead">Às vezes um monstro deixa escapar uma <b>pista</b> (um balão com o golpe que ele vai usar).
+        Cuidado: alguns monstros mentem nas pistas!</p>
       <div class="rules" id="rules"></div>
     </section>
 
@@ -113,22 +119,48 @@
 
     <section id="itens">
       <h2><img class="ico" src="assets/sprites/icons/sacola.svg" alt="">LOJA</h2>
-      <p class="lead">Moedas vêm de acertos, combos e monstros derrotados, e ficam salvas no seu arquivo. Os itens são usados na hora e não gastam o turno.</p>
+      <p class="lead">Moedas vêm de acertos, combos e monstros derrotados, e ficam salvas no seu arquivo (fases mais difíceis pagam mais).
+        Os itens são usados na hora e não gastam o turno, mas a <b>bolsa</b> tem espaço limitado em cada onda e enche de novo na próxima.
+        Monstros derrotados às vezes deixam cair +1 item na bolsa da onda.</p>
       <div class="grid" id="items"></div>
     </section>
 
     <section id="fases">
       <h2><img class="ico" src="assets/sprites/icons/estrela.svg" alt="">FASES</h2>
-      <p class="lead">Termine com 70% de vida ou mais para ganhar 3 estrelas. Entre as ondas você recupera um pouco de vida.</p>
+      <p class="lead">Termine com 70% de vida ou mais para ganhar 3 estrelas. Entre as ondas você recupera um pouco de vida.
+        Ato I: a mansão de Kastle. Ato II: o Reino das Sombras, com chefes que chamam ajudantes e atacam duas vezes.</p>
       <div class="grid" id="levels"></div>
+    </section>
+
+    <section id="progresso">
+      <h2><img class="ico" src="assets/sprites/icons/martelo.svg" alt="">OFICINA E RECOMPENSAS</h2>
+      <p class="lead">No mapa, gaste moedas na Oficina em melhorias que valem para sempre naquele arquivo.</p>
+      <div class="grid" id="upgrades"></div>
+      <h3 class="sub">Recompensas por estrelas</h3>
+      <p class="lead">As estrelas do modo normal e do Pesadelo somam e liberam modos, visuais e a fase bônus.</p>
+      <div class="grid" id="rewards"></div>
+    </section>
+
+    <section id="corridas">
+      <h2><img class="ico" src="assets/sprites/icons/caveira.svg" alt="">NOITE SEM FIM E DESAFIO DO DIA</h2>
+      <p class="lead"><b>Noite Sem Fim:</b> ondas infinitas, cada vez mais fortes, com um chefe a cada 5. Depois de cada onda
+        você escolhe 1 de 3 relíquias. Usa as moedas e as melhorias do seu arquivo.</p>
+      <p class="lead"><b>Desafio do Dia:</b> 10 ondas iguais para todo mundo (a corrida muda à meia-noite de Brasília), sem as
+        melhorias da Oficina. O servidor refaz a sua corrida para conferir a pontuação antes de pôr no ranking do dia.</p>
+      <h3 class="sub">Relíquias</h3>
+      <div class="grid" id="relics"></div>
     </section>
 
     <section id="multiplayer">
       <h2><img class="ico" src="assets/sprites/icons/duelo.svg" alt="">MULTIPLAYER</h2>
-      <p class="lead">Na Arena dos Caçadores você duela contra outros jogadores: partida rápida (por troféus parecidos),
-        desafio direto a quem está online ou sala privada com código. A cada rodada você joga uma carta da mão
-        (ou passa) e depois escolhe a arma. Cada carta só pode ser usada uma vez por partida. Vencer dá troféus,
-        e os troféus liberam novos caçadores e cartas.</p>
+      <p class="lead">Na Arena dos Caçadores você duela contra outros jogadores. A cada rodada você joga uma carta da mão
+        (ou passa) e depois escolhe a arma. Cada carta só pode ser usada uma vez por partida, e o seu deck tem 8 cartas
+        (no máximo 1 lendária e 2 épicas). Se o tempo acabar, você repete a arma da rodada anterior. Na caixa do adversário
+        aparecem as últimas armas dele: ler o padrão é a sua maior arma.</p>
+      <h3 class="sub">Modos</h3>
+      <div class="grid" id="mp-modes"></div>
+      <p class="lead">Missões diárias e torneios dão <b>Ecto</b>, que compra molduras e expressões. Todo mês a temporada
+        acaba: quem passou de 1000 troféus perde metade do excedente e todos ganham um prêmio pela liga alcançada.</p>
       <h3 class="sub">Cartas</h3>
       <div class="grid cards-wrap" id="mp-cards"><p class="lead">Carregando do servidor...</p></div>
       <h3 class="sub">Caçadores</h3>

@@ -1,7 +1,7 @@
 // Como cada monstro escolhe Possessão (pedra), Assombração (papel) ou Maldição (tesoura).
 // Os perfis são descobríveis: o Monstruário revela o comportamento depois de algumas vitórias.
 import { MOVES } from '../config/weapons.js';
-import { counterOf } from './rps.js';
+import { counterOf, outcome } from './rps.js';
 import { pick, weighted } from './random.js';
 
 /**
@@ -33,10 +33,43 @@ export function chooseMove(ai, memory, rng = Math.random) {
     case 'trickster':
       if (lastPlayer && rng() < ai.chance) return counterOf(lastPlayer);
       return pick(MOVES, rng);
+    case 'vengeful': {
+      const winner = lastWinningMove(playerHistory, ownHistory);
+      if (winner && rng() < ai.chance) return winner;
+      return pick(MOVES, rng);
+    }
+    case 'coward': {
+      const lostLast = lastOwn && lastPlayer && outcome(lastOwn, lastPlayer) === 'lose';
+      if (lostLast && rng() < ai.chance) return pick(MOVES.filter(m => m !== lastOwn), rng);
+      return pick(MOVES, rng);
+    }
     case 'random':
     default:
       return ai.bias ? weighted(ai.bias, rng) : pick(MOVES, rng);
   }
+}
+
+/**
+ * Pista do próximo golpe: aparece com `tell.chance` e, nos monstros mentirosos,
+ * mostra outra jogada com `tell.lie`. Retorna a jogada mostrada ou null.
+ */
+export function rollTell(tell, intent, rng = Math.random) {
+  if (!tell || rng() >= tell.chance) return null;
+  if (rng() < (tell.lie ?? 0)) return pick(MOVES.filter(m => m !== intent), rng);
+  return intent;
+}
+
+/**
+ * Última jogada do monstro que venceu o Caçador. O histórico do Caçador vem da fase
+ * inteira, o do monstro só desde que ele apareceu: os dois se alinham pelo fim.
+ */
+export function lastWinningMove(playerHistory, ownHistory) {
+  const offset = playerHistory.length - ownHistory.length;
+  for (let i = ownHistory.length - 1; i >= 0; i--) {
+    const player = playerHistory[offset + i];
+    if (player && outcome(ownHistory[i], player) === 'win') return ownHistory[i];
+  }
+  return null;
 }
 
 export function mostFrequent(list) {

@@ -506,11 +506,21 @@ function skulls() {
 }
 
 // ═══════════════════ MAPA DE FASES ═══════════════════
+/** Moldura redonda de madeira das vinhetas: fundo `bgC` e o desenho `inner` recortado no círculo. */
+export function framedLocation(bgC, inner) {
+  const g = new Grid();
+  g.circle(32, 32, 28, bgC);
+  inner.erase((x, y) => Math.hypot(x - 32, y - 32) > 27 || (inner.get(x, y) || '').includes('@'));
+  g.blit(inner);
+  g.ring(32, 32, 29, 3, 'm3');
+  g.ring(32, 32, 30, 1, 'm5');
+  g.outline('k');
+  return g;
+}
+
 /** Vinhetas 64x64 que representam cada local no mapa. */
 function location(kind) {
-  const g = new Grid();
   const bgC = { floresta: 'v1', patio: 'p1', mansao: 'p2', camara: 'r1' }[kind];
-  g.circle(32, 32, 28, bgC);
   const inner = new Grid();
   if (kind === 'floresta') {
     inner.blit(treeCrown().shifted(0, -6));
@@ -531,12 +541,7 @@ function location(kind) {
     inner.blit(torch(1).shifted(-18, 0));
     inner.blit(torch(2).shifted(18, 0));
   }
-  inner.erase((x, y) => Math.hypot(x - 32, y - 32) > 27 || (inner.get(x, y) || '').includes('@'));
-  g.blit(inner);
-  g.ring(32, 32, 29, 3, 'm3');
-  g.ring(32, 32, 30, 1, 'm5');
-  g.outline('k');
-  return g;
+  return framedLocation(bgC, inner);
 }
 
 function pathDot() {
@@ -549,20 +554,25 @@ function pathDot() {
 
 
 // ═══════════════════ PLATAFORMAS (batalha estilo Pokémon) ═══════════════════
-/** Oval achatado onde os lutadores ficam de pé. */
-function platform(kind) {
+/** Oval achatado onde os lutadores ficam de pé. C = [topo, luz, borda, lateral]. */
+export function platformBase(C) {
   const g = new Grid();
+  g.ellipse(32, 36, 30, 10, C[3]);           // lateral (espessura)
+  g.ellipse(32, 33, 30, 10, C[2]);
+  g.ellipse(32, 32, 29, 9, C[0]);
+  g.ellipse(30, 30, 22, 5, C[1]);            // luz no topo
+  g.ellipse(32, 32, 20, 5, C[0]);
+  return g;
+}
+
+function platform(kind) {
   const C = {
     grama: ['v3', 'v4', 'v2', 'm2'],
     pedra: ['t3', 't4', 't2', 't1'],
     tapete: ['r2', 'r3', 'r1', 'm1'],
     runa: ['g2', 'g3', 'g1', 'k2'],
   }[kind];
-  g.ellipse(32, 36, 30, 10, C[3]);           // lateral (espessura)
-  g.ellipse(32, 33, 30, 10, C[2]);
-  g.ellipse(32, 32, 29, 9, C[0]);
-  g.ellipse(30, 30, 22, 5, C[1]);            // luz no topo
-  g.ellipse(32, 32, 20, 5, C[0]);
+  const g = platformBase(C);
   if (kind === 'grama') {
     const r = rng(77);
     for (let i = 0; i < 16; i++) {

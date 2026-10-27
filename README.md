@@ -1,14 +1,28 @@
 # JokenGhost — Caçada em Turnos 👻
 
 RPG por turnos em pixel art onde cada golpe é decidido no **pedra, papel e tesoura**.
-Você é o Caçador: atravesse a Floresta Maldita, invada a mansão e derrote **Kastle**, o Bobo da Corte das trevas.
+Você é o Caçador: atravesse a Floresta Maldita, invada a mansão, derrote **Kastle** e depois enfrente o
+Reino das Sombras até **Morgana**, a Rainha Banshee.
 
+**Campanha**
 - Batalhas em perspectiva estilo Pokémon: você de costas em primeiro plano, os monstros na plataforma ao fundo
-- 4 fases com história, diálogos e ondas de monstros (incluindo um chefe que muda de fraqueza)
-- 7 monstros, cada um com fraqueza, resistência e um jeito próprio de jogar (que você descobre no **Monstruário**)
-- Loja com 6 itens, combos, estrelas por fase e 3 arquivos de save
-- **Arena dos Caçadores** (multiplayer online): lobby, partida rápida, desafios e salas privadas,
-  cartas de perk estilo baralho, troféus, ranking global e 6 caçadores para desbloquear
+- 2 atos, 8 fases e 1 fase bônus, com história, diálogos e ondas de monstros
+- 16 monstros, cada um com fraqueza, resistência, um jeito de jogar e **pistas** (alguns mentem), tudo no **Monstruário**
+- Todos os monstros da onda jogam: você troca golpes com o alvo e os outros acertam meio golpe se vencerem a sua arma
+- Chefes com mecânicas: mudar de fraqueza, chamar ajudantes, atacar duas vezes
+- Loja com bolsa limitada por onda (monstros às vezes deixam cair +1 item), **Oficina** de melhorias permanentes,
+  **modo Pesadelo**, visuais e fase bônus liberados por estrelas, e 3 arquivos de save
+
+**Corridas**
+- **Noite Sem Fim:** ondas infinitas e cada vez mais fortes, chefe a cada 5 ondas, 1 de 3 relíquias depois de cada onda
+- **Desafio do Dia:** a mesma corrida para todo mundo, com ranking diário conferido pelo servidor
+
+**Arena dos Caçadores** (multiplayer online)
+- Ranqueada (troféus), Casual, 2x2, Chefe Cooperativo, Torneio Relâmpago (8 caçadores) e Rei da Arena
+- Bots entram quando falta gente; dá para assistir as partidas de quem está online
+- Deck de 8 cartas (16 cartas, limite por raridade), 6 caçadores, histórico das armas do adversário
+- Missões diárias, Ecto, loja de molduras e expressões, temporadas mensais com recompensas
+
 - Trilha sonora composta em partituras [Scrimshaw](https://tools.simonwillison.net/scrimshaw-jukebox), tocada ao vivo
 - Funciona no navegador, no desktop e no celular
 
@@ -47,11 +61,13 @@ styles/             CSS por área (base, componentes, telas, batalha, multiplaye
 src/
   main.js           monta serviços, interface e cenas
   config/           dados do jogo: armas, monstros, itens, fases, balanceamento
-  domain/           regras puras e testáveis (batalha, IA, economia, saves, monstruário)
+  domain/           regras puras e testáveis (batalha, IA, atributos, campanha, corridas, saves, monstruário)
   core/             motor: loop e cenas, renderizador pixel-perfect, tweens, partículas, áudio, música
   world/            personagens animados, efeitos, cenários laterais e palco de batalha em perspectiva
-  scenes/           Menu, Mapa, História, Diálogo, Batalha, Resultado, Arena (lobby) e Duelo
-  ui/               HUD da batalha, cartas, modais (saves, opções, monstruário, arena), toasts
+  scenes/           Menu, Mapa, História, Diálogo, Batalha (campanha e corridas), Resultado,
+                    Arena (lobby), Duelo (1x1/2x2/espectador) e Chefe Cooperativo
+  ui/               HUD da batalha, cartas, modais (saves, opções, monstruário, oficina, relíquias,
+                    desafio do dia, deck, missões, loja, arena), toasts
   net/              cliente Socket.io do multiplayer
   vendor/scrimshaw/ motor de partituras Scrimshaw (Apache 2.0)
 assets/
@@ -69,7 +85,12 @@ legacy/pygame/      versão original em Python/Pygame
 ```
 
 A regra principal: `domain/` não conhece tela nenhuma. A batalha (`domain/battle.js`) decide o que acontece
-e devolve um resultado; a cena (`scenes/BattleScene.js`) só anima esse resultado.
+e devolve um resultado; a cena (`scenes/BattleScene.js`) só anima esse resultado. O "modo" da batalha
+(`scenes/battleModes.js`) diz se é uma fase da campanha ou uma corrida, sem a cena precisar saber.
+
+Melhorias, relíquias e dificuldade são **modificadores** (`domain/loadout.js`) que viram um único objeto de
+atributos lido pela batalha. As corridas (`domain/run.js`) usam geradores com semente e registram cada jogada,
+então o servidor refaz a corrida do Desafio do Dia com o mesmo código (`server/src/shared.js`).
 
 ## Sprites e fonte
 
@@ -94,8 +115,10 @@ pesam poucos KB. Para compor ou testar, cole o arquivo no editor do
 |---------|-----------|
 | `menu` | menu principal |
 | `mapa` | mapa, cartas e diálogos |
-| `batalha` | batalhas das fases |
-| `chefe` | Kastle |
+| `batalha` | batalhas do Ato I e o começo das corridas |
+| `sombras` | batalhas do Ato II |
+| `chefe` | chefes |
+| `rainha` | Morgana |
 | `lobby` / `duelo` | Arena e duelos online |
 | `vitoria` / `derrota` | vinhetas de resultado |
 

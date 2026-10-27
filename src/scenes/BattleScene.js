@@ -1,15 +1,15 @@
 // Batalha por turnos: o domínio (domain/battle.js) decide, esta cena anima.
+// O modo (battleModes.js) diz se é uma fase da campanha ou uma corrida.
 import { Scene } from '../core/Scene.js';
 import { GW, PX } from '../core/Renderer.js';
 import { Ease } from '../core/Tween.js';
-import { Battle } from '../domain/battle.js';
 import * as Bestiary from '../domain/bestiary.js';
-import { recordVictory, recordDefeat } from '../domain/progress.js';
-import { LEVELS, levelById } from '../config/levels.js';
 import { WEAPONS, WEAPON_LIST, ENEMY_MOVES } from '../config/weapons.js';
 import { itemById } from '../config/items.js';
 import { BattleStage, LAYOUT } from '../world/BattleStage.js';
 import { CHARACTERS, selectedCharacter } from '../config/characters.js';
+import { hunterBase } from '../world/hunterLook.js';
+import { createMode } from './battleModes.js';
 import { Fighter } from '../world/Fighter.js';
 import { Effects } from '../world/Effects.js';
 import { BattleHud } from '../ui/BattleHud.js';
@@ -39,32 +39,34 @@ export class BattleScene extends Scene {
     $('pause-resume').addEventListener('click', () => ui.modals.close('modal-pause'));
     $('pause-options').addEventListener('click', () => ui.options.open());
     $('pause-retry').addEventListener('click', async () => {
-      if (!(await ui.modals.confirm('Recomeçar a fase do início?'))) return;
+      if (!(await ui.modals.confirm(this.mode.retryQuestion))) return;
       ui.modals.close('modal-pause');
-      game.go('battle', { levelId: this.level.id });
+      game.go('battle', this.mode.retryParams);
     });
     $('pause-quit').addEventListener('click', async () => {
-      if (!(await ui.modals.confirm('Sair da fase? O progresso desta batalha será perdido.'))) return;
+      if (!(await ui.modals.confirm('Sair? O progresso desta batalha será perdido.'))) return;
       ui.modals.close('modal-pause');
-      game.go('map', { focus: this.level.id });
+      game.go(...this.mode.quitTo);
     });
-    game.bus.on('blur', () => { if (game.scene === this && !this.ending) this.pause(); });
+    // perder o foco pausa, a não ser que já haja uma janela aberta (escolha de relíquia, opções...)
+    game.bus.on('blur', () => { if (game.scene === this && !this.ending && !game.modalOpen) this.pause(); });
   }
 
   get book() { return this.game.profile.bestiary; }
 
   // ═══════════════════════ ciclo de vida ═══════════════════════
-  enter({ levelId }) {
+  /** @param {{ levelId?: number, run?: 'endless' | 'daily' }} params */
+  enter(params) {
     const { assets } = this.game;
-    this.level = levelById(levelId);
-    this.battle = new Battle({ level: this.level, economy: this.game.economy });
-    this.stage = new BattleStage(assets, this.level.scenery);
+    this.mode = createMode(this.game, params);
+    this.battle = this.mode.battle;
+    this.#buildStage(this.mode.scenery);
     this.effects = new Effects(assets);
     const char = CHARACTERS[selectedCharacter(this.game.storage)];
     this.playerName = char.name;
     $('player-name').textContent = char.name.toUpperCase();
     const P = LAYOUT.player;
-    this.hunter = new Fighter(assets, { base: `char/${char.id}/back`, x: P.x, y: P.y, scale: P.scale });
+    this.hunter = new Fighter(assets, { base: hunterBase(this.game, 'back'), x: P.x, y: P.y, scale: P.scale });
     this.fighters = new Map();
     this.targetUid = null;
     this.hoverUid = null;
@@ -81,13 +83,16 @@ export class BattleScene extends Scene {
     this.hud.setStatus(p);
     this.hud.setCombo(0);
     this.hud.setMuted(this.game.options.muted);
-    this.hud.refreshShop();
+    this.hud.bindEconomy(this.mode.economy);
+    this.hud.setRelics(this.mode.relics);
+    this.#syncBag();
 
     this.spawnWave();
     this.intro();
   }
 
   exit() {
+    this.hud.bindEconomy(null);
     this.game.renderer.camera.x = this.game.renderer.camera.y = 0;
     this.game.canvas.style.cursor = '';
     this.ui.modals.close('modal-pause');
@@ -98,7 +103,7 @@ export class BattleScene extends Scene {
     this.tweens.to(this.hunter, { ox: 0 }, 800, Ease.outCubic);
     this.hud.say(this.#appearText());
     await this.wait(300);
-    await this.banner(`FASE ${this.level.id} — ${this.level.name.toUpperCase()}`, 1400);
+    await this.banner(this.mode.title, 1400);
     await this.banner(this.#announce(), 1000, 'danger');
     this.unlock();
   }
@@ -122,26 +127,63 @@ export class BattleScene extends Scene {
 
   spawnWave() {
     this.fighters.clear();
-    this.battle.enemies.forEach((e, i) => {
-      const slot = e.def.boss ? LAYOUT.boss : LAYOUT.enemySlots[i];
-      const f = new Fighter(this.game.assets, { base: e.def.sprite, x: slot.x, y: slot.y, scale: e.def.scale ?? PX, flying: !!e.def.flying });
-      f.ox = 600 + i * 120;
-      this.tweens.to(f, { ox: 0 }, 900 + i * 150, Ease.outCubic);
-      this.fighters.set(e.uid, f);
-      if (Bestiary.see(this.book, e.id)) this.toast(`Novo monstro no Monstruário: ${e.def.name}!`, 'icon/livro');
-    });
+    this.battle.enemies.forEach((e, i) => this.#enterFighter(e, e.def.boss ? LAYOUT.boss : LAYOUT.enemySlots[i], i));
     this.game.saveProfile();
-    this.hud.setWave(this.battle.waveIndex, this.level.waves.length);
-    this.hud.setEnemies(this.battle.enemies.map(e => ({ uid: e.uid, name: e.def.name, ratio: e.hp / e.maxHp, boss: !!e.def.boss, phases: e.def.phases?.length ?? 0 })));
-    this.game.audio.playMusic(this.battle.enemies.some(e => e.def.boss) ? 'chefe' : 'batalha');
+    this.hud.setWaveLabel(this.mode.waveLabel);
+    this.#syncEnemyBoxes();
+    const boss = this.battle.enemies.find(e => e.def.boss);
+    this.game.audio.playMusic(boss ? boss.def.music ?? 'chefe' : this.mode.music);
     this.setTarget(this.battle.alive()[0]?.uid);
+  }
+
+  /** Coloca um monstro no palco entrando pela direita (e registra no Monstruário). */
+  #enterFighter(e, slot, order = 0) {
+    const f = new Fighter(this.game.assets, { base: e.def.sprite, x: slot.x, y: slot.y, scale: e.def.scale ?? PX, flying: !!e.def.flying });
+    f.ox = 600 + order * 120;
+    this.tweens.to(f, { ox: 0 }, 900 + order * 150, Ease.outCubic);
+    this.fighters.set(e.uid, f);
+    if (Bestiary.see(this.book, e.id)) this.toast(`Novo monstro no Monstruário: ${e.def.name}!`, 'icon/livro');
+  }
+
+  /** Primeira posição livre do palco para um ajudante invocado (o chefe fica no centro). */
+  #freeSlot() {
+    const taken = (s) => [...this.fighters.values()].some(f => !f.dying && Math.abs(f.x - s.x) < 40);
+    return LAYOUT.enemySlots.slice(1).find(s => !taken(s)) ?? LAYOUT.enemySlots[1];
+  }
+
+  /** Ajudantes chamados por um chefe neste turno. */
+  async #showSummons(list) {
+    for (const s of list) {
+      const helper = this.battle.find(s.uid);
+      const boss = this.battle.find(s.by);
+      this.fighters.get(s.by)?.play('attack');
+      this.game.audio.play('phase');
+      this.#enterFighter(helper, this.#freeSlot());
+      this.hud.say(`${boss.def.name} chamou um ${helper.def.name}!`);
+      await this.wait(700);
+    }
+    if (list.length) this.#syncEnemyBoxes();
+  }
+
+  #syncEnemyBoxes() {
+    this.hud.setEnemies(this.battle.alive().map(e => ({ uid: e.uid, name: e.def.name, ratio: e.hp / e.maxHp, boss: !!e.def.boss, phases: e.def.phases?.length ?? 0 })));
+    if (this.targetUid) this.hud.setTarget(this.targetUid);
   }
 
   unlock() {
     if (this.ending) return;
     this.busy = false;
     this.hud.lock(false);
-    this.hud.say(`O que ${this.playerName} vai fazer?`);
+    this.hud.say(`O que ${this.playerName} vai fazer?${this.#tellsLine()}`);
+  }
+
+  /** Segunda linha da mensagem com as pistas visíveis (a caixa só tem duas linhas). */
+  #tellsLine() {
+    if (this.battle.revealed) return '';
+    const tells = this.battle.alive().filter(e => e.tell);
+    if (tells.length === 0) return '';
+    if (tells.length > 1) return `\n${tells.length} monstros deixaram escapar uma pista!`;
+    return `\nPista: ${tells[0].def.name} → ${ENEMY_MOVES[tells[0].tell].name}`;
   }
 
   toast(text, iconKey) { this.ui.toasts.show(text, { iconKey }); }
@@ -182,17 +224,18 @@ export class BattleScene extends Scene {
     this.hud.lock(true);
 
     await this.#joken(tf);
-    const r = this.battle.attack(weaponId, this.targetUid);
-    this.reveal = { weapon: weaponId, move: r.enemyMove, uid: r.targetUid, t: 0 };
+    const r = this.mode.attack(weaponId, this.targetUid);
+    this.reveal = { weapon: weaponId, moves: r.moves, t: 0 };
     this.hud.say(`${this.playerName} usou ${WEAPONS[weaponId].name}!\n${this.battle.find(r.targetUid).def.name} usou ${ENEMY_MOVES[r.enemyMove].name}!`);
     this.game.audio.play('go');
     await this.wait(600);
 
     if (r.outcome === 'win') await this.#playerHits(r, tf);
     else if (r.outcome === 'lose') await this.#enemyHits(r, tf);
-    else await this.#clash(tf);
-
+    else await this.#clash(r, tf);
     this.reveal = null;
+    for (const hit of r.sideHits) await this.#sideHit(hit);
+
     await this.#afterExchange(r);
   }
 
@@ -271,27 +314,69 @@ export class BattleScene extends Scene {
     await this.wait(200);
 
     this.reveal = null;
-    if (r.blocked) {
-      this.effects.play('fx/shield', hc.x, hc.y, { scale: 3, fps: 10 });
-      this.game.audio.play('block');
-      this.effects.text('BLOQUEADO!', hc.x, hc.y - 110, { color: '#6f96f0', size: 24 });
-      this.hud.say('O Amuleto bloqueou o golpe!');
-    } else {
-      this.hunter.play('hurt');
+    if (r.blocked) this.#hunterBlocks('O Amuleto bloqueou o golpe!');
+    else {
+      this.#hunterHurt(r.playerDamage, { big: true });
       this.hud.say(`${this.playerName} recebeu ${r.playerDamage} de dano!`);
-      this.hunter.flash = 1; this.hunter.flashColor = '#ff7563';
-      this.hunter.shake(320, 8);
-      this.game.audio.play('hurt');
-      this.screenShake(12);
-      this.particles.burst(hc.x, hc.y, { colors: ['#d23a3a', '#ff7563', '#a35fd9'], count: 14 });
-      if (this.game.options.damageNumbers) this.effects.text(`-${r.playerDamage}`, hc.x, hc.y - 80, { color: '#ff7563', size: 40 });
     }
+    this.#showThorns(r.thorns);
     this.hud.setCombo(0);
     this.#syncPlayer();
     await this.wait(700);
   }
 
-  async #clash(tf) {
+  /** Um monstro que não era o alvo venceu a arma do Caçador e acerta meio golpe. */
+  async #sideHit(hit) {
+    const f = this.fighters.get(hit.uid);
+    if (!f || f.dying) return;
+    const name = this.battle.find(hit.uid).def.name;
+    const mv = ENEMY_MOVES[hit.move];
+    f.play('attack');
+    await this.wait(220);
+    const hc = this.hunter.center;
+    this.effects.play(mv.fx, hc.x, hc.y, { scale: PX });
+    await this.wait(160);
+    if (hit.blocked) this.#hunterBlocks(`O Amuleto bloqueou o golpe de ${name}!`);
+    else {
+      this.#hunterHurt(hit.damage);
+      this.hud.say(hit.echo ? `${name} atacou de novo e acertou ${hit.damage}!` : `${name} aproveitou e acertou ${hit.damage} de dano!`);
+    }
+    this.#showThorns(hit.thorns);
+    this.#syncPlayer();
+    await this.wait(500);
+  }
+
+  #hunterBlocks(message) {
+    const hc = this.hunter.center;
+    this.effects.play('fx/shield', hc.x, hc.y, { scale: 3, fps: 10 });
+    this.game.audio.play('block');
+    this.effects.text('BLOQUEADO!', hc.x, hc.y - 110, { color: '#6f96f0', size: 24 });
+    this.hud.say(message);
+  }
+
+  #hunterHurt(amount, { big = false } = {}) {
+    const hc = this.hunter.center;
+    this.hunter.play('hurt');
+    this.hunter.flash = 1; this.hunter.flashColor = '#ff7563';
+    this.hunter.shake(320, big ? 8 : 5);
+    this.game.audio.play('hurt');
+    this.screenShake(big ? 12 : 6);
+    this.particles.burst(hc.x, hc.y, { colors: ['#d23a3a', '#ff7563', '#a35fd9'], count: big ? 14 : 8 });
+    if (this.game.options.damageNumbers) this.effects.text(`-${amount}`, hc.x, hc.y - 80, { color: '#ff7563', size: big ? 40 : 32 });
+  }
+
+  /** Espinhos das relíquias: dano devolvido a quem acertou o Caçador. */
+  #showThorns(list) {
+    for (const t of list) {
+      const f = this.fighters.get(t.uid);
+      if (!f) continue;
+      f.flash = 1; f.flashColor = '#a8e070';
+      this.effects.text(`-${t.damage}`, f.center.x, this.#topOf(f) - 40, { color: '#a8e070', size: 24 });
+      this.#syncEnemyBar(t.uid);
+    }
+  }
+
+  async #clash(r, tf) {
     const hc = this.hunter.center, ec = tf.center;
     const mid = { x: (hc.x + ec.x) / 2, y: (hc.y + ec.y) / 2 };
     this.hud.say('Empate! Os golpes se anularam.');
@@ -301,6 +386,11 @@ export class BattleScene extends Scene {
     this.particles.burst(mid.x, mid.y, { colors: ['#c9c7d4', '#f4f2fa'], count: 10 });
     this.game.audio.play('draw');
     this.effects.text('EMPATE!', mid.x, mid.y - 60, { color: '#c9c7d4', size: 24 });
+    if (r.drawDamage) {
+      tf.flash = 1; tf.flashColor = '#ffffff';
+      this.effects.text(`-${r.drawDamage}`, tf.center.x, this.#topOf(tf) - 60, { color: '#f4f2fa', size: 32, delay: 120 });
+      this.#syncEnemyBar(r.targetUid);
+    }
     this.tweens.to(this.hunter, { ox: 0 }, 300, Ease.outBack);
     this.tweens.to(tf, { ox: 0 }, 300, Ease.outBack);
     await this.wait(650);
@@ -308,9 +398,40 @@ export class BattleScene extends Scene {
 
   async #afterExchange(r) {
     this.#syncPlayer();
-    if (r.killed) await this.killEnemy(r.targetUid);
-    if (r.phaseChanged != null) await this.bossPhase(r.targetUid, r.phaseChanged);
+    const thorns = [...r.thorns, ...r.sideHits.flatMap(h => h.thorns)];
+    this.#showHeal(r.healed + thorns.reduce((s, t) => s + t.healed, 0));
+    this.#showDrops(r.drops);
+    await this.#reapDead();
+    const phases = [{ uid: r.targetUid, phaseChanged: r.phaseChanged }, ...thorns].filter(p => p.phaseChanged != null);
+    for (const p of phases) await this.bossPhase(p.uid, p.phaseChanged);
+    await this.#showSummons(r.summoned);
     await this.#resolveEnd(r);
+  }
+
+  /** Itens que caíram dos monstros derrotados (vão para a bolsa desta onda). */
+  #showDrops(n) {
+    if (!n) return;
+    const hc = this.hunter.center;
+    this.effects.play('fx/coin', hc.x + 80, hc.y - 40, { fps: 18 });
+    this.effects.text(`+${n} ITEM`, hc.x + 80, hc.y - 90, { color: '#7cf0dc', size: 24, delay: 150 });
+    this.toast(n > 1 ? `Caíram ${n} itens: sua bolsa ganhou espaço nesta onda!` : 'Caiu um item: +1 na bolsa nesta onda!', 'icon/bolsa');
+    this.#syncBag();
+  }
+
+  #showHeal(amount) {
+    if (amount <= 0) return;
+    const hc = this.hunter.center;
+    this.effects.play('fx/heal', hc.x, hc.y, { scale: 3 });
+    this.effects.text(`+${amount}`, hc.x, hc.y - 80, { color: '#a8e070', size: 32 });
+    this.game.audio.play('heal');
+    this.#syncPlayer();
+  }
+
+  /** Anima a derrota de todo monstro que ficou sem vida (golpe, espinhos, Água Benta...). */
+  async #reapDead() {
+    for (const [uid, f] of [...this.fighters]) {
+      if (!f.dying && this.battle.find(uid).hp <= 0) await this.killEnemy(uid);
+    }
   }
 
   async #resolveEnd(r) {
@@ -351,14 +472,16 @@ export class BattleScene extends Scene {
     const be = this.battle.find(uid);
     this.hud.setEnemyHp(uid, be.hp / be.maxHp, phase);
     this.hud.say(`${be.def.name} mudou de forma! A fraqueza dele mudou.`);
-    await this.banner('KASTLE MUDOU DE FORMA!', 1200, 'danger');
-    this.toast('A fraqueza de Kastle mudou! Descubra a nova.', 'icon/caveira');
+    await this.banner(`${be.def.name.toUpperCase()} MUDOU DE FORMA!`, 1200, 'danger');
+    this.toast(`A fraqueza de ${be.def.name} mudou! Descubra a nova.`, 'icon/caveira');
     this.setTarget(uid);
   }
 
   async nextWave() {
     await this.wait(300);
-    const info = this.battle.nextWave();
+    const info = this.mode.offer ? await this.#chooseRelic() : this.mode.nextWave();
+    const scenery = this.mode.scenery;
+    if (scenery !== this.stageKind) this.#buildStage(scenery);
     await this.banner(`ONDA ${info.wave + 1}!`, 900);
     if (info.healed) {
       const hc = this.hunter.center;
@@ -367,9 +490,25 @@ export class BattleScene extends Scene {
       this.game.audio.play('heal');
     }
     this.#syncPlayer();
+    this.#syncBag();
     this.spawnWave();
     await this.wait(900);
     await this.banner(this.#announce(), 900, 'danger');
+  }
+
+  /** Corridas: escolhe 1 de 3 relíquias antes da próxima onda. */
+  async #chooseRelic() {
+    this.hud.say('Onda vencida! Escolha uma relíquia.');
+    const id = await this.ui.relics.choose(this.mode.offer);
+    const info = this.mode.chooseRelic(id);
+    this.hud.setRelics(this.mode.relics);
+    this.game.audio.play('super');
+    return info;
+  }
+
+  #buildStage(kind) {
+    this.stageKind = kind;
+    this.stage = new BattleStage(this.game.assets, kind);
   }
 
   async victory() {
@@ -379,17 +518,7 @@ export class BattleScene extends Scene {
     this.hunter.play('win', { loop: true });
     this.game.audio.playMusic('vitoria');
     await this.banner('VITÓRIA!', 1500, 'win');
-    const p = this.game.profile;
-    const before = p.unlocked;
-    const stars = this.battle.stars();
-    recordVictory(p, this.level.id, stars, LEVELS.length);
-    p.stats.turns += this.battle.turns;
-    this.game.saveProfile();
-    this.game.go('result', {
-      levelId: this.level.id, won: true, stars,
-      coinsEarned: this.battle.coinsEarned, damageTaken: this.battle.damageTaken, turns: this.battle.turns,
-      unlockedNew: p.unlocked > before,
-    });
+    this.game.go('result', this.mode.finish(true));
   }
 
   async defeat() {
@@ -398,20 +527,13 @@ export class BattleScene extends Scene {
     this.hunter.play('ko', { hold: true });
     this.game.audio.playMusic('derrota');
     await this.banner('DERROTA...', 1600, 'lose');
-    const p = this.game.profile;
-    recordDefeat(p);
-    p.stats.turns += this.battle.turns;
-    this.game.saveProfile();
-    this.game.go('result', {
-      levelId: this.level.id, won: false, stars: 0,
-      coinsEarned: this.battle.coinsEarned, damageTaken: this.battle.damageTaken, turns: this.battle.turns,
-    });
+    this.game.go('result', this.mode.finish(false));
   }
 
   // ═══════════════════════ loja ═══════════════════════
   async buy(itemId) {
     if (this.busy || this.ending) return;
-    const r = this.battle.useItem(itemId);
+    const r = this.mode.useItem(itemId);
     if (!r.ok) {
       this.game.audio.play('error');
       this.ui.toasts.show(r.reason, { iconKey: 'icon/fechar', force: true });
@@ -431,9 +553,8 @@ export class BattleScene extends Scene {
     if (it.effect.shield) { this.effects.play('fx/shield', hc.x, hc.y, { scale: 3, fps: 8 }); this.game.audio.play('block'); }
     if (it.effect.empower) { this.particles.burst(hc.x, hc.y, { colors: ['#f08c2a', '#ffc04d', '#d23a3a'], count: 20 }); this.game.audio.play('super'); }
     if (it.effect.reveal) {
-      const t = this.battle.find(this.targetUid);
       this.game.audio.play('select');
-      if (t) this.toast(`A Vela revela: ${t.def.name} vai usar ${ENEMY_MOVES[t.intent].name}!`, ENEMY_MOVES[t.intent].icon);
+      this.toast('A Vela revela o próximo golpe de todos os monstros!', 'icon/vela');
     }
     for (const hit of r.hits) {
       const f = this.fighters.get(hit.uid);
@@ -449,12 +570,12 @@ export class BattleScene extends Scene {
     this.hud.say(`${this.playerName} usou ${it.name}!`);
     this.hud.setStatus(p);
     this.#syncPlayer();
+    this.#syncBag();
+    this.#showDrops(r.drops);
     await this.wait(700);
 
-    for (const hit of r.hits) {
-      if (hit.killed) await this.killEnemy(hit.uid);
-      else if (hit.phaseChanged != null) await this.bossPhase(hit.uid, hit.phaseChanged);
-    }
+    await this.#reapDead();
+    for (const hit of r.hits) if (!hit.killed && hit.phaseChanged != null) await this.bossPhase(hit.uid, hit.phaseChanged);
     await this.#resolveEnd(r);
   }
 
@@ -462,6 +583,15 @@ export class BattleScene extends Scene {
     const p = this.battle.player;
     this.hud.setHp(p.hp, p.maxHp);
     this.hud.setStatus({ ...p, revealed: this.battle.revealed });
+  }
+
+  #syncEnemyBar(uid) {
+    const e = this.battle.find(uid);
+    if (e) this.hud.setEnemyHp(uid, e.hp / e.maxHp, e.phase);
+  }
+
+  #syncBag() {
+    this.hud.setBag(this.battle.itemsLeft, this.battle.bagSize);
   }
 
   // ═══════════════════════ pausa / extras ═══════════════════════
@@ -581,27 +711,39 @@ export class BattleScene extends Scene {
     return f.drawY - 64 * f.scale + (f.scale > PX ? 30 : 14) - 40;
   }
 
-  /** Seta sobre o alvo e, com a Vela acesa, o próximo ataque dele. */
+  /** Seta sobre o alvo; sobre cada monstro, o golpe revelado pela Vela ou a pista que ele deixou escapar. */
   #drawTargetMarker(r) {
-    const f = this.fighters.get(this.targetUid);
-    const e = this.battle.find(this.targetUid);
-    if (!f || !e || f.dying || this.reveal) return;
-    const top = this.#topOf(f) + 20;
+    if (this.reveal) return;
     const bob = Math.sin(this.time / 180) * 4;
-    r.text('▼', f.drawX, top + bob, { size: 24, align: 'center', color: '#f6d548' });
-    if (this.battle.revealed) r.sprite(ENEMY_MOVES[e.intent].icon, 0, f.drawX + 56, top - 10 + bob, { scale: 1 });
+    for (const [uid, f] of this.fighters) {
+      const e = this.battle.find(uid);
+      if (f.dying || e.hp <= 0) continue;
+      const top = this.#topOf(f) + 20;
+      if (uid === this.targetUid) r.text('▼', f.drawX, top + bob, { size: 24, align: 'center', color: '#f6d548' });
+      if (this.battle.revealed) r.sprite(ENEMY_MOVES[e.intent].icon, 0, f.drawX + 56, top - 10 + bob, { scale: 1 });
+      else if (e.tell && !this.busy) this.#drawTell(r, f.drawX + 70, top - 40 + bob, e.tell);
+    }
+  }
+
+  /** Balão de pensamento com o golpe que o monstro parece preparar (pode ser mentira). */
+  #drawTell(r, x, y, move) {
+    const a = 0.8 + Math.sin(this.time / 260) * 0.15;
+    // o centro da nuvem fica em (34, 24) do balão de 64x64, desenhado em escala 2
+    r.sprite('icon/pista', 0, x, y, { scale: PX, alpha: a });
+    r.sprite(ENEMY_MOVES[move].icon, 0, x + 2 * PX, y - 8 * PX, { scale: 1, alpha: a });
   }
 
   #drawReveal(r) {
     if (!this.reveal) return;
-    const f = this.fighters.get(this.reveal.uid);
     const k = Ease.outBack(Math.min(1, this.reveal.t / 220));
     const a = Math.min(1, (1400 - this.reveal.t) / 200);
     const hc = this.hunter.center;
     r.sprite(WEAPONS[this.reveal.weapon].icon, 0, hc.x, hc.y - 140, { scale: 1, sx: k, sy: k, alpha: a });
-    if (f) {
+    for (const { uid, move, echo } of this.reveal.moves) {
+      const f = this.fighters.get(uid);
+      if (!f || f.dying) continue;
       const top = f.drawY - 64 * f.scale;
-      r.sprite(ENEMY_MOVES[this.reveal.move].icon, 0, f.drawX, top - 70, { scale: 1, sx: k, sy: k, alpha: a });
+      r.sprite(ENEMY_MOVES[move].icon, 0, f.drawX + (echo ? 72 : 0), top - 70, { scale: 1, sx: k, sy: k, alpha: a });
     }
   }
 }

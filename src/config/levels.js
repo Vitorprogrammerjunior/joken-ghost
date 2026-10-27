@@ -1,8 +1,11 @@
-// As quatro fases da campanha, com história, cenário e ondas de inimigos.
+// Fases da campanha, com história, cenário e ondas de inimigos.
+// `ending` mostra um texto de ENDINGS ao vencer; `bonus` marca a fase extra liberada por `reward`.
+// `coinScale` multiplica as moedas da fase (as mais difíceis pagam mais).
 
 export const LEVELS = [
   {
     id: 1,
+    coinScale: 0.8,
     name: 'Floresta Maldita',
     scenery: 'floresta',
     location: 'tile/loc_floresta',
@@ -29,6 +32,7 @@ export const LEVELS = [
   },
   {
     id: 2,
+    coinScale: 0.9,
     name: 'Pátio da Mansão',
     scenery: 'patio',
     location: 'tile/loc_patio',
@@ -52,6 +56,7 @@ export const LEVELS = [
   },
   {
     id: 3,
+    coinScale: 1,
     name: 'Interior da Mansão',
     scenery: 'mansao',
     location: 'tile/loc_mansao',
@@ -75,6 +80,7 @@ export const LEVELS = [
   },
   {
     id: 4,
+    coinScale: 1.1,
     name: 'Câmara do Mal',
     scenery: 'camara',
     location: 'tile/loc_camara',
@@ -95,19 +101,175 @@ export const LEVELS = [
       { who: 'hunter', text: 'Brincadeira acabou, palhaço.\nSeu show termina hoje!' },
     ],
     waves: [['morcego', 'fantasma', 'fogo_fatuo'], ['kastle']],
+    ending: 'ato1',
+  },
+
+  // ═══════════════ Ato II — O Reino das Sombras ═══════════════
+  {
+    id: 5,
+    coinScale: 1.2,
+    name: 'Cemitério Esquecido',
+    scenery: 'cemiterio',
+    location: 'tile/loc_cemiterio',
+    music: 'sombras',
+    intro: [
+      '5ª Fase — O Cemitério Esquecido',
+      '',
+      'Atrás da mansão, um portão enferrujado',
+      'leva a um cemitério que não aparece em mapa nenhum.',
+      '',
+      'A terra das covas está remexida.',
+      'Algo saiu delas... e não foi para descansar.',
+    ],
+    dialogue: [
+      { who: 'hunter', text: 'Então a risada do Kastle veio daqui.\nQue cheiro de terra molhada...' },
+      { who: 'hunter', text: 'As covas estão vazias!\nOs mortos estão andando por aí.' },
+      { who: 'hunter', text: 'Fiquem de olho nas pistas: um zumbi\nque perde costuma trocar de golpe.' },
+    ],
+    waves: [['zumbi', 'corvo'], ['zumbi', 'corvo', 'zumbi']],
+  },
+  {
+    id: 6,
+    coinScale: 1.3,
+    name: 'Catacumbas',
+    scenery: 'catacumbas',
+    location: 'tile/loc_catacumbas',
+    music: 'sombras',
+    intro: [
+      '6ª Fase — As Catacumbas',
+      '',
+      'Uma escada sob a capela desce',
+      'até túneis forrados de ossos.',
+      '',
+      'Lá no fundo, alguém cava sem parar,',
+      'cantarolando uma música de ninar.',
+    ],
+    dialogue: [
+      { who: 'hunter', text: 'Paredes de crânios. Que decoração\nencantadora...' },
+      { who: 'coveiro', text: 'Mais um visitante? Que bom!\nEu ADORO cavar covas novas.' },
+      { who: 'coveiro', text: 'Meus ajudantes vão te mostrar\no caminho... para baixo da terra!' },
+      { who: 'hunter', text: 'Se você chamar ajuda, eu derrubo\num por um. Pode vir!' },
+    ],
+    waves: [['esqueleto', 'mumia'], ['coveiro']],
+  },
+  {
+    id: 7,
+    coinScale: 1.4,
+    name: 'Torre do Relógio',
+    scenery: 'torre',
+    location: 'tile/loc_torre',
+    music: 'sombras',
+    intro: [
+      '7ª Fase — A Torre do Relógio',
+      '',
+      'As catacumbas terminam numa torre',
+      'onde o tempo anda para os dois lados.',
+      '',
+      'A lua ficou vermelha.',
+      'E alguém lá em cima está uivando.',
+    ],
+    dialogue: [
+      { who: 'hunter', text: 'Engrenagens, sinos e... pegadas de lobo?' },
+      { who: 'relojoeiro', text: 'TIC. TAC. Você chegou cedo.\nOu atrasado? Para mim, tanto faz.' },
+      { who: 'relojoeiro', text: 'Eu sempre ataco duas vezes:\numa no tempo certo e outra fora dele!' },
+      { who: 'hunter', text: 'Então eu vou ter que acertar\nantes que o seu relógio bata.' },
+    ],
+    waves: [['lobisomem', 'banshee'], ['relojoeiro']],
+  },
+  {
+    id: 8,
+    coinScale: 1.5,
+    name: 'Portal das Sombras',
+    scenery: 'portal',
+    location: 'tile/loc_portal',
+    music: 'sombras',
+    intro: [
+      '8ª Fase — O Portal das Sombras',
+      '',
+      'No alto da torre gira um portal roxo.',
+      'Do outro lado, um trono feito de lamentos.',
+      '',
+      'É ali que mora quem puxava as cordas',
+      'do Bobo da Corte desde o começo.',
+    ],
+    dialogue: [
+      { who: 'morgana', text: 'Então você é o caçador que\ncalou o meu bobo...' },
+      { who: 'morgana', text: 'Eu sou MORGANA, a Rainha Banshee.\nCada grito meu é uma mentira.' },
+      { who: 'hunter', text: 'Então eu vou parar de ouvir\ne começar a ler os seus golpes.' },
+      { who: 'morgana', text: 'Leia, se conseguir!\nHA... HAAAAAAA!' },
+    ],
+    waves: [['banshee', 'corvo'], ['morgana']],
+    ending: 'final',
+  },
+
+  // ═══════════════ Fase bônus ═══════════════
+  {
+    id: 9,
+    coinScale: 2,
+    name: 'Cripta Secreta',
+    scenery: 'cripta',
+    location: 'tile/loc_cripta',
+    music: 'sombras',
+    bonus: true,
+    reward: 'cripta',
+    mods: [{ mult: { enemyHpMult: 1.15 } }],
+    intro: [
+      'Fase Bônus — A Cripta Secreta',
+      '',
+      'Uma passagem escondida atrás de um retrato',
+      'leva a uma cripta cheia de troféus de caça.',
+      '',
+      'Os piores monstros da mansão estão aqui,',
+      'mais fortes e mais ricos do que nunca.',
+    ],
+    dialogue: [
+      { who: 'hunter', text: 'Um desafio de verdade, finalmente.\nAs moedas aqui valem o dobro!' },
+      { who: 'kastle', text: 'Sentiu saudade, caçador?\nEu voltei só para esta festa!' },
+    ],
+    waves: [['armadura', 'lobisomem', 'mumia'], ['gargula', 'banshee', 'boneca'], ['kastle']],
   },
 ];
 
-export const ENDING = [
+/** Depois de Kastle: a história continua no Ato II. */
+const ACT_ONE = [
   'Com um último grito, Kastle se desfaz em fumaça.',
   '',
-  'O círculo de runas se apaga e, um a um,',
+  'Mas a risada dele continua ecoando...',
+  'e vem de fora da mansão.',
+  '',
+  '"Você acha que eu era o dono desta casa?',
+  ' Eu era só o BOBO da corte, caçador..."',
+  '',
+  'Atrás da mansão, um portão se abre sozinho.',
+  '',
+  'FIM DO ATO I',
+];
+
+const FINAL = [
+  'O grito de Morgana se transforma em silêncio.',
+  '',
+  'O portal se fecha e, um a um,',
   'os espíritos da mansão finalmente descansam.',
   '',
   'O caçador sai pelos portões ao amanhecer,',
   'com a mochila vazia e o coração cheio.',
   '',
-  'FIM... por enquanto.',
+  'FIM... ou será que alguém ainda caça à noite?',
 ];
 
+/** Textos mostrados depois de certas fases. `focus` é a fase destacada ao voltar ao mapa. */
+export const ENDINGS = {
+  ato1: { lines: ACT_ONE, scenery: 'cemiterio', music: 'sombras', focus: 5, button: 'CONTINUAR' },
+  final: { lines: FINAL, scenery: 'floresta', music: 'vitoria', focus: 8, button: 'VER FINAL' },
+};
+
 export const levelById = (id) => LEVELS.find(l => l.id === id);
+
+/** Fases da história (sem a fase bônus): vencer a última mostra o final. */
+export const MAIN_LEVELS = LEVELS.filter(l => !l.bonus);
+
+/** Páginas do mapa. */
+export const ACTS = [
+  { id: 1, name: 'ATO I — A MANSÃO', levels: [1, 2, 3, 4] },
+  { id: 2, name: 'ATO II — O REINO DAS SOMBRAS', levels: [5, 6, 7, 8, 9] },
+];

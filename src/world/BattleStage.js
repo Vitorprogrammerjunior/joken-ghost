@@ -81,6 +81,30 @@ function scatter(r, rand, n, colors, { minY = HORIZON + 8, kind = 'tuft' } = {})
   }
 }
 
+/** Salão de ossos (catacumbas e cripta): parede de crânios, pilares e piso de pedra. */
+function bakeBoneHall(r, rand, { floor = ['#1c1729', '#2f2a3d', '#3c3750', '#4a4559'] } = {}) {
+  for (let y = -84; y < HORIZON; y += T) r.tileRow('tile/bone_wall', y);
+  for (const x of [40, 1112]) for (let y = -84; y < HORIZON; y += T) r.sprite('tile/pillar', 0, x, y, { anchor: 'topleft' });
+  r.sprite('tile/cobweb', 0, 168, 0, { anchor: 'topleft' });
+  r.sprite('tile/cobweb', 0, 984, 0, { anchor: 'topleft', flipX: true });
+  bandedGradient(r, HORIZON - 6, HORIZON + 6, ['#0e0b16', '#1c1729'], 4);
+  bandedGradient(r, HORIZON, GH, floor, 8);
+  for (const y of rowLines(10)) r.rect(0, y, GW, PX, '#0e0b16');
+  convergingLines(r, { spacing: 150, color: '#0e0b16' });
+  scatter(r, rand, 40, ['#c4b4c4', '#8a7a8e'], { kind: 'pebble' });
+  r.sprite('tile/coffin', 0, -30, 470, { anchor: 'topleft', scale: 3 });
+  r.sprite('tile/skulls', 0, 1100, 520, { anchor: 'topleft', scale: 3, flipX: true });
+}
+
+/** Tochas nas paredes do salão de ossos, com a cor da chama. */
+function animateTorches(s, r, rgb) {
+  for (const x of [250, 900]) {
+    const f = Math.floor(s.t / 120) % 4;
+    glow(r, x + 64, 150, 170 + (f % 2) * 10, rgb, 0.25);
+    r.sprite('tile/torch', f, x, 90, { anchor: 'topleft' });
+  }
+}
+
 const KINDS = {
   // ═══════════════ Floresta Maldita ═══════════════
   floresta: {
@@ -237,6 +261,120 @@ const KINDS = {
       if (Math.random() < 0.1) {
         s.particles.spawn({ x: Math.random() * GW, y: GH, vx: (Math.random() - 0.5) * 20, vy: -40 - Math.random() * 40, life: 2500, color: Math.random() > 0.5 ? '#f08c2a' : '#d23a3a', glow: true });
       }
+    },
+    front() {},
+  },
+
+  // ═══════════════ Ato II: Cemitério Esquecido ═══════════════
+  cemiterio: {
+    platform: 'tile/plat_terra',
+    bake(r, rand) {
+      bandedGradient(r, 0, HORIZON, ['#0b0412', '#22081c', '#3a0f22', '#4a1626']);
+      for (let i = 0; i < 50; i++) r.rect(Math.floor(rand() * 640) * PX, Math.floor(rand() * 80) * PX, PX, PX, '#ffb3a0', 0.2 + rand() * 0.4);
+      r.sprite('tile/moon', 0, 1040, 90, { tint: '#d23a3a', tintAlpha: 0.5 });
+      r.sprite('tile/crypt_far', 0, 576, HORIZON - T - 10, { anchor: 'topleft' });
+      r.tileRow('tile/fence', HORIZON - T + 20);
+      bandedGradient(r, HORIZON, GH, ['#1a1614', '#22201b', '#2c2a1f', '#363322'], 8);
+      for (const y of rowLines(14)) r.rect(0, y, GW, PX, '#0e0b16', 0.5);
+      trapezoid(r, { top: 30, bottom: 420, color: '#3b2716' });
+      scatter(r, rand, 140, ['#2f4a2c', '#1b3a26', '#43271a']);
+      for (const [x, y, s] of [[90, 320, 1], [250, 330, 1], [990, 326, 1], [1150, 318, 1], [40, 420, 2], [1130, 430, 2]]) {
+        r.sprite(rand() > 0.5 ? 'tile/cross_grave' : 'tile/gravestone', 0, x, y, { anchor: 'topleft', scale: s });
+      }
+      r.sprite('tile/open_grave', 0, 120, 600, { anchor: 'center', scale: 3 });
+      r.sprite('tile/dead_tree', 0, -60, 220, { anchor: 'topleft', scale: 3 });
+      r.sprite('tile/dead_tree', 0, 1120, 220, { anchor: 'topleft', scale: 3, flipX: true });
+    },
+    animate(s, r) {
+      r.tileRow('tile/fog', HORIZON - 80, { offset: -s.t * 0.02, alpha: 0.5 });
+      for (let i = 0; i < 2; i++) {
+        const x = ((s.t * (0.04 + i * 0.02) + i * 600) % (GW + 200)) - 100;
+        r.sprite('enemy/corvo/idle', s.t / 140 + i, x, 50 + i * 30, { scale: 1, alpha: 0.6, tint: '#0e0b16', tintAlpha: 0.9 });
+      }
+      if (Math.random() < 0.05) {
+        s.particles.spawn({ x: Math.random() * GW, y: HORIZON + Math.random() * 300, vx: 6, vy: -8, life: 3500, color: '#a8e070', glow: true, wobble: 20, seed: Math.random() * 10 });
+      }
+    },
+    front(s, r) { r.tileRow('tile/fog', 610, { offset: s.t * 0.035, alpha: 0.3 }); },
+  },
+
+  // ═══════════════ Catacumbas ═══════════════
+  catacumbas: {
+    platform: 'tile/plat_osso',
+    bake(r, rand) { bakeBoneHall(r, rand); },
+    animate(s, r) {
+      animateTorches(s, r, '240,140,42');
+      if (Math.random() < 0.06) {
+        s.particles.spawn({ x: Math.random() * GW, y: 0, vx: 0, vy: 30 + Math.random() * 20, life: 3000, color: '#8a7a8e' });
+      }
+    },
+    front() {},
+  },
+
+  // ═══════════════ Torre do Relógio ═══════════════
+  torre: {
+    platform: 'tile/plat_latao',
+    bake(r) {
+      for (let y = -84; y < HORIZON; y += T) r.tileRow('tile/brick_dark', y);
+      // janela redonda com a lua vermelha
+      r.ctx.fillStyle = '#4a1626';
+      r.ctx.beginPath(); r.ctx.arc(640, 120, 96, 0, Math.PI * 2); r.ctx.fill();
+      r.sprite('tile/moon', 0, 640, 120, { tint: '#d23a3a', tintAlpha: 0.6 });
+      r.ctx.strokeStyle = '#0e0b16'; r.ctx.lineWidth = 8;
+      r.ctx.beginPath(); r.ctx.arc(640, 120, 96, 0, Math.PI * 2); r.ctx.stroke();
+      r.rect(636, 24, 8, 192, '#0e0b16'); r.rect(544, 116, 192, 8, '#0e0b16');
+      bandedGradient(r, HORIZON, GH, ['#2a1810', '#43271a', '#5a3522', '#6b4029'], 8);
+      convergingLines(r, { spacing: 90, color: '#22140f' });
+      for (const y of rowLines(12)) r.rect(0, y, GW, PX, '#22140f');
+    },
+    animate(s, r) {
+      const f = Math.floor(s.t / 140) % 4;
+      r.sprite('tile/gear', f, 150, 120, { scale: 4 });
+      r.sprite('tile/gear', 3 - f, 1140, 160, { scale: 3 });
+      r.sprite('tile/gear', f, 1010, 40, { scale: 2 });
+      const swing = Math.sin(s.t / 600) * 0.12;
+      r.ctx.save();
+      r.ctx.translate(330, 0);
+      r.ctx.rotate(swing);
+      r.sprite('tile/bell', 0, 0, 150, { scale: 3 });
+      r.ctx.restore();
+    },
+    front() {},
+  },
+
+  // ═══════════════ Portal das Sombras ═══════════════
+  portal: {
+    platform: 'tile/plat_vazio',
+    bake(r, rand) {
+      bandedGradient(r, 0, HORIZON, ['#05020a', '#120624', '#1e0f33', '#2a1440']);
+      for (let i = 0; i < 120; i++) r.rect(Math.floor(rand() * 640) * PX, Math.floor(rand() * 150) * PX, PX, PX, '#d9a8ff', 0.2 + rand() * 0.6);
+      bandedGradient(r, HORIZON, GH, ['#120624', '#1e0f33', '#2a1440', '#3c1d63'], 8);
+      convergingLines(r, { spacing: 120, color: '#a35fd9', alpha: 0.35 });
+      for (const y of rowLines(10)) r.rect(0, y, GW, PX, '#0e0b16', 0.6);
+    },
+    animate(s, r) {
+      const f = Math.floor(s.t / 120) % 4;
+      glow(r, 640, 150, 260, '163,95,217', 0.3);
+      r.sprite('tile/portal', f, 640, 150, { scale: 4 });
+      for (let i = 0; i < 4; i++) {
+        const x = [80, 260, 1020, 1190][i];
+        const y = [120, 60, 70, 150][i] + Math.sin(s.t / 700 + i) * 10;
+        r.sprite('tile/float_rock', 0, x, y, { scale: i % 2 ? 2 : 3 });
+      }
+      if (Math.random() < 0.12) {
+        s.particles.spawn({ x: Math.random() * GW, y: GH, vx: (Math.random() - 0.5) * 30, vy: -40 - Math.random() * 40, life: 2600, color: Math.random() > 0.5 ? '#a35fd9' : '#7cf0dc', glow: true });
+      }
+    },
+    front() {},
+  },
+
+  // ═══════════════ Cripta Secreta (bônus) ═══════════════
+  cripta: {
+    platform: 'tile/plat_runa',
+    bake(r, rand) { bakeBoneHall(r, rand, { floor: ['#120624', '#1e0f33', '#2a1440', '#3c1d63'] }); },
+    animate(s, r) {
+      animateTorches(s, r, '163,95,217');
+      r.sprite('tile/rune', Math.floor(s.t / 250) % 4, 640, 600, { scale: 5, alpha: 0.6 });
     },
     front() {},
   },

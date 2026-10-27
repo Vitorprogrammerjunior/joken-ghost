@@ -1,16 +1,20 @@
 // Cena de diálogo em quadrinhos antes da batalha.
-import { selectedCharacter } from '../config/characters.js';
+import { hunterBase } from '../world/hunterLook.js';
 import { Scene } from '../core/Scene.js';
 import { levelById } from '../config/levels.js';
+import { ENEMIES } from '../config/enemies.js';
 import { Scenery, GROUND_Y } from '../world/Scenery.js';
 import { Fighter } from '../world/Fighter.js';
 import { $ } from '../ui/dom.js';
 
 const CHARS_PER_SEC = 32;
-const SPEAKERS = {
-  hunter: { name: 'CAÇADOR', side: 'left' },
-  kastle: { name: 'KASTLE', side: 'right' },
-};
+const HUNTER = { name: 'CAÇADOR', side: 'left' };
+
+/** Quem fala: o Caçador (esquerda) ou um monstro de config/enemies.js (direita). */
+function speaker(who) {
+  const def = ENEMIES[who];
+  return def ? { name: def.name.toUpperCase(), side: 'right', def } : HUNTER;
+}
 
 export class DialogueScene extends Scene {
   constructor(game) {
@@ -26,12 +30,12 @@ export class DialogueScene extends Scene {
   enter({ levelId }) {
     this.level = levelById(levelId);
     this.scenery = new Scenery(this.game.assets, this.level.scenery);
-    this.hunter = new Fighter(this.game.assets, { base: `char/${selectedCharacter(this.game.storage)}/side`, x: 300, y: GROUND_Y });
+    this.hunter = new Fighter(this.game.assets, { base: hunterBase(this.game, 'side'), x: 300, y: GROUND_Y });
     this.hunter.ox = -500;
     this.tweens.to(this.hunter, { ox: 0 }, 700);
-    const hasKastle = this.level.dialogue.some(l => l.who === 'kastle');
-    this.other = hasKastle ? new Fighter(this.game.assets, { base: 'enemy/kastle', x: 960, y: GROUND_Y, scale: 3 }) : null;
-    this.game.audio.playMusic(hasKastle ? 'chefe' : 'mapa');
+    const villain = this.level.dialogue.map(l => speaker(l.who).def).find(Boolean);
+    this.other = villain ? new Fighter(this.game.assets, { base: villain.sprite, x: 960, y: GROUND_Y, scale: villain.scale ?? 3, flying: !!villain.flying }) : null;
+    this.game.audio.playMusic(villain?.boss ? (villain.music ?? 'chefe') : this.level.music ?? 'mapa');
     this.line = -1;
     this.next();
   }
@@ -43,7 +47,7 @@ export class DialogueScene extends Scene {
     this.line++;
     if (this.line >= this.level.dialogue.length) { this.#toBattle(); return; }
     this.chars = 0;
-    const sp = SPEAKERS[this.current.who] ?? SPEAKERS.hunter;
+    const sp = speaker(this.current.who);
     this.nameEl.textContent = sp.name;
     this.speech.dataset.side = sp.side;
     this.textEl.textContent = '';

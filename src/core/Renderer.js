@@ -31,7 +31,7 @@ export class Renderer {
     let c = this.tintCache.get(id);
     if (!c) {
       c = document.createElement('canvas');
-      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
       const x = c.getContext('2d');
       x.drawImage(img, 0, 0);
       x.globalCompositeOperation = 'source-atop';

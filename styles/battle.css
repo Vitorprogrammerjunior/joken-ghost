@@ -135,7 +135,11 @@
 }
 .drawer.slide-in { animation: drawer-in 0.2s steps(4) both; }
 @keyframes drawer-in { from { transform: translate(-50%, 40px); opacity: 0; } }
-.drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; color: var(--gold); text-shadow: var(--outline); }
+.drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; color: var(--gold); text-shadow: var(--outline); }
+.drawer-head > span:first-child { flex: 1; }
+.bag-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 12px 2px 6px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone); color: var(--white); }
+.bag-pill b { font-weight: normal; }
+.bag-pill.empty { color: var(--red-2); box-shadow: 0 0 0 2px var(--red); }
 #shop-drawer { width: 1000px; }
 
 .weapon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -192,7 +196,7 @@
 .shop-name { color: var(--white); }
 .shop-desc { font-size: 16px; line-height: 24px; color: var(--fog); }
 .shop-price { display: flex; align-items: center; gap: 6px; color: var(--gold); font-size: 24px; line-height: 32px; }
-.shop-card.poor { opacity: 0.55; }
+.shop-card.poor, .shop-card.no-bag { opacity: 0.55; }
 .shop-card.poor .shop-price { color: var(--red-2); }
 
 /* ─── vida baixa: borda vermelha pulsando ─── */
@@ -204,3 +208,18 @@
   animation: blink 1s steps(2) infinite;
   pointer-events: none;
 }
+
+/* ─── relíquias das corridas ─── */
+.relic-strip {
+  position: absolute;
+  right: 24px;
+  top: 404px;
+  display: flex;
+  flex-wrap: wrap-reverse;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 420px;
+}
+.relic-strip .relic-chip { display: inline-flex; padding: 2px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--purple-2); }
+.relic-strip .relic-chip .ico { width: 32px; height: 32px; }
+.relic-strip .relic-chip b { align-self: flex-end; margin-left: -8px; font-weight: normal; font-size: 16px; line-height: 16px; color: var(--gold); text-shadow: var(--outline); }

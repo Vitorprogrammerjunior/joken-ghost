@@ -2,8 +2,11 @@
 import { ENEMIES, ENEMY_ORDER } from './config/enemies.js';
 import { ITEMS } from './config/items.js';
 import { LEVELS } from './config/levels.js';
+import { UPGRADES } from './config/upgrades.js';
+import { STAR_REWARDS } from './config/rewards.js';
+import { RELICS } from './config/relics.js';
 import { WEAPON_LIST, WEAPONS, ENEMY_MOVES, BEATS } from './config/weapons.js';
-import { serverUrl, leagueIcon } from './config/multiplayer.js';
+import { serverUrl, leagueIcon, MODES } from './config/multiplayer.js';
 import { cardEl } from './ui/Card.js';
 import { SPRITES, FRAME_SIZE } from './config/sprites.generated.js';
 import { $, h, icon } from './ui/dom.js';
@@ -55,9 +58,27 @@ $('items').replaceChildren(...ITEMS.map(it => h('article', { class: 'card' },
   h('div', { class: 'stat' }, icon('icon/moeda', 'ico ico-xs'), ` ${it.price} moedas`))));
 
 $('levels').replaceChildren(...LEVELS.map(l => h('article', { class: 'card' },
-  h('h3', {}, icon(l.location, 'ico ico-lg'), `${l.id}. ${l.name}`),
+  h('h3', {}, icon(l.location, 'ico ico-lg'), l.bonus ? `Bônus: ${l.name}` : `${l.id}. ${l.name}`),
   ...l.waves.map((wave, i) => h('div', { class: 'chips' }, `Onda ${i + 1}: `,
     ...wave.map(id => h('span', { class: 'chip' }, ENEMIES[id].name)))))));
+
+$('upgrades').replaceChildren(...UPGRADES.map(u => h('article', { class: 'card' },
+  h('h3', {}, icon(u.icon, 'ico ico-lg'), u.name),
+  h('p', { class: 'muted' }, u.desc),
+  h('div', { class: 'stat' }, icon('icon/moeda', 'ico ico-xs'), ` ${u.costs.join(' / ')} moedas`))));
+
+$('rewards').replaceChildren(...STAR_REWARDS.map(r => h('article', { class: 'card' },
+  h('h3', {}, icon(r.icon, 'ico ico-lg'), r.name),
+  h('p', { class: 'muted' }, r.desc),
+  h('div', { class: 'stat' }, icon('icon/estrela', 'ico ico-xs'), ` ${r.stars} estrelas`))));
+
+$('relics').replaceChildren(...RELICS.map(r => h('article', { class: 'card' },
+  h('h3', {}, icon(r.icon, 'ico ico-lg'), r.name),
+  h('p', { class: 'muted' }, r.desc))));
+
+$('mp-modes').replaceChildren(...Object.values(MODES).map(m => h('article', { class: 'card' },
+  h('h3', {}, icon(m.icon, 'ico ico-lg'), m.name),
+  h('p', { class: 'muted' }, m.desc))));
 
 // Multiplayer: catálogo e ranking vêm do servidor
 fetch(`${serverUrl()}/api/catalog`).then(r => r.json()).then(({ cards, characters }) => {

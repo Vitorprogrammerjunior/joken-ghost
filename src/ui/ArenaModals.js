@@ -1,6 +1,6 @@
-// Janelas da arena multiplayer: cartas, caçadores, ranking, desafio recebido e perfil.
+// Janelas da arena multiplayer: caçadores, ranking, desafio recebido e perfil.
+// (O deck fica em DeckModal.js; modos, missões e loja em ArenaShop.js.)
 import { $, h, icon } from './dom.js';
-import { cardEl } from './Card.js';
 import { spriteCanvas } from './SpriteCanvas.js';
 import { LEAGUE_NAMES, leagueIcon } from '../config/multiplayer.js';
 import { selectCharacter } from '../config/characters.js';
@@ -24,7 +24,7 @@ export class ArenaModals {
     $('challenge-no').addEventListener('click', () => this.#answer(false));
     $('profile-save').addEventListener('click', () => {
       net.setNickname($('profile-nick').value);
-      game.storage.setItem('jokenghost_mp_nick', $('profile-nick').value);
+      net.rememberNickname($('profile-nick').value);
       modals.close('modal-profile');
     });
     $('profile-copy').addEventListener('click', () => {
@@ -40,14 +40,6 @@ export class ArenaModals {
   }
 
   #toast(text) { this.game.bus.emit('toast', text); }
-
-  // ─── cartas ───────────────────────────────────────────────────
-  openCards() {
-    const { cards } = this.net.catalog;
-    const owned = this.net.profile.unlocked.cards;
-    $('cards-grid').replaceChildren(...cards.map(c => cardEl(c, { size: 'md', locked: !owned.includes(c.id) })));
-    this.modals.open('modal-cards');
-  }
 
   // ─── caçadores ────────────────────────────────────────────────
   openCharacters() {

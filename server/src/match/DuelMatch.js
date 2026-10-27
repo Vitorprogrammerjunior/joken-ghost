@@ -1,0 +1,175 @@
+'use strict';
+// Duelo entre caçadores (1x1 ou 2x2) sobre as regras de src/duel.js.
+// Fases de cada rodada: cartas -> armas (com tempo por assento por causa da Visão) -> resultado.
+const duelRules = require('../duel');
+const { leagueOf, deckOf } = require('../catalog');
+const { BotBrain } = require('../bots');
+const { Match } = require('./Match');
+
+const START_DELAY_MS = 2200;
+
+class DuelMatch extends Match {
+  /**
+   * @param {object} o  tudo de Match, mais:
+   * @param {boolean} o.ranked                  vale troféus
+   * @param {string} o.stage                    cenário
+   * @param {() => number} o.rng
+   * @param {Function} o.chooseMove             IA compartilhada (bots)
+   * @param {boolean} [o.botTakesOver]          2x2: um bot assume quem cair (em vez de perder)
+   * @param {(match: DuelMatch, r: object) => void} [o.onRound]
+   */
+  constructor(o) {
+    super(o);
+    this.ranked = !!o.ranked;
+    this.stage = o.stage;
+    this.rng = o.rng;
+    this.chooseMove = o.chooseMove;
+    this.botTakesOver = !!o.botTakesOver;
+    this.onRound = o.onRound ?? (() => {});
+    const half = this.seats.length / 2;
+    const teams = [this.seats.slice(0, half), this.seats.slice(half)].map(t => t.map(s => s.player));
+    this.duel = duelRules.createDuel(teams, deckOf, this.rng, this.rules);
+    this.seats.forEach(s => { s.brain = s.player.isBot ? this.#brain(s.player) : null; });
+    this.deadlines = [];
+    this.phaseTimers = [];
+    this.endsAt = 0;
+  }
+
+  start() {
+    this.seats.forEach((_, i) => this.send(i, 'match_start', this.view(i)));
+    this.toSpectators('match_start', this.view(null));
+    this.later(START_DELAY_MS, () => this.#cardPhase());
+  }
+
+  // ═══════════════════════ fases ═══════════════════════
+  #setPhaseTimers(timers) {
+    for (const t of this.phaseTimers) this.cancel(t);
+    this.phaseTimers = timers;
+  }
+
+  #cardPhase() {
+    const d = duelRules.startRound(this.duel);
+    this.endsAt = this.now() + this.rules.cardPhaseMs;
+    const common = { round: d.round, endsIn: this.rules.cardPhaseMs, hp: d.sides.map(s => s.hp), sudden: d.round >= this.rules.suddenDeathRound };
+    this.seats.forEach((s, i) => {
+      const f = d.fighters[i];
+      this.send(i, 'card_phase', { ...common, hand: f.hand, deckLeft: this.#deckLeft(i) });
+      if (s.brain && !f.cardLocked) this.later(s.brain.thinkMs(), () => this.pickCard(i, s.brain.chooseCard(f.hand, d.sides[f.side])));
+    });
+    this.toSpectators('card_phase', { ...common, hand: [] });
+    if (duelRules.bothLocked(d, 'cardLocked')) return this.#weaponPhase();
+    this.#setPhaseTimers([this.later(this.rules.cardPhaseMs, () => this.#weaponPhase())]);
+  }
+
+  #weaponPhase() {
+    const d = duelRules.startWeaponPhase(this.duel);
+    this.deadlines = d.fighters.map((_, i) => this.now() + duelRules.weaponTime(d, i));
+    this.endsAt = Math.max(...this.deadlines);
+    const cards = d.fighters.map(f => f.card);
+    const timers = [];
+    this.seats.forEach((s, i) => {
+      const f = d.fighters[i];
+      const ms = duelRules.weaponTime(d, i);
+      this.send(i, 'weapon_phase', { round: d.round, endsIn: ms, cards, forbidden: f.forbidden });
+      timers.push(this.later(ms, () => this.#lockWeapon(i, null)));
+      if (s.brain) {
+        const op = d.fighters[duelRules.laneOpponent(d, i)];
+        const think = Math.min(s.brain.thinkMs(), ms - 400);
+        timers.push(this.later(think, () => this.#lockWeapon(i, s.brain.chooseWeapon(f.history, op.history, f.forbidden))));
+      }
+    });
+    this.toSpectators('weapon_phase', { round: d.round, endsIn: this.rules.weaponPhaseMs, cards, forbidden: null });
+    this.#setPhaseTimers(timers);
+  }
+
+  /** Trava a arma do assento i (null = tempo esgotado: repete a anterior). */
+  #lockWeapon(i, weapon) {
+    const d = this.duel;
+    const f = d.fighters[i];
+    if (d.phase !== 'weapon' || f.weaponLocked) return false;
+    const ok = weapon == null ? duelRules.autoWeapon(d, i) != null : duelRules.pickWeapon(d, i, weapon);
+    if (!ok) return false;
+    this.send(i, 'weapon_locked', { weapon: f.weapon, auto: weapon == null });
+    this.toAll('seat_ready', { seat: i, phase: 'weapon' });
+    // Visão: quem ainda não escolheu vê a arma de quem acabou de escolher (ou a falsa do Disfarce)
+    const j = duelRules.laneOpponent(d, i);
+    if (d.fighters[j].card === 'visao' && !d.fighters[j].weaponLocked) this.send(j, 'vision', { weapon: duelRules.visionOf(d, i), seat: i });
+    if (duelRules.bothLocked(d, 'weaponLocked')) this.#resolve();
+    return true;
+  }
+
+  #resolve() {
+    this.#setPhaseTimers([]);
+    const r = duelRules.resolveRound(this.duel);
+    this.onRound(this, r);
+    this.toAll('round_result', { ...r, history: this.duel.fighters.map(f => f.history) });
+    if (r.winner != null) this.later(this.rules.revealMs, () => this.finish({ winnerSide: r.winner, reason: 'nocaute' }));
+    else this.later(this.rules.revealMs, () => this.#cardPhase());
+  }
+
+  // ═══════════════════════ jogadas dos clientes ═══════════════════════
+  pickCard(i, cardId) {
+    const d = this.duel;
+    if (!duelRules.pickCard(d, i, cardId)) return;
+    this.send(i, 'card_locked', { cardId });
+    this.toAll('seat_ready', { seat: i, phase: 'card' });
+    if (duelRules.bothLocked(d, 'cardLocked')) this.#weaponPhase();
+  }
+
+  pickWeapon(i, weapon) { this.#lockWeapon(i, weapon); }
+
+  /** Desistir: o lado de quem desistiu perde. */
+  forfeit(i) { this.finish({ winnerSide: 1 - this.duel.fighters[i].side, reason: 'desistência' }); }
+
+  abandon(i) {
+    if (this.botTakesOver) {
+      // 2x2: um bot assume o lugar para o parceiro não ficar sozinho
+      const seat = this.seats[i];
+      seat.brain = this.#brain({ ...seat.player, ai: { type: 'learner', adapt: 0.5 } });
+      this.toAll('seat_status', { seat: i, connected: false, bot: true });
+      return;
+    }
+    this.finish({ winnerSide: 1 - this.duel.fighters[i].side, reason: 'abandono' });
+  }
+
+  #brain(bot) { return new BotBrain(bot, { chooseMove: this.chooseMove, rng: this.rng, thinkMs: this.rules.botThinkMs }); }
+
+  // ═══════════════════════ visões ═══════════════════════
+  #deckLeft(i) {
+    const f = this.duel.fighters[i];
+    return f.deck.filter(c => !f.used.includes(c)).length;
+  }
+
+  #fighterView(i) {
+    const f = this.duel.fighters[i];
+    const p = this.seats[i].player;
+    return {
+      seat: i, side: f.side, lane: f.lane, id: f.id, nickname: f.nickname, character: f.character,
+      trophies: f.trophies, league: leagueOf(f.trophies), frame: p.equipped?.frame ?? null, isBot: !!p.isBot,
+    };
+  }
+
+  /** Estado completo para o assento i (null = espectador), usado no início e na reconexão. */
+  view(i) {
+    const d = this.duel;
+    const me = i == null ? null : d.fighters[i];
+    return {
+      matchId: this.id, kind: this.kind, ranked: this.ranked, stage: this.stage, you: i,
+      fighters: d.fighters.map((_, k) => this.#fighterView(k)),
+      sides: d.sides.map(s => ({ hp: s.hp, maxHp: s.maxHp })),
+      spectators: this.spectators.size,
+      round: d.round,
+      phase: d.phase,
+      endsIn: Math.max(0, (i != null && d.phase === 'weapon' ? this.deadlines[i] : this.endsAt) - this.now()),
+      hand: me && d.phase === 'card' ? me.hand : [],
+      cards: d.phase === 'weapon' ? d.fighters.map(f => f.card) : null,
+      cardLocked: !!me?.cardLocked,
+      weaponLocked: !!me?.weaponLocked,
+      forbidden: me?.forbidden ?? null,
+      deckLeft: i == null ? 0 : this.#deckLeft(i),
+      history: d.fighters.map(f => f.history),
+    };
+  }
+}
+
+module.exports = { DuelMatch };

@@ -347,6 +347,114 @@ export const SPRITES = {
     "src": "assets/sprites/enemies/kastle/hurt.svg",
     "frames": 2
   },
+  "enemy/zumbi/idle": {
+    "src": "assets/sprites/enemies/zumbi/idle.svg",
+    "frames": 4
+  },
+  "enemy/zumbi/attack": {
+    "src": "assets/sprites/enemies/zumbi/attack.svg",
+    "frames": 4
+  },
+  "enemy/zumbi/hurt": {
+    "src": "assets/sprites/enemies/zumbi/hurt.svg",
+    "frames": 2
+  },
+  "enemy/corvo/idle": {
+    "src": "assets/sprites/enemies/corvo/idle.svg",
+    "frames": 4
+  },
+  "enemy/corvo/attack": {
+    "src": "assets/sprites/enemies/corvo/attack.svg",
+    "frames": 4
+  },
+  "enemy/corvo/hurt": {
+    "src": "assets/sprites/enemies/corvo/hurt.svg",
+    "frames": 2
+  },
+  "enemy/esqueleto/idle": {
+    "src": "assets/sprites/enemies/esqueleto/idle.svg",
+    "frames": 4
+  },
+  "enemy/esqueleto/attack": {
+    "src": "assets/sprites/enemies/esqueleto/attack.svg",
+    "frames": 4
+  },
+  "enemy/esqueleto/hurt": {
+    "src": "assets/sprites/enemies/esqueleto/hurt.svg",
+    "frames": 2
+  },
+  "enemy/mumia/idle": {
+    "src": "assets/sprites/enemies/mumia/idle.svg",
+    "frames": 4
+  },
+  "enemy/mumia/attack": {
+    "src": "assets/sprites/enemies/mumia/attack.svg",
+    "frames": 4
+  },
+  "enemy/mumia/hurt": {
+    "src": "assets/sprites/enemies/mumia/hurt.svg",
+    "frames": 2
+  },
+  "enemy/lobisomem/idle": {
+    "src": "assets/sprites/enemies/lobisomem/idle.svg",
+    "frames": 4
+  },
+  "enemy/lobisomem/attack": {
+    "src": "assets/sprites/enemies/lobisomem/attack.svg",
+    "frames": 4
+  },
+  "enemy/lobisomem/hurt": {
+    "src": "assets/sprites/enemies/lobisomem/hurt.svg",
+    "frames": 2
+  },
+  "enemy/banshee/idle": {
+    "src": "assets/sprites/enemies/banshee/idle.svg",
+    "frames": 4
+  },
+  "enemy/banshee/attack": {
+    "src": "assets/sprites/enemies/banshee/attack.svg",
+    "frames": 4
+  },
+  "enemy/banshee/hurt": {
+    "src": "assets/sprites/enemies/banshee/hurt.svg",
+    "frames": 2
+  },
+  "enemy/coveiro/idle": {
+    "src": "assets/sprites/enemies/coveiro/idle.svg",
+    "frames": 4
+  },
+  "enemy/coveiro/attack": {
+    "src": "assets/sprites/enemies/coveiro/attack.svg",
+    "frames": 4
+  },
+  "enemy/coveiro/hurt": {
+    "src": "assets/sprites/enemies/coveiro/hurt.svg",
+    "frames": 2
+  },
+  "enemy/relojoeiro/idle": {
+    "src": "assets/sprites/enemies/relojoeiro/idle.svg",
+    "frames": 4
+  },
+  "enemy/relojoeiro/attack": {
+    "src": "assets/sprites/enemies/relojoeiro/attack.svg",
+    "frames": 4
+  },
+  "enemy/relojoeiro/hurt": {
+    "src": "assets/sprites/enemies/relojoeiro/hurt.svg",
+    "frames": 2
+  },
+  "enemy/morgana/idle": {
+    "src": "assets/sprites/enemies/morgana/idle.svg",
+    "frames": 4
+  },
+  "enemy/morgana/attack": {
+    "src": "assets/sprites/enemies/morgana/attack.svg",
+    "frames": 4
+  },
+  "enemy/morgana/hurt": {
+    "src": "assets/sprites/enemies/morgana/hurt.svg",
+    "frames": 2
+  },
   "icon/estaca": {
     "src": "assets/sprites/icons/estaca.svg",
     "frames": 1
@@ -503,6 +611,18 @@ export const SPRITES = {
     "src": "assets/sprites/icons/repetir.svg",
     "frames": 1
   },
+  "icon/pista": {
+    "src": "assets/sprites/icons/pista.svg",
+    "frames": 1
+  },
+  "icon/bolsa": {
+    "src": "assets/sprites/icons/bolsa.svg",
+    "frames": 1
+  },
+  "icon/martelo": {
+    "src": "assets/sprites/icons/martelo.svg",
+    "frames": 1
+  },
   "icon/perk_escudo": {
     "src": "assets/sprites/icons/perk_escudo.svg",
     "frames": 1
@@ -569,6 +689,66 @@ export const SPRITES = {
   },
   "icon/liga_lenda": {
     "src": "assets/sprites/icons/liga_lenda.svg",
+    "frames": 1
+  },
+  "icon/perk_estaca_prata": {
+    "src": "assets/sprites/icons/perk_estaca_prata.svg",
+    "frames": 1
+  },
+  "icon/perk_aspirador_turbo": {
+    "src": "assets/sprites/icons/perk_aspirador_turbo.svg",
+    "frames": 1
+  },
+  "icon/perk_cruz_flamejante": {
+    "src": "assets/sprites/icons/perk_cruz_flamejante.svg",
+    "frames": 1
+  },
+  "icon/perk_provocacao": {
+    "src": "assets/sprites/icons/perk_provocacao.svg",
+    "frames": 1
+  },
+  "icon/perk_disfarce": {
+    "src": "assets/sprites/icons/perk_disfarce.svg",
+    "frames": 1
+  },
+  "icon/emote_risada": {
+    "src": "assets/sprites/icons/emote_risada.svg",
+    "frames": 1
+  },
+  "icon/emote_gg": {
+    "src": "assets/sprites/icons/emote_gg.svg",
+    "frames": 1
+  },
+  "icon/emote_susto": {
+    "src": "assets/sprites/icons/emote_susto.svg",
+    "frames": 1
+  },
+  "icon/emote_raiva": {
+    "src": "assets/sprites/icons/emote_raiva.svg",
+    "frames": 1
+  },
+  "icon/emote_coracao": {
+    "src": "assets/sprites/icons/emote_coracao.svg",
+    "frames": 1
+  },
+  "icon/emote_caveira": {
+    "src": "assets/sprites/icons/emote_caveira.svg",
+    "frames": 1
+  },
+  "icon/ecto": {
+    "src": "assets/sprites/icons/ecto.svg",
+    "frames": 1
+  },
+  "icon/taca": {
+    "src": "assets/sprites/icons/taca.svg",
+    "frames": 1
+  },
+  "icon/coroa": {
+    "src": "assets/sprites/icons/coroa.svg",
+    "frames": 1
+  },
+  "icon/assistir": {
+    "src": "assets/sprites/icons/assistir.svg",
     "frames": 1
   },
   "fx/hit": {
@@ -693,6 +873,38 @@ export const SPRITES = {
   },
   "ui/tab_active": {
     "src": "assets/sprites/ui/tab_active.svg",
+    "frames": 1
+  },
+  "ui/moldura_madeira": {
+    "src": "assets/sprites/ui/moldura_madeira.svg",
+    "frames": 1
+  },
+  "ui/moldura_prata": {
+    "src": "assets/sprites/ui/moldura_prata.svg",
+    "frames": 1
+  },
+  "ui/moldura_ouro": {
+    "src": "assets/sprites/ui/moldura_ouro.svg",
+    "frames": 1
+  },
+  "ui/moldura_fantasma": {
+    "src": "assets/sprites/ui/moldura_fantasma.svg",
+    "frames": 1
+  },
+  "ui/moldura_temporada_prata": {
+    "src": "assets/sprites/ui/moldura_temporada_prata.svg",
+    "frames": 1
+  },
+  "ui/moldura_temporada_ouro": {
+    "src": "assets/sprites/ui/moldura_temporada_ouro.svg",
+    "frames": 1
+  },
+  "ui/moldura_temporada_platina": {
+    "src": "assets/sprites/ui/moldura_temporada_platina.svg",
+    "frames": 1
+  },
+  "ui/moldura_temporada_lenda": {
+    "src": "assets/sprites/ui/moldura_temporada_lenda.svg",
     "frames": 1
   },
   "tile/moon": {
@@ -873,6 +1085,82 @@ export const SPRITES = {
   },
   "tile/plat_runa": {
     "src": "assets/sprites/tiles/plat_runa.svg",
+    "frames": 1
+  },
+  "tile/cross_grave": {
+    "src": "assets/sprites/tiles/cross_grave.svg",
+    "frames": 1
+  },
+  "tile/crypt_far": {
+    "src": "assets/sprites/tiles/crypt_far.svg",
+    "frames": 1
+  },
+  "tile/open_grave": {
+    "src": "assets/sprites/tiles/open_grave.svg",
+    "frames": 1
+  },
+  "tile/bone_wall": {
+    "src": "assets/sprites/tiles/bone_wall.svg",
+    "frames": 1
+  },
+  "tile/coffin": {
+    "src": "assets/sprites/tiles/coffin.svg",
+    "frames": 1
+  },
+  "tile/cobweb": {
+    "src": "assets/sprites/tiles/cobweb.svg",
+    "frames": 1
+  },
+  "tile/gear": {
+    "src": "assets/sprites/tiles/gear.svg",
+    "frames": 4
+  },
+  "tile/bell": {
+    "src": "assets/sprites/tiles/bell.svg",
+    "frames": 1
+  },
+  "tile/portal": {
+    "src": "assets/sprites/tiles/portal.svg",
+    "frames": 4
+  },
+  "tile/float_rock": {
+    "src": "assets/sprites/tiles/float_rock.svg",
+    "frames": 1
+  },
+  "tile/loc_cemiterio": {
+    "src": "assets/sprites/tiles/loc_cemiterio.svg",
+    "frames": 1
+  },
+  "tile/loc_catacumbas": {
+    "src": "assets/sprites/tiles/loc_catacumbas.svg",
+    "frames": 1
+  },
+  "tile/loc_torre": {
+    "src": "assets/sprites/tiles/loc_torre.svg",
+    "frames": 1
+  },
+  "tile/loc_portal": {
+    "src": "assets/sprites/tiles/loc_portal.svg",
+    "frames": 1
+  },
+  "tile/loc_cripta": {
+    "src": "assets/sprites/tiles/loc_cripta.svg",
+    "frames": 1
+  },
+  "tile/plat_terra": {
+    "src": "assets/sprites/tiles/plat_terra.svg",
+    "frames": 1
+  },
+  "tile/plat_osso": {
+    "src": "assets/sprites/tiles/plat_osso.svg",
+    "frames": 1
+  },
+  "tile/plat_latao": {
+    "src": "assets/sprites/tiles/plat_latao.svg",
+    "frames": 1
+  },
+  "tile/plat_vazio": {
+    "src": "assets/sprites/tiles/plat_vazio.svg",
     "frames": 1
   }
 };

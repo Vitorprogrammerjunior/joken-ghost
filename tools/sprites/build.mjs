@@ -10,10 +10,13 @@ import { toSVG } from './lib/export.mjs';
 import { characterSheets } from './art/hunter.mjs';
 import { cardSheets } from './art/cards.mjs';
 import { enemySheets } from './art/enemies.mjs';
+import { enemySheets2 } from './art/enemies2.mjs';
 import { iconSheets } from './art/icons.mjs';
 import { fxSheets } from './art/fx.mjs';
 import { uiSheets } from './art/ui.mjs';
 import { tileSheets } from './art/tiles.mjs';
+import { tileSheets2 } from './art/tiles2.mjs';
+import { arenaIconSheets, frameSheets } from './art/arena.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'assets', 'sprites');
@@ -44,13 +47,13 @@ for (const [id, views] of Object.entries(characterSheets())) {
   }
 }
 for (const [name, g] of Object.entries(cardSheets())) emit(`card/${name}`, `cards/${name}`, g);
-for (const [enemy, anims] of Object.entries(enemySheets())) {
+for (const [enemy, anims] of Object.entries({ ...enemySheets(), ...enemySheets2() })) {
   for (const [anim, g] of Object.entries(anims)) emit(`enemy/${enemy}/${anim}`, `enemies/${enemy}/${anim}`, g);
 }
-for (const [name, g] of Object.entries(iconSheets())) emit(`icon/${name}`, `icons/${name}`, g);
+for (const [name, g] of Object.entries({ ...iconSheets(), ...arenaIconSheets() })) emit(`icon/${name}`, `icons/${name}`, g);
 for (const [name, g] of Object.entries(fxSheets())) emit(`fx/${name}`, `fx/${name}`, g);
-for (const [name, g] of Object.entries(uiSheets())) emit(`ui/${name}`, `ui/${name}`, g);
-for (const [name, g] of Object.entries(tileSheets())) emit(`tile/${name}`, `tiles/${name}`, g);
+for (const [name, g] of Object.entries({ ...uiSheets(), ...frameSheets() })) emit(`ui/${name}`, `ui/${name}`, g);
+for (const [name, g] of Object.entries({ ...tileSheets(), ...tileSheets2() })) emit(`tile/${name}`, `tiles/${name}`, g);
 
 const js = `// GERADO por tools/sprites/build.mjs — não edite à mão.
 // Todas as sprites usam frames de ${FRAME}x${FRAME}px em folhas horizontais.

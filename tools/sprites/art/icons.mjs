@@ -15,7 +15,7 @@ function bar(g, x0, y0, x1, y1, w, c) {
 }
 
 // ─── armas do Caçador ─────────────────────────────────────────
-function estaca() {
+export function estaca() {
   const g = new Grid();
   bar(g, 10, 54, 38, 26, 14, 'm4');
   g.poly([[32, 21], [43, 32], [56, 8]], 'm5');     // ponta afiada
@@ -32,7 +32,7 @@ function estaca() {
   return finish(g, { shade: false });
 }
 
-function aspirador() {
+export function aspirador() {
   const g = new Grid();
   const B = new Grid();
   B.rect(8, 22, 26, 30, 'g3');
@@ -57,7 +57,7 @@ function aspirador() {
   return finish(g, { shade: false });
 }
 
-function cruz() {
+export function cruz() {
   const g = new Grid();
   // raios de luz sagrada
   for (let i = 0; i < 8; i++) {
@@ -498,6 +498,44 @@ function repetir() {
   return finish(g);
 }
 
+/**
+ * Balão de pensamento das pistas, desenhado em escala 2: a nuvem (centro em 34,24)
+ * cabe um ícone de golpe em escala 1 por cima. A cauda aponta para o monstro.
+ */
+function pista() {
+  const g = new Grid();
+  for (const [x, y, r] of [[24, 20, 13], [38, 16, 13], [48, 26, 12], [36, 34, 13], [22, 32, 12]]) g.circle(x, y, r, 'q4');
+  g.circle(12, 50, 4, 'q4');
+  g.circle(6, 58, 3, 'q4');
+  g.shade({ light: 0, dark: 1 });
+  return finish(g, { shade: false });
+}
+
+/** Martelo da oficina. */
+function martelo() {
+  const g = new Grid();
+  bar(g, 14, 54, 38, 26, 7, 'm4');
+  const H = new Grid();
+  H.poly([[26, 14], [44, 4], [58, 24], [40, 34]], 't4');
+  H.shade({ depth: 2 });
+  H.line(30, 16, 44, 8, 't5');
+  g.blit(H);
+  g.rect(12, 50, 6, 6, 'm2');
+  return finish(g, { shade: false });
+}
+
+/** Bolsa de itens da fase (limite de usos). */
+function bolsa() {
+  const g = new Grid();
+  g.ellipse(32, 38, 20, 18, 'm4');
+  g.poly([[20, 22], [44, 22], [40, 14], [24, 14]], 'm4');
+  g.shade({ depth: 2 });
+  g.rect(18, 22, 28, 4, 'm2');
+  g.rect(29, 26, 6, 8, 'y3');
+  g.set(31, 28, 'y4');
+  return finish(g, { shade: false });
+}
+
 // ─── perks do multiplayer ─────────────────────────────────────
 function escudo() {
   const g = new Grid();
@@ -536,7 +574,7 @@ function empateForte() {
   return finish(g);
 }
 
-function visao() {
+export function visao() {
   const g = new Grid();
   g.poly([[4, 32], [20, 18], [44, 18], [60, 32], [44, 46], [20, 46]], 'w');
   g.shade();
@@ -679,7 +717,7 @@ export function iconSheets() {
     pausa: pausa(), fechar: fechar(), seta_esq: seta('left'), seta_dir: seta('right'),
     engrenagem: engrenagem(), disquete: disquete(), duelo: duelo(), pergaminho: pergaminho(),
     trofeu: trofeu(), check: check(), alvo: alvo(), interrogacao: interrogacao(),
-    jogar: jogar(), casa: casa(), repetir: repetir(),
+    jogar: jogar(), casa: casa(), repetir: repetir(), pista: pista(), bolsa: bolsa(), martelo: martelo(),
     perk_escudo: escudo(), perk_golpe_duplo: golpeDuplo(), perk_empate_forte: empateForte(),
     perk_visao: visao(), perk_resistencia: resistencia(), perk_sorte: sorte(),
     perk_cura: cura(), perk_espinhos: espinhos(), perk_vampirismo: vampirismo(),

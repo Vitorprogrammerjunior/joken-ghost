@@ -45,6 +45,27 @@ export function seededRandom(seed) {
   return () => ((s = (s * 16807) % 2147483647) / 2147483647);
 }
 
+/** Salão de ossos visto de lado (catacumbas e cripta). */
+function bakeBoneHall(r, floorColor) {
+  for (let y = 0; y < 512; y += T) r.tileRow('tile/bone_wall', y);
+  for (const x of [0, 1152]) for (let y = 0; y < 512; y += T) r.sprite('tile/pillar', 0, x, y, { anchor: 'topleft' });
+  r.sprite('tile/cobweb', 0, 128, 0, { anchor: 'topleft' });
+  r.sprite('tile/cobweb', 0, 1024, 0, { anchor: 'topleft', flipX: true });
+  for (let y = 512; y < GH; y += T) r.tileRow('tile/floor_stone', y);
+  r.rect(0, 512, GW, GH - 512, floorColor, 0.35);
+  bandedGradient(r, 506, 520, ['#0e0b16', '#2f2a3d'], 4);
+  r.sprite('tile/coffin', 0, 140, 384, { anchor: 'topleft' });
+  r.sprite('tile/skulls', 0, 1000, 470, { anchor: 'topleft' });
+}
+
+function animateWallTorches(s, r, rgb) {
+  for (const x of [380, 836]) {
+    const f = Math.floor(s.t / 120) % 4;
+    glow(r, x + 64, 280, 170 + (f % 2) * 10, rgb, 0.25);
+    r.sprite('tile/torch', f, x, 230, { anchor: 'topleft' });
+  }
+}
+
 const KINDS = {
   // ═══════════════ Floresta Maldita ═══════════════
   floresta: {
@@ -210,6 +231,85 @@ const KINDS = {
         s.particles.spawn({ x: 500 + Math.random() * 700, y: 700, vx: (Math.random() - 0.5) * 20, vy: -40 - Math.random() * 40, life: 2500, color: Math.random() > 0.5 ? '#f08c2a' : '#d23a3a', glow: true });
       }
     },
+    front() {},
+  },
+
+  // ═══════════════ Cemitério Esquecido ═══════════════
+  cemiterio: {
+    bake(r, rand) {
+      bandedGradient(r, 0, 470, ['#0b0412', '#22081c', '#3a0f22', '#4a1626']);
+      for (let i = 0; i < 60; i++) r.rect(Math.floor(rand() * 640) * PX, Math.floor(rand() * 140) * PX, PX, PX, '#ffb3a0', 0.2 + rand() * 0.4);
+      r.sprite('tile/moon', 0, 1010, 120, { tint: '#d23a3a', tintAlpha: 0.5 });
+      r.sprite('tile/crypt_far', 0, 560, 300, { anchor: 'topleft', scale: 3 });
+      r.tileRow('tile/fence', 404);
+      r.rect(0, 528, GW, GH - 528, '#22201b');
+      r.tileRow('tile/grass_top', 488, { offset: 20 });
+      bandedGradient(r, 534, GH, ['#2c2a1f', '#22201b', '#16140f']);
+      for (const [x, y] of [[60, 410], [300, 420], [880, 416], [1120, 410]]) {
+        r.sprite(rand() > 0.5 ? 'tile/cross_grave' : 'tile/gravestone', 0, x, y, { anchor: 'topleft' });
+      }
+      r.sprite('tile/dead_tree', 0, -20, 280, { anchor: 'topleft', scale: 3 });
+      r.sprite('tile/dead_tree', 0, 1100, 280, { anchor: 'topleft', scale: 3, flipX: true });
+    },
+    animate(s, r) {
+      r.tileRow('tile/fog', 380, { offset: -s.t * 0.02, alpha: 0.6 });
+      const x = ((s.t * 0.05) % (GW + 200)) - 100;
+      r.sprite('enemy/corvo/idle', s.t / 140, x, 90, { scale: 1, alpha: 0.6, tint: '#0e0b16', tintAlpha: 0.9 });
+    },
+    front(s, r) { r.tileRow('tile/fog', 600, { offset: s.t * 0.03, alpha: 0.35 }); },
+  },
+
+  // ═══════════════ Catacumbas ═══════════════
+  catacumbas: {
+    bake(r) { bakeBoneHall(r, '#43271a'); },
+    animate(s, r) { animateWallTorches(s, r, '240,140,42'); },
+    front() {},
+  },
+
+  // ═══════════════ Torre do Relógio ═══════════════
+  torre: {
+    bake(r) {
+      for (let y = 0; y < 512; y += T) r.tileRow('tile/brick_dark', y);
+      r.ctx.fillStyle = '#4a1626';
+      r.ctx.beginPath(); r.ctx.arc(640, 220, 120, 0, Math.PI * 2); r.ctx.fill();
+      r.sprite('tile/moon', 0, 640, 220, { scale: 3, tint: '#d23a3a', tintAlpha: 0.6 });
+      r.ctx.strokeStyle = '#0e0b16'; r.ctx.lineWidth = 10;
+      r.ctx.beginPath(); r.ctx.arc(640, 220, 120, 0, Math.PI * 2); r.ctx.stroke();
+      r.rect(635, 100, 10, 240, '#0e0b16'); r.rect(520, 215, 240, 10, '#0e0b16');
+      for (let y = 512; y < GH; y += T) r.tileRow('tile/floor_wood', y);
+      bandedGradient(r, 506, 520, ['#0e0b16', '#43271a'], 4);
+    },
+    animate(s, r) {
+      const f = Math.floor(s.t / 140) % 4;
+      r.sprite('tile/gear', f, 170, 200, { scale: 4 });
+      r.sprite('tile/gear', 3 - f, 1110, 260, { scale: 3 });
+    },
+    front() {},
+  },
+
+  // ═══════════════ Portal das Sombras ═══════════════
+  portal: {
+    bake(r, rand) {
+      bandedGradient(r, 0, 520, ['#05020a', '#120624', '#1e0f33', '#2a1440']);
+      for (let i = 0; i < 140; i++) r.rect(Math.floor(rand() * 640) * PX, Math.floor(rand() * 240) * PX, PX, PX, '#d9a8ff', 0.2 + rand() * 0.6);
+      bandedGradient(r, 520, GH, ['#2a1440', '#1e0f33', '#120624'], 8);
+      r.rect(0, 518, GW, 4, '#a35fd9', 0.6);
+    },
+    animate(s, r) {
+      const f = Math.floor(s.t / 120) % 4;
+      glow(r, 640, 260, 300, '163,95,217', 0.3);
+      r.sprite('tile/portal', f, 640, 260, { scale: 5 });
+      for (let i = 0; i < 3; i++) {
+        r.sprite('tile/float_rock', 0, [140, 1000, 1160][i], [180, 120, 330][i] + Math.sin(s.t / 700 + i) * 10, { scale: 2 });
+      }
+    },
+    front() {},
+  },
+
+  // ═══════════════ Cripta Secreta ═══════════════
+  cripta: {
+    bake(r) { bakeBoneHall(r, '#3c1d63'); },
+    animate(s, r) { animateWallTorches(s, r, '163,95,217'); },
     front() {},
   },
 };

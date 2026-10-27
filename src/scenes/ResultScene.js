@@ -1,15 +1,16 @@
-// Tela de resultado da fase (vitória ou derrota).
-import { selectedCharacter } from '../config/characters.js';
+// Tela de resultado (fase da campanha ou corrida). O resumo vem pronto do modo
+// da batalha (scenes/battleModes.js): título, estrelas, números, nota e botões.
+import { hunterBase } from '../world/hunterLook.js';
 import { Scene } from '../core/Scene.js';
 import { GW, GH } from '../core/Renderer.js';
-import { LEVELS, levelById } from '../config/levels.js';
 import { Scenery, GROUND_Y } from '../world/Scenery.js';
 import { Fighter } from '../world/Fighter.js';
-import { $, h, icon } from '../ui/dom.js';
+import { $, h, icon, show } from '../ui/dom.js';
 
 export class ResultScene extends Scene {
-  constructor(game) {
+  constructor(game, ui) {
     super(game, 'screen-result');
+    this.ui = ui;
     this.titleEl = $('result-title');
     this.starsEl = $('result-stars');
     this.statsEl = $('result-stats');
@@ -17,34 +18,29 @@ export class ResultScene extends Scene {
     this.actionsEl = $('result-actions');
   }
 
+  /**
+   * @param {{ won: boolean, stars: number, scenery: string, title: string,
+   *   stats: { icon: string, label: string, value: string|number }[], note: string,
+   *   actions: { label: string, icon: string, primary?: boolean, go: [string, object] }[],
+   *   daily?: object|null }} r
+   */
   enter(r) {
     this.r = r;
-    const lvl = levelById(r.levelId);
-    this.scenery = new Scenery(this.game.assets, lvl.scenery);
-    this.hunter = new Fighter(this.game.assets, { base: `char/${selectedCharacter(this.game.storage)}/side`, x: 300, y: GROUND_Y });
+    this.scenery = new Scenery(this.game.assets, r.scenery);
+    this.hunter = new Fighter(this.game.assets, { base: hunterBase(this.game, 'side'), x: 300, y: GROUND_Y });
     this.hunter.play(r.won ? 'win' : 'ko', { loop: r.won, hold: !r.won });
 
-    this.titleEl.textContent = r.won ? 'VITÓRIA!' : 'DERROTA...';
+    this.titleEl.textContent = r.title;
     this.titleEl.className = `result-title ${r.won ? 'win' : 'lose'}`;
-    this.starsEl.replaceChildren(...(r.won ? [1, 2, 3].map(k => icon(k <= r.stars ? 'icon/estrela' : 'icon/estrela_vazia', `ico ico-lg star s${k}`)) : []));
-    const row = (ico, label, value) => h('li', {}, icon(ico, 'ico ico-sm'), h('span', {}, label), h('b', {}, value));
-    this.statsEl.replaceChildren(
-      row('icon/moeda', 'Moedas ganhas', `+${r.coinsEarned}`),
-      row('icon/coracao', 'Dano recebido', r.damageTaken),
-      row('icon/espadas', 'Turnos', r.turns),
-    );
-    const next = levelById(r.levelId + 1);
-    this.noteEl.textContent = !r.won ? 'Dica: abra o Monstruário e use a arma certa contra cada monstro.'
-      : !next ? 'Você derrotou Kastle e libertou a mansão!'
-      : r.unlockedNew ? `Nova fase liberada: ${next.name}!` : '';
+    this.starsEl.replaceChildren(...(r.stars ? [1, 2, 3].map(k => icon(k <= r.stars ? 'icon/estrela' : 'icon/estrela_vazia', `ico ico-lg star s${k}`)) : []));
+    show(this.starsEl, r.stars > 0);
+    this.statsEl.replaceChildren(...r.stats.map(s => h('li', {}, icon(s.icon, 'ico ico-sm'), h('span', {}, s.label), h('b', {}, s.value))));
+    this.noteEl.textContent = r.note;
 
-    const btn = (label, cls, ico, fn) => h('button', { class: `btn ${cls}`, onclick: fn }, icon(ico), label);
-    const actions = [];
-    if (r.won && r.levelId < LEVELS.length) actions.push(btn('PRÓXIMA FASE', 'btn-primary', 'icon/jogar', () => this.game.go('story', { levelId: r.levelId + 1 })));
-    if (r.won && r.levelId === LEVELS.length) actions.push(btn('VER FINAL', 'btn-primary', 'icon/trofeu', () => this.game.go('story', { ending: true })));
-    if (!r.won) actions.push(btn('TENTAR DE NOVO', 'btn-primary', 'icon/repetir', () => this.game.go('battle', { levelId: r.levelId })));
-    actions.push(btn('MAPA', '', 'icon/casa', () => this.game.go('map', { focus: r.levelId })));
-    this.actionsEl.replaceChildren(...actions);
+    const buttons = r.actions.map(a => h('button', { class: `btn ${a.primary ? 'btn-primary' : ''}`, onclick: () => this.game.go(...a.go) }, icon(a.icon), a.label));
+    this.actionsEl.replaceChildren(...buttons);
+    this.el.querySelectorAll('.daily-status').forEach(el => el.remove());
+    if (r.daily) this.ui.daily.offerSubmit(r.daily, this.noteEl);
     setTimeout(() => this.actionsEl.querySelector('button')?.focus(), 400);
   }
 

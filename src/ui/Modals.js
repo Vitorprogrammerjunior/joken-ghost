@@ -6,13 +6,14 @@ export class Modals {
     this.game = game;
     this.stack = [];
     this.onClose = new Map();
+    this.locked = new Set(); // janelas que só fecham por código (escolhas obrigatórias)
 
     document.querySelectorAll('.modal').forEach((m) => {
-      m.addEventListener('pointerdown', (e) => { if (e.target === m) this.close(m.id); });
+      m.addEventListener('pointerdown', (e) => { if (e.target === m && !this.locked.has(m.id)) this.close(m.id); });
       m.querySelectorAll('[data-close-modal]').forEach(b => b.addEventListener('click', () => this.close(m.id)));
     });
     game.bus.on('modal-key', (e) => {
-      if (e.code === 'Escape') { e.preventDefault(); this.closeTop(); }
+      if (e.code === 'Escape') { e.preventDefault(); if (!this.locked.has(this.top)) this.closeTop(); }
       else this.game.bus.emit(`key:${this.top}`, e);
     });
   }
@@ -20,8 +21,10 @@ export class Modals {
   get top() { return this.stack[this.stack.length - 1]; }
   isOpen(id) { return this.stack.includes(id); }
 
-  open(id, { onClose } = {}) {
+  /** `locked`: não fecha com ESC nem clicando fora. */
+  open(id, { onClose, locked = false } = {}) {
     if (this.isOpen(id)) return;
+    if (locked) this.locked.add(id);
     const el = $(id);
     el.classList.remove('hidden', 'closing');
     this.stack.push(id);
@@ -36,6 +39,7 @@ export class Modals {
     el.classList.add('closing');
     setTimeout(() => { el.classList.add('hidden'); el.classList.remove('closing'); }, 160);
     this.stack = this.stack.filter(x => x !== id);
+    this.locked.delete(id);
     this.game.modalOpen = this.stack.length;
     const cb = this.onClose.get(id);
     this.onClose.delete(id);

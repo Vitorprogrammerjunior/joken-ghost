@@ -19,6 +19,7 @@ function applyResult(winner, loser, { ranked = true } = {}) {
     const before = { trophies: p.trophies, best: p.best };
     p.trophies = Math.max(0, p.trophies + delta);
     p.best = Math.max(p.best, p.trophies);
+    p.seasonBest = Math.max(p.seasonBest ?? 0, p.trophies);
     if (won) p.wins++; else p.losses++;
     out.push({
       id: p.id,

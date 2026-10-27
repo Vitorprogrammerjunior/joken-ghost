@@ -23,6 +23,39 @@ async function exercise(store) {
   assert.equal(top[0].trophies, 120);
   assert.equal(await store.rankOf(b.player), 2);
   assert.equal(await store.count(), 2);
+
+  // campos em JSON (deck, cosméticos, missões) voltam iguais
+  loaded.deck = ['escudo', 'cura'];
+  loaded.cosmetics = ['moldura_ouro'];
+  loaded.equipped = { frame: 'moldura_ouro' };
+  loaded.missions = { day: '2026-10-26', list: [{ id: 'vencer', progress: 1, claimed: false }] };
+  loaded.ecto = 30;
+  await store.save(loaded);
+  const again = await store.getById(loaded.id);
+  assert.deepEqual(again.deck, ['escudo', 'cura']);
+  assert.deepEqual(again.equipped, { frame: 'moldura_ouro' });
+  assert.equal(again.missions.list[0].id, 'vencer');
+  assert.equal(again.ecto, 30);
+
+  // Desafio do Dia: só a melhor pontuação do dia fica
+  assert.equal(await store.submitDaily('2026-10-26', a.player.id, 500, 4), 500);
+  assert.equal(await store.submitDaily('2026-10-26', a.player.id, 300, 3), 500);
+  await store.submitDaily('2026-10-26', b.player.id, 700, 6);
+  const daily = await store.dailyTop('2026-10-26', 10);
+  assert.deepEqual(daily.map(d => [d.nickname, d.score]), [['Amigo', 700], ['Vitor', 500]]);
+  assert.deepEqual(await store.dailyRank('2026-10-26', a.player.id), { rank: 2, total: 2, score: 500 });
+  assert.equal((await store.dailyRank('2026-10-27', a.player.id)).rank, null);
+
+  // dados gerais e temporada (reset parcial acima de 1000)
+  await store.setMeta('season', { id: 3 });
+  assert.deepEqual(await store.getMeta('season'), { id: 3 });
+  const rich = await store.getById(a.player.id);
+  rich.trophies = 1600;
+  await store.save(rich);
+  await store.trimTrophies(1000);
+  const after = await store.getById(a.player.id);
+  assert.equal(after.trophies, 1300);
+  assert.equal((await store.getById(b.player.id)).trophies, 0);
 }
 
 test('JsonStore guarda contas e sobrevive a reinício', async () => {
@@ -31,7 +64,7 @@ test('JsonStore guarda contas e sobrevive a reinício', async () => {
   await exercise(store);
   store.flush();
   const again = await new JsonStore(file).init();
-  assert.equal((await again.top(1))[0].trophies, 120);
+  assert.equal((await again.top(1))[0].trophies, 1300);
 });
 
 test('PgStore funciona com SQL de Postgres', async () => {

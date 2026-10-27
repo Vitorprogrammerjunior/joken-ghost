@@ -3,14 +3,16 @@ import { serverUrl } from '../config/multiplayer.js';
 import { EventBus } from '../core/EventBus.js';
 
 const TOKEN_KEY = 'jokenghost_mp_token';
+const NICK_KEY = 'jokenghost_mp_nick';
 const WAKE_LIMIT_MS = 120000; // o plano grátis do Render dorme e leva ~1 min para acordar
 
 const SERVER_EVENTS = [
-  'welcome', 'profile', 'lobby', 'ranking', 'queue_state',
-  'challenge_received', 'challenge_sent', 'challenge_declined',
-  'room_created', 'match_start', 'match_resume', 'card_phase', 'weapon_phase',
-  'card_locked', 'weapon_locked', 'opponent_ready', 'opponent_weapon', 'opponent_status',
-  'round_result', 'match_end', 'error_msg',
+  'welcome', 'profile', 'lobby', 'ranking', 'queue_state', 'season_reward',
+  'challenge_received', 'challenge_sent', 'challenge_declined', 'room_created',
+  'tournament_state', 'king_state',
+  'match_start', 'match_resume', 'card_phase', 'weapon_phase', 'card_locked', 'weapon_locked',
+  'seat_ready', 'vision', 'seat_status', 'spectators', 'emote', 'round_result',
+  'raid_phase', 'raid_result', 'match_end', 'error_msg',
 ];
 
 export class MultiplayerClient extends EventBus {
@@ -20,7 +22,9 @@ export class MultiplayerClient extends EventBus {
     this.socket = null;
     this.profile = null;
     this.catalog = null;
-    this.lobby = { online: [], count: 0 };
+    this.lobby = { online: [], count: 0, queues: {}, tournament: { waiting: 0, size: 8 }, king: null };
+    this.tournament = null; // último estado do torneio em que estou
+    this.king = null;       // último estado do Rei da Arena (se estou nele)
   }
 
   get connected() { return !!this.socket?.connected && !!this.profile; }
@@ -73,13 +77,45 @@ export class MultiplayerClient extends EventBus {
       this.catalog = data.catalog;
     }
     if (ev === 'profile') this.profile = data;
-    if (ev === 'match_end') this.profile = data.profile;
+    if (ev === 'match_end' && data.profile) this.profile = data.profile;
     if (ev === 'lobby') this.lobby = data;
+    if (ev === 'tournament_state') this.tournament = data;
+    if (ev === 'king_state') this.king = data;
     this.emit(ev, data);
   }
 
   /** Código da conta (para usar em outro aparelho). */
   get accountCode() { return this.storage.getItem(TOKEN_KEY) ?? ''; }
+  get nickname() { return this.storage.getItem(NICK_KEY) ?? ''; }
+  rememberNickname(nick) { this.storage.setItem(NICK_KEY, nick); }
+
+  // ─── HTTP (ranking do Desafio do Dia) ─────────────────────────
+  async #http(path, body = null) {
+    const res = await fetch(`${serverUrl()}${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(20000),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error ?? 'O servidor não respondeu.');
+    return data;
+  }
+
+  /** Top 20 do dia. */
+  getDaily(day) { return this.#http(`/api/daily?day=${encodeURIComponent(day)}`); }
+
+  /** Minha posição no dia (null se não tenho conta). */
+  async getMyDaily(day) {
+    return this.accountCode ? this.#http('/api/daily/me', { token: this.accountCode, day }) : null;
+  }
+
+  /** Envia as jogadas da corrida; na primeira vez o servidor cria a conta e devolve o código. */
+  async submitDaily({ day, actions }) {
+    const r = await this.#http('/api/daily', { token: this.accountCode || undefined, nickname: this.nickname, day, actions });
+    if (r.token) this.storage.setItem(TOKEN_KEY, r.token);
+    return r;
+  }
   useAccountCode(code) {
     this.storage.setItem(TOKEN_KEY, code.trim());
     this.profile = null;
@@ -88,9 +124,21 @@ export class MultiplayerClient extends EventBus {
 
   setNickname(nickname) { this.socket.emit('set_nickname', { nickname }); }
   selectCharacter(id) { this.socket.emit('select_character', { id }); }
+  setDeck(cards) { this.socket.emit('set_deck', { cards }); }
   requestRanking() { this.socket.emit('ranking'); }
-  queueJoin() { this.socket.emit('queue_join'); }
+  claimMission(id) { this.socket.emit('missions_claim', { id }); }
+  buy(id) { this.socket.emit('shop_buy', { id }); }
+  equipFrame(id) { this.socket.emit('equip_frame', { id }); }
+  /** mode: 'ranked' | 'casual' | 'duo' | 'raid' */
+  queueJoin(mode = 'ranked') { this.socket.emit('queue_join', { mode }); }
   queueLeave() { this.socket.emit('queue_leave'); }
+  tournamentJoin() { this.socket.emit('tournament_join'); }
+  tournamentLeave() { this.tournament = null; this.socket?.emit('tournament_leave'); }
+  kingJoin() { this.socket.emit('king_join'); }
+  kingLeave() { this.king = null; this.socket?.emit('king_leave'); }
+  spectate(playerId) { this.socket.emit('spectate', { playerId }); }
+  stopSpectating() { this.socket?.emit('spectate_leave'); }
+  emote(id) { this.socket.emit('emote', { id }); }
   challenge(targetId) { this.socket.emit('challenge', { targetId }); }
   answerChallenge(fromId, accept) { this.socket.emit('challenge_answer', { fromId, accept }); }
   createRoom() { this.socket.emit('room_create'); }

@@ -102,8 +102,14 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
   grid-template-columns: 320px minmax(0, 1fr) 380px;
   gap: 20px;
 }
-.lobby-profile { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 32px 24px; text-align: center; text-shadow: var(--outline); }
-.lb-avatar { width: 192px; height: 192px; image-rendering: pixelated; }
+.lobby-profile { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 22px; text-align: center; text-shadow: var(--outline); }
+.lb-avatar-wrap { position: relative; width: 160px; height: 160px; }
+.lb-avatar { width: 160px; height: 160px; image-rendering: pixelated; }
+.lb-frame { position: absolute; inset: -8px; width: 176px; height: 176px; image-rendering: pixelated; pointer-events: none; }
+.lp-wallet { display: flex; align-items: center; gap: 6px; color: var(--green-2); }
+.lp-wallet b { font-weight: normal; color: var(--white); }
+.lp-wallet span { margin-right: 10px; color: var(--fog); }
+.lp-season { color: var(--purple-2); }
 .lp-name { display: flex; align-items: baseline; gap: 6px; padding: 4px 10px; border: 0; background: none; color: var(--white); font: inherit; font-size: 24px; line-height: 32px; text-shadow: var(--outline); cursor: pointer; }
 .lp-name:hover { color: var(--gold); }
 .lp-trophies { display: flex; align-items: center; gap: 10px; font-size: 32px; line-height: 40px; color: var(--gold); }
@@ -112,11 +118,18 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .lp-record { color: var(--fog); }
 .lp-next { margin-top: auto; color: var(--green-2); }
 
-.lobby-actions { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 12px; }
+.lobby-actions { display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 0 12px; }
+.lb-row { display: flex; gap: 10px; }
+.lb-row > .btn { flex: 1 1 0; min-width: 0; padding-inline: 12px; }
 .lb-join-row { gap: 8px; }
-.lb-join-row .field { flex: 1; }
-.lobby-tabs { display: flex; gap: 8px; }
-.lobby-tabs .btn { flex: 1 1 auto; min-width: 0; padding-inline: 10px; gap: 6px; }
+.lb-join-row .field { flex: 1; min-width: 0; }
+.lb-join-row > .btn { flex: none; }
+/* 5 abas: 3 em cima e 2 embaixo */
+.lobby-tabs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.lobby-tabs .btn { grid-column: span 2; min-width: 0; padding-inline: 8px; gap: 6px; }
+.lobby-tabs .btn:nth-child(4) { grid-column: 2 / span 2; }
+.lobby-tabs .btn { position: relative; }
+.badge { position: absolute; top: -6px; right: -6px; min-width: 24px; height: 24px; padding: 0 6px; line-height: 24px; background: var(--red); color: var(--white); font-style: normal; box-shadow: 0 0 0 2px var(--ink); }
 .mp-status { min-height: 24px; color: var(--cyan); text-shadow: var(--outline); text-align: center; }
 
 .lobby-online { display: flex; flex-direction: column; gap: 10px; padding: 32px 20px; overflow: hidden; }
@@ -128,6 +141,7 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .online-row .btn-sm { padding-inline: 12px; }
 .online-row small { color: var(--fog); display: flex; align-items: center; gap: 4px; }
 .online-row.s-match small, .online-row.s-queue small { color: var(--orange); }
+.online-row .btn-sm .ico-xs { width: 24px; height: 24px; }
 .online-empty { color: var(--mist); padding: 12px; }
 
 .lobby-overlay {
@@ -228,3 +242,116 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 #challenge-fill { width: 100%; height: 100%; background: var(--orange); }
 .field-secret { font-size: 16px; -webkit-text-security: disc; }
 .field-secret:focus { -webkit-text-security: none; }
+
+/* ─── Desafio do Dia ─── */
+.daily-me { color: var(--gold); text-shadow: var(--outline); text-align: center; }
+#daily-list .rank-row { grid-template-columns: 56px 48px minmax(0, 1fr) 32px 110px 80px; }
+.rank-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-score { font-weight: normal; color: var(--gold); text-align: right; }
+.daily-status { color: var(--cyan); text-shadow: var(--outline); text-align: center; pointer-events: auto; }
+
+/* ─── torneio e Rei da Arena ─── */
+.overlay-card h3 { display: flex; align-items: center; gap: 12px; justify-content: center; }
+.tour-card { min-width: 760px; }
+.bracket { display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; max-width: 900px; }
+.bracket-col { display: flex; flex-direction: column; justify-content: space-around; gap: 12px; min-width: 200px; }
+.bracket-title { font-weight: normal; color: var(--gold); }
+.bracket-match { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone); }
+.bracket-name { overflow: hidden; color: var(--fog); text-overflow: ellipsis; white-space: nowrap; }
+.bracket > .bracket-name { padding: 4px 10px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone); }
+.bracket-name.won { color: var(--green-2); }
+.bracket-name.lost { color: var(--mist); text-decoration: line-through; }
+.bracket-name.me { color: var(--gold); }
+.king-card { min-width: 520px; }
+.king-throne { display: flex; align-items: center; gap: 16px; }
+.king-throne b { font-weight: normal; font-size: 24px; color: var(--gold); }
+.king-throne p { color: var(--fog); }
+.king-line { list-style: decimal inside; display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; color: var(--fog); pointer-events: auto; }
+.king-line li.me { color: var(--gold); }
+
+/* ─── modos ─── */
+.modes-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; width: 100%; }
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 14px;
+  border: 2px solid transparent;
+  border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 24px / 0 stretch;
+  text-align: center;
+  text-shadow: var(--outline);
+}
+.mode-card b { font-weight: normal; color: var(--gold); }
+.mode-card p { flex: 1; color: var(--fog); }
+.mode-card small { color: var(--cyan); }
+
+/* ─── deck ─── */
+.deck-slots { display: grid; grid-template-columns: repeat(8, auto); justify-content: center; gap: 10px; min-height: 96px; pointer-events: auto; }
+.deck-slot-empty { width: calc(46 * 1.5px); height: calc(62 * 1.5px); background: var(--ink-2); box-shadow: inset 0 0 0 2px var(--stone); }
+.deck-label { width: 100%; color: var(--gold); text-shadow: var(--outline); }
+.deck-label small { color: var(--fog); }
+.card-grid.deck-collection { padding-top: 110px; margin-top: -96px; gap: 10px; min-height: 0; overflow-y: auto; pointer-events: auto; }
+.pcard.in-deck { filter: brightness(0.45) grayscale(0.6); }
+
+/* ─── missões ─── */
+.mission-list { list-style: none; display: flex; flex-direction: column; gap: 10px; width: 640px; max-width: 100%; }
+.mission-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; padding: 10px 14px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--ink-3); text-shadow: var(--outline); }
+.mission-row.done { box-shadow: 0 0 0 2px var(--green); }
+.mission-row.claimed { opacity: 0.6; }
+.mission-text { display: flex; flex-direction: column; gap: 4px; }
+.mission-text b { font-weight: normal; }
+.mission-text small { color: var(--fog); }
+.mission-bar { height: 8px; background: var(--ink); box-shadow: 0 0 0 2px var(--ink-3); }
+.mission-bar i { display: block; height: 100%; background: var(--green-2); }
+.mission-reward { display: flex; align-items: center; gap: 4px; color: var(--green-2); }
+
+/* ─── loja de Ecto ─── */
+.shop-body { display: flex; flex-direction: column; gap: 10px; width: 100%; min-height: 0; overflow-y: auto; pointer-events: auto; }
+.shop-section { width: 100%; font-weight: normal; color: var(--gold); text-shadow: var(--outline); }
+.shop-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; width: 100%; }
+.shop-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 2px solid transparent;
+  border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 24px / 0 stretch;
+  text-align: center;
+  text-shadow: var(--outline);
+}
+.shop-item b { min-height: 48px; }
+.shop-item.equipped { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
+.shop-item b { font-weight: normal; }
+.shop-frame { width: 64px; height: 64px; image-rendering: pixelated; }
+.shop-season { color: var(--purple-2); }
+.shop-item .btn .ico-xs { width: 24px; height: 24px; }
+
+/* ─── duelo: histórico, espectadores, expressões ─── */
+.duel-opp .sb-foot { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.duel-history { display: flex; gap: 2px; }
+.duel-history .ico-xs { width: 24px; height: 24px; }
+.duel-spect { display: flex; align-items: center; gap: 6px; padding: 8px 12px; color: var(--fog); background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone); text-shadow: var(--outline); }
+.emote-bar { position: absolute; top: 88px; right: 16px; z-index: 5; display: flex; gap: 6px; padding: 8px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone), 0 0 0 4px var(--ink); pointer-events: auto; animation: pop 0.2s ease-out both; }
+.emote-btn { width: 56px; height: 56px; padding: 4px; border: 0; background: none; cursor: pointer; }
+.emote-btn .ico { width: 48px; height: 48px; }
+.emote-btn:hover { background: var(--ink-3); }
+.btn-action.forbidden { opacity: 0.5; text-decoration: line-through; }
+
+/* ─── chefe cooperativo ─── */
+#screen-raid { justify-content: flex-start; }
+.raid-boss { position: absolute; top: 16px; left: 16px; width: 460px; }
+.raid-boss .boss-pips { display: flex; gap: 4px; }
+.raid-boss .boss-pips i { width: 14px; height: 8px; background: var(--ink-3); box-shadow: 0 0 0 2px var(--ink); }
+.raid-boss .boss-pips i.on { background: var(--red); }
+.raid-hunters { position: absolute; right: 24px; top: 372px; display: flex; flex-direction: column; gap: 6px; width: 400px; }
+.raid-hunter { flex-direction: row; align-items: center; gap: 12px; padding: 8px 16px 10px; }
+.raid-hunter .sb-head { flex: none; width: 150px; }
+.raid-hunter .sb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.raid-hunter .sb-hp { flex: 1; }
+.raid-hunter .sb-foot { align-self: center; min-width: 64px; text-align: right; }
+.raid-hunter.me { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
+.raid-hunter.dead { opacity: 0.45; }
+#raid-timer-fill { width: 0; height: 100%; background: var(--cyan); }
+#raid-timer-fill.low { background: var(--red); }
