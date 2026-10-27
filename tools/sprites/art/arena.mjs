@@ -1,179 +1,132 @@
 // Arte da Arena (multiplayer): cartas novas, expressões, moedas e molduras de avatar.
+// Os ícones usam o estilo de volume (lib/volume.mjs); as molduras são interface e ficam em 64x64.
 import { Grid } from '../lib/grid.mjs';
-import { estaca, aspirador, cruz, visao } from './icons.mjs';
-
-const finish = (g, { shade = true, outline = 'k' } = {}) => {
-  if (shade) g.shade();
-  if (outline) g.outline(outline);
-  return g;
-};
-
-/** Ícone de arma com um efeito por cima (cartas de arma). */
-function weaponCard(base, aura) {
-  const g = new Grid();
-  for (let i = 0; i < 12; i++) {
-    const a = i * Math.PI / 6;
-    g.line(32, 32, Math.round(32 + Math.cos(a) * 30), Math.round(32 + Math.sin(a) * 30), `${aura}@50`);
-  }
-  g.blit(base);
-  return g;
-}
+import { mat } from '../lib/volume.mjs';
+import { desenhaEstaca, desenhaAspirador, desenhaCruz, visao, raios, faisca } from './icons.mjs';
+import {
+  icone, OURO, PRATA, METAL, FERRO, MADEIRA, BRANCO, OSSO, ECTO, VERMELHO, LARANJA, AMARELO, VERDE, ROXO, LILAS, PELE,
+} from './materiais.mjs';
 
 // ─── cartas novas ─────────────────────────────────────────────
-const estacaPrata = () => {
-  const g = weaponCard(estaca().recolor({ m4: 't4', m5: 't5', m3: 't3', m6: 'w', m2: 't2' }), 'b5');
-  g.px([[50, 8], [52, 6], [56, 12]], 'w');
-  return g;
-};
-const aspiradorTurbo = () => {
-  const g = weaponCard(aspirador(), 'v5');
-  for (const y of [12, 20, 28]) g.line(4, y, 14, y, 'v5');
-  return g;
-};
-const cruzFlamejante = () => {
-  const g = new Grid();
-  for (const [x, h] of [[20, 24], [32, 34], [44, 24]]) g.poly([[x - 9, 62], [x + 9, 62], [x, 62 - h - 20]], 'o3');
-  for (const [x, h] of [[26, 20], [38, 20]]) g.poly([[x - 6, 62], [x + 6, 62], [x, 62 - h - 14]], 'y3');
-  g.blit(cruz());
-  return g;
-};
+const estacaPrata = () => icone((m) => {
+  m.backdrop((g) => raios(g, 16, 16, 15, 'b5', 12));
+  desenhaEstaca(m, { haste: PRATA, ponta: { ...PRATA, tones: ['t3', 't4', 't5', 'w', 'w'] }, anel: OURO, veio: 't3', luz: 'w' });
+  m.overlay((g) => { faisca(g, 26, 9); faisca(g, 6, 7, 'b5'); });
+});
 
-function provocacao() {
-  const g = new Grid();
-  // balão de fala bravo com "!!": provoca o oponente
-  g.ellipse(32, 26, 26, 18, 'r3');
-  g.poly([[14, 38], [24, 42], [10, 56]], 'r3');
-  g.shade({ depth: 2 });
-  for (const x of [24, 38]) {
-    g.rect(x, 12, 5, 18, 'w');
-    g.rect(x, 34, 5, 5, 'w');
+const aspiradorTurbo = () => icone((m) => {
+  m.backdrop((g) => { for (const y of [6, 12, 18, 24]) g.line(0, y, 5, y, 'v5'); raios(g, 26, 8, 6, 'v5', 8); });
+  desenhaAspirador(m, { visor: 'v5', brilho: 'w' });
+  m.overlay((g) => { faisca(g, 29, 4, 'v6'); faisca(g, 24, 2, 'v5'); });
+});
+
+const cruzFlamejante = () => icone((m) => {
+  // labaredas separadas (cada uma com volume), a de fora laranja e o miolo amarelo
+  for (const [x, h, w] of [[6, 16, 5], [26, 16, 5], [11, 22, 5], [21, 22, 5]]) {
+    m.part(LARANJA, 'sphere', (p) => p.poly([[x - w, 31], [x + w, 31], [x + 1, 31 - h]], 'x'), { light: 1 });
+    m.part(AMARELO, 'sphere', (p) => p.poly([[x - 2, 31], [x + 2, 31], [x + 1, 31 - h * 0.55]], 'x'), { edge: false });
   }
-  g.px([[56, 8], [58, 6], [60, 10], [6, 8], [4, 10]], 'y3');
-  return finish(g, { shade: false });
-}
+  desenhaCruz(m);
+});
 
-function disfarce() {
-  const g = new Grid();
-  // máscara de baile com olhos vazados
-  g.ellipse(32, 30, 26, 14, 'p3');
-  g.poly([[6, 30], [16, 20], [12, 38]], 'p3');
-  g.poly([[58, 30], [48, 20], [52, 38]], 'p3');
-  g.shade({ depth: 2 });
-  g.ellipse(21, 30, 7, 5, null);
-  g.ellipse(43, 30, 7, 5, null);
-  g.ring(21, 30, 7, 1, 'y3');
-  g.ring(43, 30, 7, 1, 'y3');
-  g.stroke(52, 38, 58, 58, 2, 'm4');
-  return finish(g, { shade: false });
-}
+const provocacao = () => icone((m) => {
+  m.part(VERMELHO, 'sphere', (p) => { p.ellipse(16, 13, 13, 9, 'x'); p.poly([[7, 19], [12, 21], [4, 29]], 'x'); });
+  m.paint((g) => { for (const x of [12, 19]) { g.rect(x, 7, 3, 8, 'w'); g.rect(x, 17, 3, 2, 'w'); } });
+  m.overlay((g) => { faisca(g, 29, 3, 'y3'); faisca(g, 3, 4, 'y3'); });
+});
+
+const disfarce = () => icone((m) => {
+  m.part(MADEIRA, 'cylinder', (p) => p.stroke(25, 19, 29, 30, 2, 'x'));
+  m.part(ROXO, 'hcylinder', (p) => {
+    p.ellipse(16, 15, 13, 7, 'x');
+    p.poly([[3, 15], [8, 9], [6, 19]], 'x');
+    p.poly([[29, 15], [24, 9], [26, 19]], 'x');
+  });
+  m.cut((p) => { p.ellipse(10, 15, 3, 2, 'x'); p.ellipse(22, 15, 3, 2, 'x'); });
+  m.paint((g) => { g.ring(10, 15, 4, 1, 'y3'); g.ring(22, 15, 4, 1, 'y3'); g.set(16, 10, 'y4'); });
+});
 
 // ─── expressões ───────────────────────────────────────────────
-/** Carinha redonda base das expressões. */
-function face(fill = 'y3') {
-  const g = new Grid();
-  g.circle(32, 32, 24, fill);
-  g.shade({ depth: 2 });
-  return g;
+/** Carinha redonda das expressões. */
+function cara(material, detalhes) {
+  return icone((m) => {
+    m.part(material, 'sphere', (p) => p.circle(16, 16, 13, 'x'));
+    detalhes(m);
+  });
 }
 
-function emoteRisada() {
-  const g = face();
-  g.line(18, 24, 24, 20, 'k').line(24, 20, 28, 24, 'k');
-  g.line(36, 24, 40, 20, 'k').line(40, 20, 46, 24, 'k');
-  g.ellipse(32, 38, 12, 8, 'k2');
-  g.erase((x, y) => y < 36 && Math.hypot((x - 32) / 12, (y - 38) / 8) < 1);
-  g.rect(22, 36, 20, 2, 'w');
-  g.ellipse(32, 43, 6, 2, 'r3');
-  g.px([[10, 22], [9, 24], [54, 22], [55, 24]], 'c4'); // lágrimas de rir
-  return finish(g, { shade: false });
-}
+const emoteRisada = () => cara(AMARELO, (m) => m.paint((g) => {
+  g.line(8, 12, 11, 10, 'k').line(11, 10, 13, 12, 'k');
+  g.line(19, 12, 21, 10, 'k').line(21, 10, 24, 12, 'k');
+  g.ellipse(16, 19, 6, 4, 'k2');
+  g.erase((x, y) => y < 18 && Math.hypot((x - 16) / 6, (y - 19) / 4) < 1.1);
+  g.rect(11, 18, 11, 1, 'w');
+  g.ellipse(16, 22, 3, 1, 'r3');
+}));
 
-function emoteGg() {
-  const g = face('v4');
-  // polegar para cima
-  g.rect(22, 28, 18, 18, 's4');
-  g.rect(26, 14, 8, 16, 's4');
-  g.rect(40, 30, 4, 4, 's3'); g.rect(40, 35, 4, 4, 's3'); g.rect(40, 40, 4, 4, 's3');
-  g.shade();
-  g.line(26, 30, 26, 44, 's2');
-  return finish(g, { shade: false });
-}
+const emoteGg = () => cara(VERDE, (m) => {
+  // joinha: punho fechado com o polegar para cima
+  m.part(mat('s5', { line: 's2' }), 'sphere', (p) => { p.rect(9, 14, 13, 10, 'x'); p.rect(10, 5, 6, 11, 'x'); });
+  m.paint((g) => { for (const y of [16, 19, 22]) g.rect(19, y, 3, 1, 's2'); g.line(16, 9, 16, 14, 's2'); });
+});
 
-function emoteSusto() {
-  const g = face('gh4');
-  g.circle(22, 26, 6, 'w'); g.circle(42, 26, 6, 'w');
-  g.circle(22, 26, 2, 'k'); g.circle(42, 26, 2, 'k');
-  g.ellipse(32, 44, 6, 8, 'k2');
-  g.px([[50, 12], [52, 16], [12, 12]], 'b4');
-  return finish(g, { shade: false });
-}
+const emoteSusto = () => cara(mat('gh4', { line: 'gh1' }), (m) => m.paint((g) => {
+  g.circle(11, 13, 3, 'w'); g.circle(21, 13, 3, 'w');
+  g.rect(11, 13, 1, 1, 'k'); g.rect(21, 13, 1, 1, 'k');
+  g.ellipse(16, 22, 3, 4, 'k2');
+}));
 
-function emoteRaiva() {
-  const g = face('r3');
-  g.line(16, 20, 28, 26, 'k').line(48, 20, 36, 26, 'k');
-  g.rect(20, 28, 6, 4, 'k'); g.rect(38, 28, 6, 4, 'k');
-  g.rect(22, 42, 20, 4, 'k2');
-  g.px([[24, 42], [28, 45], [32, 42], [36, 45], [40, 42]], 'w');
-  for (const [x, y] of [[48, 8], [54, 12], [50, 14]]) g.set(x, y, 'k'); // veia
-  return finish(g, { shade: false });
-}
+const emoteRaiva = () => cara(VERMELHO, (m) => {
+  m.paint((g) => {
+    g.line(7, 9, 13, 12, 'k').line(25, 9, 19, 12, 'k');
+    g.rect(10, 13, 3, 2, 'k'); g.rect(19, 13, 3, 2, 'k');
+    g.rect(10, 20, 12, 3, 'k2');
+    for (const x of [11, 14, 17, 20]) g.set(x, 20, 'w');
+  });
+  m.overlay((g) => g.px([[25, 2], [27, 4], [25, 5], [28, 1]], 'k'));
+});
 
-function emoteCoracao() {
-  const g = new Grid();
-  for (const [x, y, r] of [[22, 24, 13], [42, 24, 13]]) g.circle(x, y, r, 'r3');
-  g.poly([[9, 28], [55, 28], [32, 56]], 'r3');
-  g.shade({ depth: 2 });
-  g.px([[16, 18], [17, 17], [18, 17]], 'r5');
-  return finish(g, { shade: false });
-}
+const emoteCoracao = () => icone((m) => {
+  m.part(VERMELHO, 'sphere', (p) => { p.circle(10, 12, 7, 'x'); p.circle(22, 12, 7, 'x'); p.poly([[3, 14], [29, 14], [16, 29]], 'x'); });
+  m.overlay((g) => { faisca(g, 28, 4, 'r5'); g.set(4, 4, 'r5'); });
+});
 
-function emoteCaveira() {
-  const g = new Grid();
-  g.ellipse(32, 28, 22, 20, 'q4');
-  g.rect(20, 40, 24, 14, 'q4');
-  g.shade({ depth: 2 });
-  g.ellipse(23, 30, 6, 7, 'k'); g.ellipse(41, 30, 6, 7, 'k');
-  g.set(23, 30, 'r3'); g.set(41, 30, 'r3');
-  g.poly([[30, 38], [34, 38], [32, 44]], 'k');
-  for (let x = 22; x <= 40; x += 4) g.rect(x, 48, 2, 6, 'k2');
-  return finish(g, { shade: false });
-}
+const emoteCaveira = () => icone((m) => {
+  m.part(OSSO, 'sphere', (p) => { p.ellipse(16, 13, 11, 10, 'x'); p.rect(10, 20, 13, 8, 'x'); });
+  m.paint((g) => {
+    g.ellipse(11, 14, 3, 3, 'k'); g.ellipse(21, 14, 3, 3, 'k');
+    g.set(11, 14, 'r3'); g.set(21, 14, 'r3');
+    g.poly([[15, 19], [18, 19], [16.5, 22]], 'k2');
+    for (const x of [12, 15, 18, 21]) g.rect(x, 25, 1, 3, 'q1');
+  });
+});
 
 // ─── moedas e símbolos ────────────────────────────────────────
 /** Ecto: gota de energia fantasma (moeda dos cosméticos). */
-function ecto() {
-  const g = new Grid();
-  g.circle(32, 38, 18, 'v4');
-  g.poly([[18, 32], [46, 32], [32, 4]], 'v4');
-  g.shade({ depth: 2 });
-  g.ellipse(26, 34, 4, 6, 'v6');
-  g.rect(26, 40, 3, 4, 'k2'); g.rect(36, 40, 3, 4, 'k2');
-  return finish(g, { shade: false });
-}
+const ecto = () => icone((m) => {
+  m.part(mat('v4', { line: 'v1' }), 'sphere', (p) => { p.circle(16, 19, 10, 'x'); p.poly([[8, 16], [24, 16], [16, 2]], 'x'); });
+  m.paint((g) => { g.rect(12, 19, 2, 3, 'k2'); g.rect(18, 19, 2, 3, 'k2'); g.rect(14, 24, 4, 1, 'v2'); });
+});
 
-/** Taça de torneio. */
-function taca() {
-  const g = new Grid();
-  g.poly([[14, 8], [50, 8], [46, 30], [18, 30]], 'y3');
-  g.ellipse(32, 30, 14, 8, 'y3');
-  g.rect(28, 36, 8, 12, 'y2');
-  g.rect(18, 48, 28, 8, 'm3');
-  g.ring(12, 18, 6, 2, 'y2'); g.ring(52, 18, 6, 2, 'y2');
-  g.shade({ depth: 2 });
-  g.rect(22, 50, 20, 2, 'y3');
-  return finish(g, { shade: false });
-}
+/** Taça de torneio: bojo largo e alças grandes. */
+const taca = () => icone((m) => {
+  for (const side of [-1, 1]) {
+    m.part(OURO, 'sphere', (p) => { p.ring(16 + side * 11, 10, 4, 2, 'x'); p.erase((x) => (side < 0 ? x > 7 : x < 25)); }, { edge: false });
+  }
+  m.part(OURO, 'cylinder', (p) => { p.poly([[6, 4], [26, 4], [24, 13], [8, 13]], 'x'); p.ellipse(16, 13, 8, 5, 'x'); });
+  m.part(OURO, 'cylinder', (p) => p.rect(14, 18, 5, 6, 'x'));
+  m.part(MADEIRA, 'cylinder', (p) => p.rect(9, 24, 15, 5, 'x'));
+  m.paint((g) => { g.rect(12, 26, 9, 1, 'y3'); g.rect(10, 6, 1, 4, 'w'); });
+});
 
 /** Coroa do Rei da Arena. */
-function coroa() {
-  const g = new Grid();
-  g.poly([[8, 50], [56, 50], [58, 18], [44, 32], [32, 12], [20, 32], [6, 18]], 'y3');
-  g.rect(8, 50, 48, 6, 'y2');
-  g.shade({ depth: 2 });
-  g.circle(32, 40, 4, 'r3'); g.circle(18, 42, 3, 'c4'); g.circle(46, 42, 3, 'c4');
-  g.circle(32, 12, 3, 'y4'); g.circle(6, 18, 3, 'y4'); g.circle(58, 18, 3, 'y4');
-  return finish(g, { shade: false });
-}
+const coroa = () => icone((m) => {
+  m.part(OURO, 'cylinder', (p) => p.poly([[4, 25], [28, 25], [29, 9], [22, 16], [16, 6], [10, 16], [3, 9]], 'x'));
+  m.part(OURO, 'hcylinder', (p) => p.rect(4, 24, 25, 4, 'x'));
+  m.part(VERMELHO, 'sphere', (p) => p.circle(16, 19, 2, 'x'));
+  m.part(mat('c4', { line: 'c1' }), 'sphere', (p) => { p.circle(9, 20, 1.5, 'x'); p.circle(23, 20, 1.5, 'x'); });
+  m.part(AMARELO, 'sphere', (p) => { p.circle(16, 5, 2, 'x'); p.circle(3, 8, 2, 'x'); p.circle(29, 8, 2, 'x'); });
+});
 
 /** Olho (assistir uma partida). */
 const assistir = () => visao();

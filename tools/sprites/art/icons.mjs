@@ -1,727 +1,510 @@
-// Ícones 64x64: armas, ataques inimigos, itens, HUD e perks.
-import { Grid, stamp } from '../lib/grid.mjs';
+// Ícones (estilo de volume, desenhados em 32x32 e ampliados para 64x64):
+// armas, golpes dos monstros, itens, interface, cartas e ligas.
+import {
+  icone, OURO, PRATA, METAL, FERRO, MADEIRA, MADEIRA_CLARA, PERGAMINHO, OSSO, BRANCO, VIDRO, ECTO,
+  VERMELHO, LARANJA, VERDE, VERDE_ESCURO, CIANO, AZUL, ROXO, LILAS, PELE, PELE_ESCURA, CINZA, CINZA_ESCURO, PEDRA, SOMBRA,
+} from './materiais.mjs';
+import { mat } from '../lib/volume.mjs';
 
-const finish = (g, { shade = true, outline = 'k' } = {}) => {
-  if (shade) g.shade();
-  if (outline) g.outline(outline);
-  return g;
-};
-
-/** Barra diagonal com largura `w` entre dois pontos (para estacas, espadas...). */
-function bar(g, x0, y0, x1, y1, w, c) {
-  const len = Math.hypot(x1 - x0, y1 - y0);
-  const nx = -(y1 - y0) / len * w / 2, ny = (x1 - x0) / len * w / 2;
-  g.poly([[x0 + nx, y0 + ny], [x1 + nx, y1 + ny], [x1 - nx, y1 - ny], [x0 - nx, y0 - ny]], c);
-}
-
-// ─── armas do Caçador ─────────────────────────────────────────
-export function estaca() {
-  const g = new Grid();
-  bar(g, 10, 54, 38, 26, 14, 'm4');
-  g.poly([[32, 21], [43, 32], [56, 8]], 'm5');     // ponta afiada
-  g.shade({ depth: 2 });
-  // lascas da ponta talhada
-  g.line(36, 25, 52, 12, 'm6').line(40, 29, 50, 17, 'm6');
-  // veios da madeira
-  g.line(14, 44, 30, 28, 'm3').line(18, 50, 34, 34, 'm3').line(22, 42, 27, 37, 'm2');
-  // anel de ferro
-  bar(g, 15, 39, 25, 49, 5, 'g4');
-  g.line(16, 41, 23, 48, 'g5');
-  g.px([[55, 9], [54, 11]], 'r3');                 // sangue na ponta
-  g.set(52, 13, 'r2');
-  return finish(g, { shade: false });
-}
-
-export function aspirador() {
-  const g = new Grid();
-  const B = new Grid();
-  B.rect(8, 22, 26, 30, 'g3');
-  B.rect(10, 20, 22, 2, 'g3'); B.rect(10, 52, 22, 2, 'g3');
-  B.shade();
-  B.rect(12, 26, 14, 14, 'v2');
-  B.rect(13, 27, 12, 12, 'v4');
-  B.rect(15, 29, 5, 5, 'v6');
-  B.rect(12, 44, 18, 4, 'g2');
-  B.set(30, 24, 'r3');
-  g.blit(B);
-  // mangueira e bocal
-  g.stroke(30, 46, 38, 48, 4, 'g2');
-  g.stroke(38, 48, 44, 40, 4, 'g2');
-  const N = new Grid();
-  bar(N, 42, 42, 56, 26, 7, 'g4');
-  N.poly([[52, 22], [60, 28], [58, 30], [50, 24]], 'g5');
-  N.shade();
-  g.blit(N);
-  // sucção
-  g.px([[60, 18], [57, 16], [62, 22], [55, 13]], 'v5');
-  return finish(g, { shade: false });
-}
-
-export function cruz() {
-  const g = new Grid();
-  // raios de luz sagrada
-  for (let i = 0; i < 8; i++) {
-    const a = i * Math.PI / 4 + Math.PI / 8;
-    g.line(32 + Math.cos(a) * 14, 23 + Math.sin(a) * 14, 32 + Math.cos(a) * 26, 23 + Math.sin(a) * 26, 'y4');
+/** Raios de luz atrás de um ícone (no fundo, sem contorno). */
+export function raios(g, cx, cy, r, c, n = 8) {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.PI / n;
+    g.line(cx, cy, Math.round(cx + Math.cos(a) * r), Math.round(cy + Math.sin(a) * r), c);
   }
-  const C = new Grid();
-  C.rect(27, 6, 10, 52, 'y3');
-  C.rect(14, 18, 36, 10, 'y3');
-  C.shade({ depth: 2 });
-  C.rect(29, 21, 6, 4, 'r3');
-  C.set(30, 22, 'r5');
-  C.px([[29, 9], [29, 10], [16, 20], [17, 20]], 'w');
-  g.blit(C);
-  return finish(g, { shade: false });
 }
 
-// ─── ataques inimigos ─────────────────────────────────────────
-function possessao() {
-  const g = new Grid();
-  // mão fantasmagórica roxa saindo de fumaça
-  g.ellipse(32, 52, 18, 7, 'p2');
-  g.ellipse(32, 36, 11, 10, 'p4');
-  const fingers = [[20, 30, 18, 14], [26, 27, 25, 8], [32, 26, 32, 6], [38, 27, 39, 9], [43, 34, 49, 22]];
-  for (const [x0, y0, x1, y1] of fingers) g.stroke(x0, y0, x1, y1, 5, 'p4');
-  g.rect(24, 40, 16, 12, 'p4');
-  g.shade({ depth: 2 });
-  for (const [, , x1, y1] of fingers) g.set(x1, y1 - 2, 'p5');
-  g.px([[14, 50], [50, 48], [22, 56], [44, 56]], 'p1');
-  return finish(g, { shade: false });
+/** Brilhinho em cruz. */
+export function faisca(g, x, y, c = 'w') {
+  g.px([[x, y], [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]], c);
 }
 
-function assombracao() {
-  const g = new Grid();
-  // ondas de grito
-  for (const r of [26, 20]) g.ring(32, 32, r, 2, 'gh2');
-  const F = new Grid();
-  F.ellipse(32, 30, 12, 13, 'gh4');
-  F.rect(20, 30, 25, 14, 'gh4');
-  for (let x = 20; x <= 44; x += 6) F.ellipse(x + 2, 44, 3, 2, 'gh4');
-  F.shade();
-  g.blit(F);
-  g.ellipse(27, 26, 2, 3, 'k'); g.ellipse(37, 26, 2, 3, 'k');
-  g.ellipse(32, 36, 4, 5, 'k');
-  return finish(g, { shade: false });
+// ═══════════════════════ armas do Caçador ═══════════════════════
+// As armas são "desenhos" que recebem o Model: as cartas da Arena reaproveitam com outro material.
+
+/** Estaca de madeira (ou de outro material, na carta Estaca de Prata). */
+export function desenhaEstaca(m, { haste = MADEIRA, ponta = MADEIRA_CLARA, anel = FERRO, veio = 'm3', luz = 'm6' } = {}) {
+  m.part(haste, 'cylinder', (p) => p.stroke(5, 26, 17, 14, 5, 'x'));
+  m.part(ponta, 'cylinder', (p) => p.poly([[14, 11], [21, 18], [29, 2]], 'x'));
+  m.part(anel, 'cylinder', (p) => p.stroke(6, 24, 8, 22, 6, 'x'));
+  m.paint((g) => { g.line(9, 24, 16, 17, veio); g.line(19, 12, 25, 6, luz); });
+}
+export const estaca = () => icone((m) => desenhaEstaca(m));
+
+/** Aspirador de fantasmas: tanque com visor, mangueira e bocal. */
+export function desenhaAspirador(m, { visor = 'v4', brilho = 'v6' } = {}) {
+  m.part(METAL, 'cylinder', (p) => p.rect(3, 9, 12, 16, 'x'));
+  m.part(CINZA_ESCURO, 'cylinder', (p) => p.stroke(14, 20, 20, 15, 2, 'x'));
+  m.part(PRATA, 'cylinder', (p) => p.stroke(19, 15, 27, 7, 3, 'x'));
+  m.paint((g) => {
+    g.rect(5, 12, 7, 6, 'k2');
+    g.rect(6, 13, 5, 4, visor);
+    g.rect(6, 13, 2, 1, brilho);
+    g.rect(5, 21, 8, 1, 't2');
+    g.set(4, 10, 'r3');
+  });
+}
+export const aspirador = () => icone((m) => {
+  desenhaAspirador(m);
+  m.overlay((g) => { faisca(g, 29, 4, 'v5'); g.set(26, 3, 'v6'); });
+});
+
+/** Cruz de ouro com um rubi. */
+export function desenhaCruz(m) {
+  m.part(OURO, 'cylinder', (p) => p.rect(13, 3, 6, 27, 'x'));
+  m.part(OURO, 'hcylinder', (p) => p.rect(6, 9, 20, 5, 'x'));
+  m.paint((g) => { g.rect(15, 10, 2, 2, 'r3'); g.set(15, 10, 'r5'); });
+}
+export const cruz = () => icone((m) => {
+  m.backdrop((g) => raios(g, 16, 13, 14, 'y4', 8));
+  desenhaCruz(m);
+});
+
+// ═══════════════════════ golpes dos monstros ═══════════════════════
+const possessao = () => icone((m) => {
+  m.part(SOMBRA, 'hcylinder', (p) => p.ellipse(16, 27, 12, 3, 'x'));
+  m.part(LILAS, 'cylinder', (p) => {
+    p.rect(9, 13, 13, 14, 'x');
+    for (const [x, h] of [[9, 9], [12, 11], [15, 12], [18, 11]]) p.rect(x, 13 - h + 4, 3, h, 'x');
+    p.stroke(21, 19, 26, 13, 3, 'x');   // polegar
+  });
+  m.paint((g) => { for (const x of [12, 15, 18]) g.line(x, 9, x, 13, 'p2'); });
+});
+
+const assombracao = () => icone((m) => {
+  m.part(AZUL, 'flat', (p) => { p.ring(16, 16, 14, 2, 'x'); p.ring(16, 16, 10, 1, 'x'); }, { edge: false });
+  m.part(ECTO, 'sphere', (p) => {
+    p.ellipse(16, 14, 6, 6, 'x');
+    p.rect(10, 14, 13, 6, 'x');
+    p.poly([[10, 19], [23, 19], [21, 23], [18, 21], [16, 24], [13, 21], [11, 23]], 'x');
+  });
+  m.paint((g) => { g.rect(13, 12, 2, 3, 'k'); g.rect(18, 12, 2, 3, 'k'); g.ellipse(16, 18, 1, 1, 'k2'); });
+});
+
+const maldicao = () => icone((m) => {
+  m.part(ROXO, 'cylinder', (p) => {
+    p.poly([[5, 28], [27, 28], [26, 12], [22, 18], [20, 6], [16, 14], [12, 5], [10, 17], [6, 11]], 'x');
+  });
+  m.part(OSSO, 'sphere', (p) => { p.ellipse(16, 17, 7, 6, 'x'); p.rect(12, 21, 9, 5, 'x'); });
+  m.paint((g) => {
+    g.rect(12, 16, 3, 3, 'p1'); g.rect(18, 16, 3, 3, 'p1');
+    g.set(13, 17, 'p5'); g.set(19, 17, 'p5');
+    g.set(16, 20, 'k2');
+    for (const x of [13, 15, 17, 19]) g.set(x, 24, 'q1');
+  });
+});
+
+// ═══════════════════════ itens ═══════════════════════
+/** Frasco redondo com líquido; `r` é o raio do bulbo. */
+function frasco(liquido, r, extra) {
+  return icone((m) => {
+    const cy = 30 - r - 1;
+    m.part(VIDRO, 'sphere', (p) => { p.circle(16, cy, r, 'x'); p.rect(14, cy - r - 5, 5, 6, 'x'); });
+    m.part(liquido, 'sphere', (p) => {
+      p.circle(16, cy, r - 1, 'x');
+      p.erase((x, y) => y < cy - 1);
+    }, { edge: false });
+    m.part(MADEIRA, 'hcylinder', (p) => p.rect(13, cy - r - 7, 7, 3, 'x'));
+    m.paint((g) => { g.rect(12, cy - 3, 1, 3, 'w'); g.set(13, cy - 4, 'w'); });
+    extra?.(m, cy);
+  });
 }
 
-function maldicao() {
-  const g = new Grid();
-  // chamas roxas
-  for (const [x, h] of [[18, 14], [26, 22], [34, 26], [42, 20], [48, 12]]) g.poly([[x - 6, 50], [x + 6, 50], [x, 50 - h - 20]], 'p3');
-  // caveira
-  const S = new Grid();
-  S.ellipse(32, 30, 13, 12, 'g5');
-  S.rect(24, 38, 17, 8, 'g5');
-  S.shade();
-  g.blit(S);
-  g.ellipse(27, 30, 3, 3, 'p1'); g.ellipse(37, 30, 3, 3, 'p1');
-  g.set(27, 30, 'p5'); g.set(37, 30, 'p5');
-  g.px([[31, 36], [33, 36], [32, 37]], 'k2');
-  for (let x = 26; x <= 38; x += 3) g.rect(x, 42, 1, 4, 'g3');
-  return finish(g, { shade: false });
+const pocao = () => frasco(VERMELHO, 7);
+const pocaoGrande = () => frasco(VERMELHO, 9, (m) => m.overlay((g) => faisca(g, 27, 8, 'r5')));
+const aguaBenta = () => frasco(AZUL, 8, (m, cy) => m.paint((g) => { g.rect(15, cy - 1, 2, 6, 'w'); g.rect(13, cy + 1, 6, 2, 'w'); }));
+
+const elixir = () => icone((m) => {
+  m.part(VIDRO, 'cylinder', (p) => p.poly([[14, 8], [19, 8], [19, 14], [26, 28], [7, 28], [14, 14]], 'x'));
+  m.part(LARANJA, 'cylinder', (p) => p.poly([[11, 20], [22, 20], [25, 27], [8, 27]], 'x'), { edge: false });
+  m.part(ROXO, 'hcylinder', (p) => p.rect(13, 5, 7, 3, 'x'));
+  m.paint((g) => { g.rect(15, 10, 1, 4, 'w'); g.set(10, 25, 'y4'); });
+  m.overlay((g) => { faisca(g, 4, 9, 'y4'); faisca(g, 28, 13, 'y4'); g.set(27, 4, 'w'); });
+});
+
+const amuleto = () => icone((m) => {
+  m.part(OURO, 'flat', (p) => {
+    for (let i = 0; i < 9; i++) {
+      const a = Math.PI * (1.05 + i * 0.1125);
+      p.circle(16 + Math.cos(a) * 12, 13 + Math.sin(a) * 9, 1, 'x');
+    }
+  }, { edge: false });
+  m.part(OURO, 'sphere', (p) => p.poly([[16, 11], [24, 20], [16, 29], [8, 20]], 'x'));
+  m.part(AZUL, 'sphere', (p) => p.poly([[16, 14], [21, 20], [16, 26], [11, 20]], 'x'), { light: 1 });
+  m.overlay((g) => faisca(g, 14, 17));
+});
+
+const vela = () => icone((m) => {
+  m.part(OURO, 'hcylinder', (p) => p.ellipse(16, 27, 11, 3, 'x'));
+  m.part(BRANCO, 'cylinder', (p) => p.rect(12, 11, 9, 16, 'x'));
+  m.part(LARANJA, 'sphere', (p) => p.poly([[16, 2], [19, 7], [16, 10], [13, 7]], 'x'), { light: 1 });
+  m.paint((g) => { g.rect(15, 6, 2, 3, 'y4'); g.line(16, 10, 16, 11, 'k2'); g.rect(13, 12, 2, 4, 'g5'); });
+});
+
+const moeda = () => icone((m) => {
+  m.part(OURO, 'sphere', (p) => p.circle(16, 16, 13, 'x'));
+  m.paint((g) => {
+    g.ring(16, 16, 10, 1, 'y2');
+    g.ellipse(16, 14, 5, 4, 'y1'); g.rect(13, 17, 7, 4, 'y1');       // caveirinha gravada
+    g.rect(13, 13, 2, 2, 'y3'); g.rect(18, 13, 2, 2, 'y3');
+    for (const x of [14, 16, 18]) g.rect(x, 19, 1, 2, 'y2');
+  });
+});
+
+function coracao(material) {
+  return icone((m) => {
+    m.part(material, 'sphere', (p) => {
+      p.circle(10, 11, 7, 'x'); p.circle(22, 11, 7, 'x');
+      p.poly([[3, 13], [29, 13], [16, 28]], 'x');
+    });
+  });
 }
 
-// ─── itens da loja ────────────────────────────────────────────
-function flask(liquid, { big = false, cross = false } = {}) {
-  const g = new Grid();
-  const r = big ? 17 : 13, cy = big ? 38 : 40;
-  const G = new Grid();
-  G.rect(27, cy - r - 10, 10, 12, 'gh4');           // gargalo
-  G.circle(32, cy, r, 'gh4');
-  G.shade();
-  g.blit(G);
-  const L = new Grid();
-  L.circle(32, cy, r - 2, liquid);
-  L.erase((x, y) => y < cy - r / 3);
-  L.shade();
-  g.blit(L);
-  g.rect(28, cy - r - 2, 8, 2, liquid);
-  g.px([[25, cy - 6], [24, cy - 4], [26, cy - 8]], 'w');            // reflexo
-  // rolha
-  const K = new Grid();
-  K.rect(26, cy - r - 15, 12, 6, 'm4');
-  K.shade();
-  g.blit(K);
-  if (cross) { g.rect(30, cy - 2, 4, 12, 'w'); g.rect(26, cy + 1, 12, 4, 'w'); }
-  // bolhas
-  g.px([[35, cy + 2], [30, cy + 6], [38, cy - 1]], 'w@70');
-  return finish(g, { shade: false });
+function altoFalante(m) {
+  m.part(PRATA, 'cylinder', (p) => { p.rect(4, 12, 6, 9, 'x'); p.poly([[9, 12], [17, 5], [17, 28], [9, 21]], 'x'); });
+}
+const somOn = () => icone((m) => {
+  altoFalante(m);
+  m.part(BRANCO, 'flat', (p) => {
+    for (const r of [6, 10]) { p.ring(17, 16, r, 2, 'x'); }
+    p.erase((x) => x < 20);
+  }, { edge: false });
+});
+const somOff = () => icone((m) => {
+  altoFalante(m);
+  m.part(VERMELHO, 'cylinder', (p) => { p.stroke(20, 11, 28, 21, 3, 'x'); p.stroke(28, 11, 20, 21, 3, 'x'); });
+});
+
+const cadeado = () => icone((m) => {
+  m.part(PRATA, 'cylinder', (p) => { p.ring(16, 12, 7, 3, 'x'); p.erase((x, y) => y > 13); p.rect(9, 12, 3, 4, 'x'); p.rect(20, 12, 3, 4, 'x'); });
+  m.part(OURO, 'cylinder', (p) => p.rect(6, 15, 21, 14, 'x'));
+  m.paint((g) => { g.circle(16, 20, 2, 'k2'); g.rect(15, 21, 3, 5, 'k2'); g.set(16, 20, 'y1'); });
+});
+
+function estrela(material) {
+  return icone((m) => {
+    m.part(material, 'sphere', (p) => {
+      const pts = [];
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 6 : 14;
+        pts.push([16 + Math.cos(a) * r, 17 + Math.sin(a) * r]);
+      }
+      p.poly(pts, 'x');
+    });
+  });
 }
 
-function elixir() {
-  const g = new Grid();
-  const G = new Grid();
-  G.poly([[26, 22], [38, 22], [44, 54], [20, 54]], 'gh4');
-  G.rect(28, 12, 8, 10, 'gh4');
-  G.shade();
-  g.blit(G);
-  const L = new Grid();
-  L.poly([[24, 34], [40, 34], [43, 52], [21, 52]], 'o3');
-  L.shade();
-  g.blit(L);
-  g.rect(27, 7, 10, 6, 'p3');
-  g.px([[24, 26], [23, 30]], 'w');
-  for (const [x, y] of [[48, 16], [14, 22], [50, 40]]) { g.set(x, y, 'y4'); g.set(x - 1, y, 'y3'); g.set(x + 1, y, 'y3'); g.set(x, y - 1, 'y3'); g.set(x, y + 1, 'y3'); }
-  return finish(g, { shade: false });
-}
+const caveira = () => icone((m) => {
+  m.part(OSSO, 'sphere', (p) => { p.ellipse(16, 13, 11, 10, 'x'); p.rect(10, 20, 13, 8, 'x'); });
+  m.paint((g) => {
+    g.ellipse(11, 14, 3, 3, 'k'); g.ellipse(21, 14, 3, 3, 'k');
+    g.set(11, 14, 'r3'); g.set(21, 14, 'r3');
+    g.poly([[15, 19], [18, 19], [16.5, 22]], 'k2');
+    for (const x of [12, 15, 18, 21]) g.rect(x, 25, 1, 3, 'q1');
+  });
+});
 
-function amuleto() {
-  const g = new Grid();
-  // corrente
-  for (let i = 0; i < 9; i++) {
-    const a = Math.PI * (0.15 + i * 0.0875);
-    g.ring(32 + Math.cos(a) * 20, 30 - Math.sin(a) * 22, 2, 1, 'y2');
+const livro = () => icone((m) => {
+  m.part(PERGAMINHO, 'cylinder', (p) => p.rect(9, 4, 19, 25, 'x'));
+  m.part(ROXO, 'cylinder', (p) => p.rect(5, 3, 20, 26, 'x'));
+  m.part(OURO, 'cylinder', (p) => p.rect(5, 3, 3, 26, 'x'), { edge: false });
+  m.paint((g) => {
+    g.ellipse(15, 15, 5, 3, 'w');
+    g.circle(15, 15, 2, 'p1');
+    g.set(15, 15, 'r3');
+    g.frame(9, 6, 13, 19, 'y2');
+  });
+});
+
+const sacola = () => icone((m) => {
+  m.part(MADEIRA, 'sphere', (p) => { p.ellipse(16, 20, 11, 9, 'x'); p.poly([[11, 12], [21, 12], [19, 6], [13, 6]], 'x'); });
+  m.part(MADEIRA_CLARA, 'flat', (p) => { p.circle(12, 5, 2, 'x'); p.circle(20, 5, 2, 'x'); });
+  m.part(OURO, 'hcylinder', (p) => p.rect(11, 11, 11, 2, 'x'));
+  m.paint((g) => {
+    // cifrão: S de pixels com a barra no meio
+    g.rect(14, 16, 5, 1, 'y3'); g.rect(13, 17, 1, 2, 'y3'); g.rect(14, 19, 4, 1, 'y3');
+    g.rect(18, 20, 1, 2, 'y3'); g.rect(13, 22, 5, 1, 'y3'); g.rect(16, 15, 1, 9, 'y4');
+  });
+});
+
+const espadas = () => icone((m) => {
+  for (const s of [-1, 1]) {
+    const x0 = s < 0 ? 4 : 28, x1 = s < 0 ? 26 : 6;
+    m.part(PRATA, 'cylinder', (p) => p.stroke(x0, 3, x1 + s * 0, 23, 3, 'x'));
+    m.part(OURO, 'hcylinder', (p) => p.stroke(x1 - s * 3, 20, x1 + s * 3, 26, 2, 'x'));
+    m.part(MADEIRA, 'cylinder', (p) => p.stroke(x1 + s * 1, 24, x1 + s * 4, 28, 2, 'x'));
   }
-  const P = new Grid();
-  P.poly([[32, 26], [46, 38], [32, 58], [18, 38]], 'y3');
-  P.shade({ depth: 2 });
-  g.blit(P);
-  const J = new Grid();
-  J.poly([[32, 31], [41, 38], [32, 51], [23, 38]], 'b4');
-  J.shade();
-  g.blit(J);
-  g.px([[30, 35], [29, 36], [30, 37]], 'w');
-  return finish(g, { shade: false });
-}
+});
 
-function vela() {
-  const g = new Grid();
-  const C = new Grid();
-  C.rect(25, 28, 14, 26, 'q3');
-  C.ellipse(32, 28, 7, 2, 'q3');
-  C.ellipse(28, 34, 2, 4, 'q3');  // cera escorrendo
-  C.shade();
-  g.blit(C);
-  const P = new Grid();
-  P.ellipse(32, 56, 14, 4, 'y2');
-  P.shade();
-  g.blit(P);
-  g.rect(31, 22, 2, 5, 'k2');
-  g.ellipse(32, 17, 4, 6, 'o3');
-  g.ellipse(32, 18, 2, 4, 'y3');
-  g.set(32, 19, 'w');
-  return finish(g, { shade: false });
-}
+const pausa = () => icone((m) => {
+  m.part(BRANCO, 'cylinder', (p) => { p.rect(8, 5, 6, 22, 'x'); p.rect(18, 5, 6, 22, 'x'); });
+});
 
-// ─── HUD ──────────────────────────────────────────────────────
-function moeda() {
-  const g = new Grid();
-  const C = new Grid();
-  C.circle(32, 32, 22, 'y3');
-  C.shade({ depth: 3 });
-  g.blit(C);
-  g.ring(32, 32, 16, 1, 'y2');
-  // caveirinha cunhada
-  g.ellipse(32, 29, 7, 6, 'y2');
-  g.rect(28, 33, 9, 5, 'y2');
-  g.px([[29, 29], [30, 29], [34, 29], [35, 29]], 'y1');
-  g.px([[30, 36], [32, 36], [34, 36]], 'y3');
-  g.px([[20, 20], [21, 19], [19, 21]], 'y4');
-  return finish(g, { shade: false });
-}
-
-function coracao(fill = 'r3') {
-  const g = new Grid();
-  g.circle(23, 24, 11, fill);
-  g.circle(41, 24, 11, fill);
-  g.poly([[12, 28], [52, 28], [32, 52]], fill);
-  g.shade({ depth: 2 });
-  g.px([[18, 18], [19, 17], [20, 17], [17, 19]], 'w');
-  return finish(g, { shade: false });
-}
-
-function speaker(on) {
-  const g = new Grid();
-  g.rect(10, 24, 10, 16, 'g4');
-  g.poly([[18, 24], [32, 12], [32, 52], [18, 40]], 'g4');
-  g.shade();
-  if (on) {
-    // ondas sonoras: só a metade direita dos anéis
-    const ring = new Grid();
-    ring.ring(30, 32, 10, 3, 'w'); ring.ring(30, 32, 18, 3, 'w');
-    ring.erase((x) => x < 37);
-    g.blit(ring);
-  } else {
-    g.stroke(38, 22, 54, 42, 4, 'r3');
-    g.stroke(54, 22, 38, 42, 4, 'r3');
-  }
-  return finish(g, { shade: false });
-}
-
-function cadeado() {
-  const g = new Grid();
-  g.ring(32, 24, 12, 4, 'g4');
-  const B = new Grid();
-  B.rect(16, 28, 32, 26, 'y3');
-  B.shade({ depth: 2 });
-  g.blit(B);
-  g.circle(32, 38, 3, 'k2');
-  g.rect(31, 40, 3, 7, 'k2');
-  return finish(g, { shade: false });
-}
-
-function estrela(fill = 'y3') {
-  const g = new Grid();
-  const pts = [];
-  for (let i = 0; i < 10; i++) {
-    const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 11 : 26;
-    pts.push([32 + Math.cos(a) * r, 34 + Math.sin(a) * r]);
-  }
-  g.poly(pts, fill);
-  g.shade({ depth: 2 });
-  if (fill === 'y3') g.px([[30, 16], [31, 15], [29, 18]], 'w');
-  return finish(g, { shade: false });
-}
-
-function caveira() {
-  const g = new Grid();
-  const S = new Grid();
-  S.ellipse(32, 28, 18, 17, 'g5');
-  S.rect(21, 38, 23, 14, 'g5');
-  S.shade({ depth: 2 });
-  g.blit(S);
-  g.ellipse(25, 29, 5, 5, 'k2'); g.ellipse(39, 29, 5, 5, 'k2');
-  g.set(24, 28, 'r3'); g.set(38, 28, 'r3');
-  g.poly([[32, 35], [29, 41], [35, 41]], 'k2');
-  for (let x = 24; x <= 40; x += 4) g.rect(x, 46, 1, 6, 'g3');
-  return finish(g, { shade: false });
-}
-
-function livro() {
-  const g = new Grid();
-  const B = new Grid();
-  B.rect(12, 10, 38, 46, 'p3');
-  B.shade({ depth: 2 });
-  g.blit(B);
-  g.rect(48, 12, 5, 43, 'q3');       // páginas
-  for (let y = 14; y < 54; y += 3) g.rect(49, y, 4, 1, 'q2');
-  g.rect(12, 10, 4, 46, 'p2');       // lombada
-  g.frame(19, 16, 25, 34, 'y2');
-  // olho no meio
-  g.ellipse(31, 33, 8, 5, 'w');
-  g.circle(31, 33, 3, 'r3');
-  g.rect(31, 31, 1, 5, 'k');
-  return finish(g, { shade: false });
-}
-
-function sacola() {
-  const g = new Grid();
-  const S = new Grid();
-  S.ellipse(32, 40, 19, 16, 'm4');
-  S.poly([[22, 26], [42, 26], [38, 16], [26, 16]], 'm4');
-  S.shade({ depth: 2 });
-  g.blit(S);
-  g.rect(23, 24, 18, 3, 'm2');         // amarração
-  g.ellipse(26, 13, 4, 3, 'm4'); g.ellipse(38, 13, 4, 3, 'm4');
-  // cifrão
-  stamp(g, 28, 33, [
-    '..##..',
-    '.####.',
-    '##....',
-    '.###..',
-    '...##.',
-    '####..',
-    '..#...',
-  ], { '#': 'y3' });
-  return finish(g, { shade: false });
-}
-
-function espadas() {
-  const g = new Grid();
-  for (const flip of [false, true]) {
-    const s = new Grid();
-    bar(s, 12, 52, 50, 12, 6, 'g5');
-    s.poly([[46, 10], [54, 8], [52, 16]], 'g5');
-    s.shade();
-    s.line(16, 46, 48, 13, 'w');
-    bar(s, 14, 40, 24, 50, 4, 'y2');   // guarda
-    bar(s, 8, 56, 16, 48, 4, 'm3');    // cabo
-    g.blit(flip ? s.flipX() : s);
-  }
-  return finish(g, { shade: false });
-}
-
-function pausa() {
-  const g = new Grid();
-  g.rect(16, 12, 11, 40, 'w'); g.rect(37, 12, 11, 40, 'w');
-  return finish(g);
-}
-
-function fechar() {
-  const g = new Grid();
-  g.stroke(16, 16, 48, 48, 9, 'r3');
-  g.stroke(48, 16, 16, 48, 9, 'r3');
-  return finish(g);
-}
+const fechar = () => icone((m) => {
+  m.part(VERMELHO, 'cylinder', (p) => { p.stroke(6, 6, 25, 25, 5, 'x'); p.stroke(25, 6, 6, 25, 5, 'x'); });
+});
 
 function seta(dir) {
-  const g = new Grid();
-  g.poly([[18, 10], [50, 32], [18, 54]], 'w');
-  g.shade();
-  g.outline('k');
-  return dir === 'left' ? g.flipX() : g;
+  return icone((m) => {
+    m.part(BRANCO, 'sphere', (p) => p.poly(dir === 'left' ? [[24, 4], [24, 28], [6, 16]] : [[8, 4], [8, 28], [26, 16]], 'x'));
+  });
 }
 
-function engrenagem() {
-  const g = new Grid();
-  for (let i = 0; i < 8; i++) {
-    const a = i * Math.PI / 4;
-    g.rect(Math.round(32 + Math.cos(a) * 20) - 4, Math.round(32 + Math.sin(a) * 20) - 4, 9, 9, 'g4');
+const engrenagem = () => icone((m) => {
+  m.part(METAL, 'sphere', (p) => {
+    p.circle(16, 16, 10, 'x');
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      p.rect(Math.round(16 + Math.cos(a) * 11) - 2, Math.round(16 + Math.sin(a) * 11) - 2, 5, 5, 'x');
+    }
+  });
+  m.cut((p) => p.circle(16, 16, 4, 'x'));
+});
+
+const disquete = () => icone((m) => {
+  m.part(AZUL, 'flat', (p) => p.poly([[4, 4], [24, 4], [28, 8], [28, 28], [4, 28]], 'x'));
+  m.part(PRATA, 'cylinder', (p) => p.rect(9, 4, 13, 8, 'x'));
+  m.part(BRANCO, 'hcylinder', (p) => p.rect(8, 17, 16, 11, 'x'));
+  m.paint((g) => { g.rect(17, 5, 3, 6, 'b2'); g.rect(10, 20, 12, 1, 'g3'); g.rect(10, 23, 9, 1, 'g3'); });
+});
+
+const duelo = () => icone((m) => {
+  m.part(mat('k2', { line: 'k' }), 'sphere', (p) => { p.circle(10, 11, 7, 'x'); p.circle(6, 16, 4, 'x'); });
+  m.part(PELE_ESCURA, 'sphere', (p) => p.ellipse(12, 15, 5, 6, 'x'));
+  m.part(ROXO, 'cylinder', (p) => p.rect(3, 24, 13, 6, 'x'));
+  m.part(ECTO, 'sphere', (p) => { p.ellipse(23, 14, 7, 7, 'x'); p.poly([[16, 15], [30, 15], [29, 27], [25, 24], [22, 28], [18, 24], [16, 27]], 'x'); });
+  m.paint((g) => { g.rect(14, 13, 1, 2, 'k'); g.rect(20, 12, 3, 3, 'w'); g.rect(20, 13, 2, 2, 'r3'); });
+  m.overlay((g) => g.poly([[17, 3], [14, 11], [17, 11], [14, 19], [21, 9], [18, 9], [20, 3]], 'y3'));
+});
+
+const pergaminho = () => icone((m) => {
+  m.part(PERGAMINHO, 'cylinder', (p) => p.rect(7, 6, 18, 20, 'x'));
+  m.part(MADEIRA_CLARA, 'hcylinder', (p) => { p.rect(5, 3, 22, 4, 'x'); p.rect(5, 25, 22, 4, 'x'); });
+  m.paint((g) => { for (const y of [10, 13, 16, 19, 22]) g.rect(10, y, y === 22 ? 7 : 12, 1, 'm3'); });
+});
+
+export const trofeu = () => icone((m) => {
+  for (const side of [-1, 1]) {
+    m.part(OURO, 'sphere', (p) => {
+      p.ring(16 + side * 9, 10, 4, 2, 'x');
+      p.erase((x) => (side < 0 ? x > 9 : x < 23));
+    }, { edge: false });
   }
-  g.circle(32, 32, 18, 'g4');
-  g.shade({ depth: 2 });
-  g.circle(32, 32, 7, null);
-  g.erase((x, y) => Math.hypot(x - 32, y - 32) < 7);
-  return finish(g, { shade: false });
-}
+  m.part(OURO, 'cylinder', (p) => p.poly([[8, 5], [25, 5], [24, 10], [21, 15], [12, 15], [9, 10]], 'x'));
+  m.part(OURO, 'hcylinder', (p) => p.rect(7, 4, 19, 2, 'x'), { light: 1, edge: false });
+  m.part(OURO, 'cylinder', (p) => p.rect(14, 16, 5, 5, 'x'));
+  m.part(OURO, 'cylinder', (p) => p.ellipse(16, 20, 4, 1, 'x'));
+  m.part(OURO, 'cylinder', (p) => p.poly([[11, 22], [22, 22], [23, 25], [10, 25]], 'x'));
+  m.part(MADEIRA, 'cylinder', (p) => p.rect(8, 26, 17, 3, 'x'));
+  m.paint((g) => { g.set(11, 7, 'w'); g.set(11, 8, 'w'); g.set(12, 7, 'y4'); });
+});
 
-function disquete() {
-  const g = new Grid();
-  g.poly([[10, 10], [46, 10], [54, 18], [54, 54], [10, 54]], 'b3');
-  g.shade({ depth: 2 });
-  g.rect(18, 10, 26, 16, 'g5');
-  g.rect(34, 13, 6, 10, 'b2');
-  g.rect(16, 34, 32, 20, 'w');
-  g.rect(19, 39, 26, 1, 'g4'); g.rect(19, 44, 26, 1, 'g4'); g.rect(19, 49, 20, 1, 'g4');
-  return finish(g, { shade: false });
-}
+const check = () => icone((m) => {
+  m.part(VERDE, 'cylinder', (p) => { p.stroke(5, 16, 12, 24, 5, 'x'); p.stroke(12, 24, 27, 7, 5, 'x'); });
+});
 
-function duelo() {
-  const g = new Grid();
-  // fantasminha à direita
-  const G = new Grid();
-  G.ellipse(44, 28, 12, 12, 'gh4'); G.rect(32, 28, 25, 16, 'gh4');
-  for (let x = 33; x <= 56; x += 6) G.ellipse(x + 2, 44, 3, 2, 'gh4');
-  G.shade();
-  g.blit(G);
-  g.circle(41, 27, 3, 'w'); g.circle(40, 27, 2, 'r3'); g.set(40, 27, 'k');
-  // cabeça do caçador à esquerda
-  const H = new Grid();
-  H.ellipse(18, 22, 12, 10, 'k2');
-  H.ellipse(22, 32, 10, 10, 's3');
-  H.shade();
-  g.blit(H);
-  g.rect(24, 30, 2, 3, 'w'); g.set(25, 31, 'k');
-  g.rect(8, 44, 26, 12, 'p3');
-  // raio "VS"
-  g.poly([[30, 12], [36, 12], [32, 22], [37, 22], [27, 38], [30, 26], [26, 26]], 'y3');
-  return finish(g, { shade: false });
-}
+const alvo = () => icone((m) => {
+  m.part(VERMELHO, 'flat', (p) => {
+    p.ring(16, 16, 10, 2, 'x');
+    p.rect(15, 2, 3, 8, 'x'); p.rect(15, 23, 3, 8, 'x'); p.rect(2, 15, 8, 3, 'x'); p.rect(23, 15, 8, 3, 'x');
+  });
+  m.part(LARANJA, 'sphere', (p) => p.circle(16, 16, 2, 'x'));
+});
 
-function pergaminho() {
-  const g = new Grid();
-  const P = new Grid();
-  P.rect(14, 14, 36, 36, 'm6');
-  P.shade();
-  g.blit(P);
-  g.ellipse(14, 16, 5, 5, 'm5'); g.rect(9, 16, 10, 36, 'm5');
-  g.ellipse(50, 48, 5, 5, 'm5'); g.rect(45, 12, 10, 36, 'm5');
-  for (let y = 22; y < 44; y += 5) g.rect(21, y, 20, 1, 'm3');
-  return finish(g);
-}
+const interrogacao = () => icone((m) => {
+  m.part(BRANCO, 'cylinder', (p) => {
+    p.ring(16, 11, 7, 4, 'x');
+    p.erase((x, y) => y > 11 && x < 17);
+    p.rect(14, 16, 5, 6, 'x');
+    p.rect(14, 24, 5, 5, 'x');
+  });
+});
 
-function trofeu() {
-  const g = new Grid();
-  const T = new Grid();
-  T.poly([[16, 10], [48, 10], [44, 30], [20, 30]], 'y3');
-  T.ellipse(32, 30, 12, 6, 'y3');
-  T.rect(29, 34, 6, 10, 'y3');
-  T.rect(20, 44, 24, 5, 'y3');
-  T.rect(16, 49, 32, 6, 'm3');
-  T.shade({ depth: 2 });
-  g.blit(T);
-  g.ring(14, 20, 6, 2, 'y2').ring(50, 20, 6, 2, 'y2');
-  g.blit(T);
-  g.px([[22, 14], [22, 15], [22, 16]], 'w');
-  return finish(g, { shade: false });
-}
+const jogar = () => icone((m) => {
+  m.part(VERDE, 'sphere', (p) => p.poly([[8, 4], [8, 28], [27, 16]], 'x'));
+});
 
-function check() {
-  const g = new Grid();
-  g.stroke(12, 34, 26, 48, 9, 'v4');
-  g.stroke(26, 48, 52, 16, 9, 'v4');
-  return finish(g);
-}
+const casa = () => icone((m) => {
+  m.part(MADEIRA_CLARA, 'cylinder', (p) => p.rect(7, 14, 19, 15, 'x'));
+  m.part(VERMELHO, 'hcylinder', (p) => p.poly([[3, 15], [16, 3], [29, 15], [26, 17], [6, 17]], 'x'));
+  m.part(MADEIRA, 'cylinder', (p) => p.rect(14, 20, 6, 9, 'x'));
+  m.paint((g) => { g.rect(9, 18, 3, 3, 'y3'); g.set(9, 18, 'y4'); g.set(18, 24, 'y3'); });
+});
 
-function alvo() {
-  const g = new Grid();
-  g.ring(32, 32, 20, 3, 'r3');
-  g.rect(30, 4, 4, 16, 'r3'); g.rect(30, 44, 4, 16, 'r3');
-  g.rect(4, 30, 16, 4, 'r3'); g.rect(44, 30, 16, 4, 'r3');
-  g.circle(32, 32, 3, 'r4');
-  return finish(g, { shade: false });
-}
-
-function interrogacao() {
-  const small = stamp(new Grid(16, 16), 0, 0, [
-    '..######..',
-    '.########.',
-    '###....###',
-    '##......##',
-    '........##',
-    '.......###',
-    '.....####.',
-    '....###...',
-    '....##....',
-    '..........',
-    '....##....',
-    '....##....',
-  ], { '#': 'g5' });
-  // ampliado 4x para preencher o ícone
-  const g = new Grid();
-  small.forEach((x, y, c) => g.rect(12 + x * 4, 8 + y * 4, 4, 4, c));
-  return finish(g);
-}
-
-function jogar() {
-  const g = new Grid();
-  g.poly([[18, 10], [52, 32], [18, 54]], 'v4');
-  return finish(g);
-}
-
-function casa() {
-  const g = new Grid();
-  g.poly([[8, 32], [32, 10], [56, 32]], 'r2');
-  g.rect(14, 30, 36, 24, 'm5');
-  g.shade();
-  g.rect(27, 38, 10, 16, 'm2');
-  g.rect(18, 36, 6, 6, 'y3');
-  return finish(g, { shade: false });
-}
-
-function repetir() {
-  const g = new Grid();
-  g.ring(32, 32, 18, 6, 'w');
-  g.erase((x, y) => x > 34 && y < 30);
-  g.poly([[36, 6], [52, 16], [36, 26]], 'w');
-  return finish(g);
-}
+const repetir = () => icone((m) => {
+  m.part(BRANCO, 'sphere', (p) => {
+    p.ring(16, 17, 10, 4, 'x');
+    p.erase((x, y) => x > 17 && y < 15);
+    p.poly([[17, 3], [27, 9], [17, 15]], 'x');
+  });
+});
 
 /**
- * Balão de pensamento das pistas, desenhado em escala 2: a nuvem (centro em 34,24)
- * cabe um ícone de golpe em escala 1 por cima. A cauda aponta para o monstro.
+ * Balão de pensamento das pistas. O jogo desenha em escala 2 e põe o ícone do golpe
+ * em escala 1 por cima: o centro da nuvem tem que ficar em (34, 24) do quadro de 64.
  */
-function pista() {
-  const g = new Grid();
-  for (const [x, y, r] of [[24, 20, 13], [38, 16, 13], [48, 26, 12], [36, 34, 13], [22, 32, 12]]) g.circle(x, y, r, 'q4');
-  g.circle(12, 50, 4, 'q4');
-  g.circle(6, 58, 3, 'q4');
-  g.shade({ light: 0, dark: 1 });
-  return finish(g, { shade: false });
-}
+const pista = () => icone((m) => {
+  const NUVEM = { tones: ['q2', 'q3', 'q4', 'w', 'w'], line: 'q1' };
+  m.part(NUVEM, 'sphere', (p) => {
+    for (const [x, y, r] of [[12, 10, 6.5], [19, 8, 6.5], [24, 13, 6], [18, 17, 6.5], [11, 16, 6]]) p.circle(x, y, r, 'x');
+  }, { edge: false });
+  m.part(NUVEM, 'sphere', (p) => { p.circle(6, 25, 2, 'x'); p.circle(3, 29, 1, 'x'); });
+});
 
-/** Martelo da oficina. */
-function martelo() {
-  const g = new Grid();
-  bar(g, 14, 54, 38, 26, 7, 'm4');
-  const H = new Grid();
-  H.poly([[26, 14], [44, 4], [58, 24], [40, 34]], 't4');
-  H.shade({ depth: 2 });
-  H.line(30, 16, 44, 8, 't5');
-  g.blit(H);
-  g.rect(12, 50, 6, 6, 'm2');
-  return finish(g, { shade: false });
-}
+const bolsa = () => icone((m) => {
+  m.part(MADEIRA, 'sphere', (p) => { p.ellipse(16, 19, 11, 10, 'x'); p.poly([[10, 11], [22, 11], [20, 6], [12, 6]], 'x'); });
+  m.part(MADEIRA_CLARA, 'hcylinder', (p) => p.rect(8, 10, 17, 3, 'x'));
+  m.part(OURO, 'sphere', (p) => p.rect(14, 12, 5, 5, 'x'));
+});
 
-/** Bolsa de itens da fase (limite de usos). */
-function bolsa() {
-  const g = new Grid();
-  g.ellipse(32, 38, 20, 18, 'm4');
-  g.poly([[20, 22], [44, 22], [40, 14], [24, 14]], 'm4');
-  g.shade({ depth: 2 });
-  g.rect(18, 22, 28, 4, 'm2');
-  g.rect(29, 26, 6, 8, 'y3');
-  g.set(31, 28, 'y4');
-  return finish(g, { shade: false });
-}
+const martelo = () => icone((m) => {
+  m.part(MADEIRA, 'cylinder', (p) => p.stroke(6, 27, 18, 14, 3, 'x'));
+  m.part(FERRO, 'sphere', (p) => p.poly([[13, 7], [22, 2], [29, 12], [20, 17]], 'x'));
+  m.paint((g) => g.line(15, 7, 21, 4, 't5'));
+});
 
-// ─── perks do multiplayer ─────────────────────────────────────
-function escudo() {
-  const g = new Grid();
-  g.poly([[12, 12], [52, 12], [50, 36], [32, 56], [14, 36]], 'b3');
-  g.shade({ depth: 2 });
-  g.poly([[32, 12], [52, 12], [50, 36], [32, 56]], 'b2');
-  g.rect(29, 18, 6, 26, 'y3'); g.rect(21, 24, 22, 6, 'y3');
-  return finish(g, { shade: false });
+// ═══════════════════════ cartas (perks) ═══════════════════════
+function escudo(material, cruzMat) {
+  return (m) => {
+    m.part(material, 'cylinder', (p) => p.poly([[5, 4], [27, 4], [27, 17], [16, 29], [5, 17]], 'x'));
+    if (cruzMat) {
+      m.part(cruzMat, 'cylinder', (p) => p.rect(14, 8, 5, 15, 'x'));
+      m.part(cruzMat, 'hcylinder', (p) => p.rect(10, 11, 13, 4, 'x'));
+    }
+  };
 }
+const perkEscudo = () => icone(escudo(AZUL, OURO));
 
-function golpeDuplo() {
-  const g = new Grid();
-  for (const [ox, oy] of [[-8, 6], [8, -6]]) {
-    const f = new Grid();
-    f.rect(20 + ox, 22 + oy, 22, 18, 's4');
-    for (let i = 0; i < 4; i++) f.rect(20 + ox + i * 6, 18 + oy, 5, 6, 's4');
-    f.rect(16 + ox, 28 + oy, 6, 10, 's4');
-    f.shade();
-    for (let i = 1; i < 4; i++) f.rect(19 + ox + i * 6, 19 + oy, 1, 5, 's2');
-    f.outline('k');
-    g.blit(f);
+function punho(m, dx, dy) {
+  m.part(PELE, 'sphere', (p) => {
+    p.rect(4 + dx, 8 + dy, 12, 10, 'x');
+    p.rect(2 + dx, 12 + dy, 4, 5, 'x');
+  });
+  m.paint((g) => { for (const x of [7, 10, 13]) g.line(x + dx, 8 + dy, x + dx, 11 + dy, 's2'); });
+}
+const perkGolpeDuplo = () => icone((m) => {
+  punho(m, 0, 11);
+  punho(m, 13, 2);
+  m.overlay((g) => { faisca(g, 29, 2, 'y4'); g.set(3, 29, 'y4'); });
+});
+
+const perkEmpateForte = () => icone((m) => {
+  m.part(OURO, 'cylinder', (p) => { p.rect(15, 4, 3, 22, 'x'); p.rect(4, 7, 25, 2, 'x'); });
+  for (const x of [8, 25]) {
+    m.part(OURO, 'hcylinder', (p) => { p.line(x - 4, 9, x - 4, 18, 'x'); p.line(x + 4, 9, x + 4, 18, 'x'); p.ellipse(x, 19, 5, 2, 'x'); });
   }
-  g.px([[54, 10], [56, 8], [8, 52], [6, 54]], 'y3');
-  return g;
-}
+  m.part(MADEIRA, 'hcylinder', (p) => p.rect(9, 26, 15, 3, 'x'));
+});
 
-function empateForte() {
-  const g = new Grid();
-  g.rect(31, 10, 3, 40, 'y2');
-  g.rect(10, 14, 45, 3, 'y2');
-  g.rect(22, 50, 21, 5, 'y2');
-  for (const x of [16, 48]) {
-    g.line(x - 6, 30, x, 16, 'g4').line(x + 6, 30, x, 16, 'g4');
-    g.ellipse(x, 32, 9, 3, 'y3');
-  }
-  return finish(g);
-}
+/** Olho aberto (carta Visão e o botão de assistir partidas). */
+export const visao = () => icone((m) => {
+  m.part(BRANCO, 'sphere', (p) => p.poly([[2, 16], [9, 8], [16, 6], [23, 8], [30, 16], [23, 24], [16, 26], [9, 24]], 'x'));
+  m.part(ROXO, 'sphere', (p) => p.circle(16, 16, 7, 'x'));
+  m.paint((g) => { g.circle(16, 16, 3, 'k'); g.rect(13, 13, 2, 2, 'w'); });
+});
 
-export function visao() {
-  const g = new Grid();
-  g.poly([[4, 32], [20, 18], [44, 18], [60, 32], [44, 46], [20, 46]], 'w');
-  g.shade();
-  g.circle(32, 32, 11, 'p3');
-  g.circle(32, 32, 6, 'k');
-  g.px([[28, 28], [29, 27]], 'w');
-  return finish(g, { shade: false });
-}
+const perkResistencia = () => icone((m) => {
+  m.part(PEDRA, 'cylinder', (p) => {
+    p.rect(6, 9, 21, 20, 'x');
+    for (const x of [6, 12, 18, 24]) p.rect(x, 4, 4, 5, 'x');
+  });
+  m.paint((g) => {
+    for (const y of [13, 18, 23]) g.rect(7, y, 19, 1, 't2');
+    for (const [x, y] of [[12, 9], [20, 13], [10, 18], [18, 18], [14, 23], [22, 23]]) g.rect(x, y, 1, 5, 't2');
+    g.rect(14, 22, 5, 7, 'k2');
+  });
+});
 
-function resistencia() {
-  const g = new Grid();
-  // torre de pedra
-  g.rect(16, 18, 32, 38, 't4');
-  for (let i = 0; i < 4; i++) g.rect(14 + i * 10, 10, 7, 8, 't4');
-  g.shade({ depth: 2 });
-  for (let y = 24; y < 56; y += 6) g.rect(16, y, 32, 1, 't2');
-  for (let y = 24; y < 56; y += 12) { g.rect(28, y, 1, 6, 't2'); g.rect(38, y + 6, 1, 6, 't2'); }
-  g.rect(27, 42, 10, 14, 'k2');
-  return finish(g, { shade: false });
-}
+const perkSorte = () => icone((m) => {
+  m.part(VERDE_ESCURO, 'cylinder', (p) => p.stroke(16, 16, 22, 30, 2, 'x'));
+  m.part(VERDE, 'sphere', (p) => {
+    for (const [x, y] of [[11, 10], [21, 10], [11, 19], [21, 19]]) p.circle(x, y, 5.5, 'x');
+  });
+  m.paint((g) => { g.line(16, 6, 16, 23, 'v2'); g.line(6, 15, 26, 15, 'v2'); g.set(9, 8, 'v6'); });
+});
 
-function sorte() {
-  const g = new Grid();
-  for (const [x, y] of [[24, 22], [40, 22], [24, 38], [40, 38]]) g.circle(x, y, 10, 'v4');
-  g.stroke(32, 34, 38, 58, 3, 'v3');
-  g.shade({ depth: 2 });
-  g.px([[20, 18], [36, 18]], 'v6');
-  return finish(g, { shade: false });
-}
+const perkCura = () => icone((m) => {
+  m.part(VERMELHO, 'sphere', (p) => { p.circle(10, 11, 7, 'x'); p.circle(22, 11, 7, 'x'); p.poly([[3, 13], [29, 13], [16, 28]], 'x'); });
+  m.part(VERDE, 'cylinder', (p) => { p.rect(14, 8, 5, 13, 'x'); p.rect(10, 12, 13, 5, 'x'); }, { light: 1 });
+});
 
+const perkEspinhos = () => icone((m) => {
+  m.part(PRATA, 'sphere', (p) => {
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      p.poly([[16 + Math.cos(a - 0.35) * 8, 16 + Math.sin(a - 0.35) * 8], [16 + Math.cos(a) * 15, 16 + Math.sin(a) * 15],
+        [16 + Math.cos(a + 0.35) * 8, 16 + Math.sin(a + 0.35) * 8]], 'x');
+    }
+  });
+  m.part(VERDE_ESCURO, 'sphere', (p) => p.circle(16, 16, 8, 'x'));
+  m.paint((g) => { g.line(11, 13, 14, 15, 'k'); g.line(21, 13, 18, 15, 'k'); g.rect(13, 19, 6, 1, 'k'); });
+});
 
-// ─── perks novos (cartas) ─────────────────────────────────────
-function cura() {
-  const g = coracao('r3');
-  g.rect(28, 22, 8, 22, 'w'); g.rect(21, 29, 22, 8, 'w');
-  g.rect(29, 23, 6, 20, 'v4'); g.rect(22, 30, 20, 6, 'v4');
-  return g;
-}
+const perkVampirismo = () => icone((m) => {
+  // boca aberta: lábios vermelhos, fundo escuro e as presas
+  m.part(VERMELHO, 'hcylinder', (p) => p.ellipse(16, 12, 14, 8, 'x'));
+  m.paint((g) => {
+    g.ellipse(16, 12, 11, 5, 'r1');
+    g.rect(6, 7, 21, 2, 'w');                           // dentes de cima
+    g.poly([[7, 8], [11, 8], [9, 15]], 'w');            // presas
+    g.poly([[21, 8], [25, 8], [23, 15]], 'w');
+    g.set(9, 13, 'g5'); g.set(23, 13, 'g5');
+  });
+  m.part(VERMELHO, 'sphere', (p) => { p.ellipse(9, 24, 2, 3, 'x'); p.poly([[9, 19], [11, 23], [7, 23]], 'x'); });
+  m.part(VERMELHO, 'sphere', (p) => { p.ellipse(23, 26, 2, 3, 'x'); p.poly([[23, 21], [25, 25], [21, 25]], 'x'); });
+});
 
-function espinhos() {
-  const g = new Grid();
-  // bola de espinhos: espinhos brancos em volta de um núcleo verde
-  for (let i = 0; i < 10; i++) {
-    const a = i * Math.PI / 5;
-    const c = [32 + Math.cos(a) * 14, 32 + Math.sin(a) * 14];
-    const tip = [32 + Math.cos(a) * 28, 32 + Math.sin(a) * 28];
-    const n = [-Math.sin(a) * 5, Math.cos(a) * 5];
-    g.poly([[c[0] + n[0], c[1] + n[1]], [c[0] - n[0], c[1] - n[1]], tip], 'g5');
-  }
-  g.shade();
-  const B = new Grid();
-  B.circle(32, 32, 15, 'v3');
-  B.shade({ depth: 2 });
-  g.blit(B);
-  g.px([[26, 26], [27, 25], [28, 25]], 'v6');
-  g.rect(27, 33, 4, 2, 'k'); g.rect(34, 33, 4, 2, 'k');   // carinha brava
-  g.line(26, 31, 30, 32, 'k').line(39, 31, 35, 32, 'k');
-  return finish(g, { shade: false });
-}
+const perkFuria = () => icone((m) => {
+  m.part(LARANJA, 'sphere', (p) => {
+    for (const [x, h] of [[7, 17], [12, 23], [17, 26], [22, 22], [26, 16]]) p.poly([[x - 5, 29], [x + 5, 29], [x, 29 - h]], 'x');
+  }, { edge: false, light: 1 });
+  m.part(PELE, 'sphere', (p) => { p.rect(9, 15, 14, 13, 'x'); p.rect(7, 19, 4, 6, 'x'); });
+  m.paint((g) => { for (const x of [12, 15, 18]) g.line(x, 15, x, 18, 's2'); });
+});
 
-function vampirismo() {
-  const g = new Grid();
-  const M = new Grid();
-  M.ellipse(32, 24, 20, 12, 'r1');
-  M.erase((x, y) => y < 22);
-  g.blit(M);
-  g.rect(12, 20, 40, 4, 'q3');
-  g.poly([[18, 22], [24, 22], [21, 36]], 'w');
-  g.poly([[40, 22], [46, 22], [43, 36]], 'w');
-  g.ellipse(43, 46, 4, 6, 'r3');
-  g.poly([[39, 44], [47, 44], [43, 36]], 'r3');
-  g.ellipse(21, 46, 3, 4, 'r3');
-  g.shade();
-  g.set(42, 44, 'r5');
-  return finish(g, { shade: false });
-}
+const perkEscudoSagrado = () => icone((m) => {
+  m.part(OURO, 'flat', (p) => { p.ring(16, 4, 5, 2, 'x'); }, { edge: false });
+  escudo(BRANCO, OURO)(m);
+  m.overlay((g) => { faisca(g, 3, 9, 'y4'); faisca(g, 29, 9, 'y4'); g.set(4, 22, 'y4'); g.set(28, 22, 'y4'); });
+});
 
-function furia() {
-  const g = new Grid();
-  for (const [x, h] of [[18, 22], [26, 30], [34, 34], [42, 26], [48, 18]]) g.poly([[x - 7, 40], [x + 7, 40], [x, 40 - h]], 'o3');
-  for (const [x, h] of [[24, 18], [32, 24], [40, 18]]) g.poly([[x - 5, 40], [x + 5, 40], [x, 40 - h]], 'y3');
-  const F = new Grid();
-  F.rect(20, 32, 24, 20, 's4');
-  for (let i = 0; i < 4; i++) F.rect(20 + i * 6, 27, 5, 7, 's4');
-  F.shade();
-  for (let i = 1; i < 4; i++) F.rect(19 + i * 6, 28, 1, 6, 's2');
-  g.blit(F);
-  return finish(g, { shade: false });
-}
+const perkJuizo = () => icone((m) => {
+  m.part(CINZA_ESCURO, 'sphere', (p) => { for (const [x, y, r] of [[10, 12, 6], [17, 8, 7], [24, 12, 6], [16, 14, 7]]) p.circle(x, y, r, 'x'); });
+  m.part(OURO, 'cylinder', (p) => p.poly([[17, 15], [11, 23], [16, 23], [12, 31], [22, 19], [17, 19], [20, 15]], 'x'), { light: 1 });
+});
 
-function escudoSagrado() {
-  const g = new Grid();
-  g.ring(32, 10, 12, 2, 'y4');
-  g.poly([[12, 16], [52, 16], [50, 38], [32, 58], [14, 38]], 'y3');
-  g.shade({ depth: 2 });
-  g.poly([[18, 20], [46, 20], [44, 37], [32, 51], [20, 37]], 'w');
-  g.rect(30, 24, 4, 20, 'y2'); g.rect(24, 29, 16, 4, 'y2');
-  for (const [x, y] of [[6, 30], [58, 30], [8, 46], [56, 46]]) g.px([[x, y], [x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]], 'y4');
-  return finish(g, { shade: false });
-}
-
-function juizo() {
-  const g = new Grid();
-  for (const [x, y, r] of [[20, 18, 9], [32, 14, 11], [44, 18, 9], [32, 22, 10]]) g.circle(x, y, r, 'g2');
-  g.shade({ light: 1, dark: 0 });
-  g.poly([[34, 26], [42, 26], [34, 40], [40, 40], [24, 62], [28, 44], [22, 44]], 'y3');
-  g.poly([[35, 28], [39, 28], [32, 40], [36, 40], [27, 54]], 'y4');
-  return finish(g, { shade: false });
-}
-
-// ─── ligas do ranking ─────────────────────────────────────────
-function liga(fill, extra) {
-  const g = new Grid();
-  g.poly([[14, 8], [50, 8], [50, 34], [32, 58], [14, 34]], fill);
-  g.shade({ depth: 2 });
-  g.poly([[20, 14], [44, 14], [44, 32], [32, 48], [20, 32]], 'k2');
-  const pts = [];
-  for (let i = 0; i < 10; i++) {
-    const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 4 : 10;
-    pts.push([32 + Math.cos(a) * r, 29 + Math.sin(a) * r]);
-  }
-  g.poly(pts, fill);
-  if (extra === 'coroa') {
-    g.poly([[18, 8], [22, 0], [27, 6], [32, 0], [37, 6], [42, 0], [46, 8]], 'y3');
-    g.set(32, 2, 'r3');
-  }
-  return finish(g, { shade: false });
+// ═══════════════════════ ligas ═══════════════════════
+function liga(cor, coroa = false) {
+  return icone((m) => {
+    m.part(mat(cor, { line: 'k' }), 'cylinder', (p) => p.poly([[5, 6], [27, 6], [27, 20], [16, 30], [5, 20]], 'x'));
+    m.part(mat('g1', { line: 'k' }), 'flat', (p) => p.poly([[9, 10], [23, 10], [23, 19], [16, 25], [9, 19]], 'x'));
+    const pts = [];
+    for (let i = 0; i < 10; i++) {
+      const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 3 : 7;
+      pts.push([16 + Math.cos(a) * r, 17 + Math.sin(a) * r]);
+    }
+    m.part(mat(cor), 'sphere', (p) => p.poly(pts, 'x'), { light: 2, edge: false });
+    if (coroa) m.part(OURO, 'cylinder', (p) => p.poly([[8, 7], [24, 7], [25, 1], [21, 4], [16, 0], [11, 4], [7, 1]], 'x'));
+  });
 }
 
 export function iconSheets() {
   return {
     estaca: estaca(), aspirador: aspirador(), cruz: cruz(),
     possessao: possessao(), assombracao: assombracao(), maldicao: maldicao(),
-    pocao: flask('r3'), pocao_grande: flask('r3', { big: true }), agua_benta: flask('b4', { cross: true }),
-    elixir: elixir(), amuleto: amuleto(), vela: vela(),
-    moeda: moeda(), coracao: coracao(), coracao_vazio: coracao('g2'),
-    som_on: speaker(true), som_off: speaker(false),
-    cadeado: cadeado(), estrela: estrela(), estrela_vazia: estrela('g2'),
+    pocao: pocao(), pocao_grande: pocaoGrande(), agua_benta: aguaBenta(), elixir: elixir(),
+    amuleto: amuleto(), vela: vela(), moeda: moeda(), coracao: coracao(VERMELHO), coracao_vazio: coracao(CINZA_ESCURO),
+    som_on: somOn(), som_off: somOff(),
+    cadeado: cadeado(), estrela: estrela(OURO), estrela_vazia: estrela(CINZA_ESCURO),
     caveira: caveira(), livro: livro(), sacola: sacola(), espadas: espadas(),
     pausa: pausa(), fechar: fechar(), seta_esq: seta('left'), seta_dir: seta('right'),
     engrenagem: engrenagem(), disquete: disquete(), duelo: duelo(), pergaminho: pergaminho(),
     trofeu: trofeu(), check: check(), alvo: alvo(), interrogacao: interrogacao(),
     jogar: jogar(), casa: casa(), repetir: repetir(), pista: pista(), bolsa: bolsa(), martelo: martelo(),
-    perk_escudo: escudo(), perk_golpe_duplo: golpeDuplo(), perk_empate_forte: empateForte(),
-    perk_visao: visao(), perk_resistencia: resistencia(), perk_sorte: sorte(),
-    perk_cura: cura(), perk_espinhos: espinhos(), perk_vampirismo: vampirismo(),
-    perk_furia: furia(), perk_escudo_sagrado: escudoSagrado(), perk_juizo: juizo(),
-    liga_bronze: liga('o2'), liga_prata: liga('t4'), liga_ouro: liga('y3'), liga_platina: liga('c4'), liga_lenda: liga('p4', 'coroa'),
+    perk_escudo: perkEscudo(), perk_golpe_duplo: perkGolpeDuplo(), perk_empate_forte: perkEmpateForte(),
+    perk_visao: visao(), perk_resistencia: perkResistencia(), perk_sorte: perkSorte(),
+    perk_cura: perkCura(), perk_espinhos: perkEspinhos(), perk_vampirismo: perkVampirismo(),
+    perk_furia: perkFuria(), perk_escudo_sagrado: perkEscudoSagrado(), perk_juizo: perkJuizo(),
+    liga_bronze: liga('o2'), liga_prata: liga('t4'), liga_ouro: liga('y3'), liga_platina: liga('c4'), liga_lenda: liga('p4', true),
   };
 }

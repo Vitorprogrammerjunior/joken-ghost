@@ -21,7 +21,13 @@ a fantasmas. As sprites NÃO são imagens: são código JavaScript que desenha p
 Siga TODAS as regras abaixo. O resultado precisa funcionar sem ajustes.
 
 ──────────────── 1. O FORMATO ────────────────
-- Cada frame é uma grade de 64x64 pixels (classe Grid). (0,0) é o canto de cima à esquerda.
+O jogo tem DOIS estilos, cada um com a sua ferramenta:
+- INIMIGOS (e ícones): "estilo de volume". Você desenha numa grade de 32x32 montando PEÇAS
+  (cabeça, corpo, braço...), cada uma com um material e uma forma; o motor pinta a luz em faixas,
+  as linhas internas e o contorno sozinho, e amplia para 64x64. Veja a seção 4B.
+- PERSONAGENS (caçadores jogáveis): desenho livre numa grade de 64x64 com a classe Grid (seção 4).
+Para os dois:
+- Cada frame vira uma grade de 64x64 pixels no fim. (0,0) é o canto de cima à esquerda.
 - O fundo é transparente: só pinte o que faz parte do personagem.
 - Cores: SÓ as chaves da paleta (seção 3), escritas como texto: 'k', 'r3', 'v4'... Nunca use hex direto.
 - Uma animação é uma "folha": vários frames 64x64 lado a lado, montada com sheet([frame1, frame2, ...]).
@@ -33,8 +39,9 @@ Siga TODAS as regras abaixo. O resultado precisa funcionar sem ajustes.
   (clareia em cima/esquerda e escurece embaixo/direita) e cole com g.blit(parte). Luz vem de cima à esquerda.
 - Poucas cores por parte (2 a 4 tons da mesma rampa). Olhos e detalhes com cores fortes (r3, y3, c4...).
 - INIMIGOS olham para a ESQUERDA (o Caçador fica à esquerda da tela).
-- Quem anda no chão: o ponto mais baixo (pés, base) encosta em y = 59. Quem voa: centralize perto de y = 32.
-- O personagem ocupa uns 40 a 56 pixels de altura. Não encoste nas bordas (deixe 2px livres).
+- Inimigo (grade 32x32): quem anda encosta os pés em y = 29; quem voa fica perto de y = 16.
+  Ocupa uns 20 a 28 pixels de altura e deixa 1px livre nas bordas (o contorno usa esse pixel).
+- Personagem (grade 64x64): o ponto mais baixo encosta em y = 59; ocupa uns 40 a 56 pixels de altura.
 - Entre frames da mesma animação, mude pouco: deslocar 1-4px, mexer um braço, abrir a boca.
   Use os MESMOS parâmetros de posição em todos os frames, para não "tremer".
 - Desenho determinístico: nada de Math.random() (a sprite tem que sair igual em todo build).
@@ -81,6 +88,29 @@ g.innerLine(['v3', 'v4'], 'k')              // linha escura separando essas core
 sheet([g1, g2, g3])                         // folha horizontal de frames
 Todos os métodos de desenho devolvem a própria grade, então dá para encadear: g.rect(...).line(...).
 
+──────────────── 4B. MOTOR DE VOLUME (inimigos e ícones) ────────────────
+import { Model, mat } from '../lib/volume.mjs';
+import { folhas } from './enemies.mjs';                  // monta idle/attack/hurt a partir das poses
+import { MADEIRA, VERMELHO, ... } from './materiais.mjs';
+const m = new Model();                                   // grade 32x32
+m.part(MATERIAL, FORMA, (p) => { ...desenha a silhueta em p com a API da seção 4, cor 'x'... }, opções)
+   FORMA (de onde vem a luz):
+     'cylinder'  — faixas verticais, brilho perto da esquerda (corpos, pernas, troncos, copos)
+     'hcylinder' — faixas horizontais (chapéus, cintos, bordas, tampas)
+     'sphere'    — brilho num ponto em cima à esquerda (cabeças, fantasmas, olhos grandes, frutas)
+     'flat'      — chapado com borda clara em cima (asas finas, placas)
+   opções: { edge: false } tira a linha interna da peça; { light: 1 } (ou -1) clareia/escurece a peça.
+   A ORDEM importa: peças desenhadas depois ficam NA FRENTE (e ganham a linha interna onde cobrem as de trás).
+m.paint((g) => ...)      // detalhes sem volume por cima: olhos, boca, botões, rachaduras (cores da paleta)
+m.cut((p) => ...)        // abre buracos no que já foi desenhado
+m.backdrop((g) => ...)   // atrás de tudo e sem contorno (auras, brilho de lanterna)
+m.overlay((g) => ...)    // por cima do contorno e sem contorno (faíscas, gotas soltas)
+m.render()               // devolve o frame 64x64 pronto
+MATERIAIS prontos (materiais.mjs): OURO, PRATA, METAL, FERRO, MADEIRA, MADEIRA_CLARA, PERGAMINHO, OSSO, BRANCO,
+  VIDRO, ECTO (fantasma), VERMELHO, LARANJA, AMARELO, VERDE, VERDE_ESCURO, CIANO, AZUL, ROXO, LILAS, PELE,
+  PELE_ESCURA, CINZA, CINZA_ESCURO, PEDRA, SOMBRA.
+Material próprio: mat('r3', { line: 'r1' }) — 5 tons andando na rampa a partir do meio-tom, e a cor da linha interna.
+
 ──────────────── 5. O QUE ENTREGAR ────────────────
 Um arquivo .mjs (módulo ES) que exporta UMA função sem parâmetros que devolve as folhas.
 
@@ -88,10 +118,10 @@ Um arquivo .mjs (módulo ES) que exporta UMA função sem parâmetros que devolv
   idle   — 4 frames  (parado respirando/flutuando, em loop)
   attack — 4 frames  (preparo, golpe, golpe no máximo, volta)
   hurt   — 2 frames  (recuando para a DIREITA, cara de dor)
-  Formato de saída:
-    export function minhasSprites() {
-      return { idDoInimigo: { idle: sheet([...4]), attack: sheet([...4]), hurt: sheet([...2]) } };
-    }
+  Formato de saída (motor de volume, seção 4B):
+    export const minhasSprites = () => ({
+      idDoInimigo: folhas(frame, { idle: [4 poses], attack: [4 poses], hurt: [2 poses] }),
+    });
   O id é em minúsculas, sem acento nem espaço (ex.: 'espantalho', 'sereia_morta').
 
 ▸ PERSONAGEM (caçador jogável), opção A — só paleta nova (mais fácil e mais consistente):
@@ -121,60 +151,43 @@ Um arquivo .mjs (módulo ES) que exporta UMA função sem parâmetros que devolv
 
 ▸ Junto do código, escreva a FICHA preenchida (seção 7).
 
-──────────────── 6. EXEMPLO COMPLETO (inimigo simples) ────────────────
-import { Grid, sheet } from '../lib/grid.mjs';
+──────────────── 6. EXEMPLO COMPLETO (inimigo simples, estilo de volume) ────────────────
+import { Model, mat } from '../lib/volume.mjs';
+import { folhas } from './enemies.mjs';
+import { MADEIRA, MADEIRA_CLARA, VERMELHO, AMARELO } from './materiais.mjs';
 
-/** Um frame do Espantalho. Olha para a ESQUERDA; a base da estaca encosta no chão (y = 59). */
+/** Um frame do Espantalho (grade 32x32). Olha para a ESQUERDA; a estaca encosta no chão em y = 29. */
 function espantalho({ dy = 0, lean = 0, arm = 0, mood = 'idle' } = {}) {
-  const g = new Grid();
-  const X = 32 + lean, Y = dy;
+  const m = new Model();
+  const X = 16 + lean, Y = dy;
 
-  // estaca de madeira (fica parada: é o "pé" dele)
-  g.rect(31, 40, 3, 20, 'm3');
-
-  // camisa: parte separada com sombreamento próprio (ganha volume)
-  const T = new Grid();
-  T.poly([[X - 10, 28 + Y], [X + 10, 28 + Y], [X + 8, 46 + Y], [X - 8, 46 + Y]], 'r2');
-  T.shade({ depth: 2 });
-  g.blit(T);
-
+  // estaca de madeira (o "pé" dele)
+  m.part(MADEIRA, 'cylinder', (p) => p.rect(15, 20, 2, 10, 'x'));
+  // camisa: cilindro (faixas de luz verticais)
+  m.part(VERMELHO, 'cylinder', (p) => p.poly([[X - 5, 13 + Y], [X + 5, 13 + Y], [X + 4, 22 + Y], [X - 4, 22 + Y]], 'x'));
   // braço de palha: estica para a esquerda no ataque
-  g.stroke(X - 8, 31 + Y, X - 20 - arm * 6, 30 + Y - arm * 2, 3, 'y2');
-
-  // cabeça de saco
-  const H = new Grid();
-  H.ellipse(X, 18 + Y, 9, 9, 'm5');
-  H.shade();
-  g.blit(H);
-
+  m.part(AMARELO, 'cylinder', (p) => p.stroke(X - 4, 15 + Y, X - 10 - arm * 3, 15 + Y - arm, 2, 'x'));
+  // cabeça de saco: esfera (brilho em cima à esquerda)
+  m.part(MADEIRA_CLARA, 'sphere', (p) => p.ellipse(X, 9 + Y, 5, 5, 'x'));
   // chapéu
-  g.rect(X - 12, 10 + Y, 24, 3, 'm2');
-  g.rect(X - 7, 3 + Y, 14, 8, 'm2');
+  m.part(mat('m2', { line: 'm1' }), 'hcylinder', (p) => { p.rect(X - 6, 5 + Y, 13, 2, 'x'); p.rect(X - 3, 1 + Y, 7, 4, 'x'); });
 
-  // rosto virado para a esquerda
-  if (mood === 'hurt') {
-    g.line(X - 7, 15 + Y, X - 4, 18 + Y, 'k').line(X - 7, 18 + Y, X - 4, 15 + Y, 'k');
-  } else {
-    g.rect(X - 7, 15 + Y, 3, 3, 'k');
-    g.set(X - 6, 16 + Y, 'o4'); // olho brilhando
-  }
-  g.rect(X - 8, 22 + Y, 8, mood === 'attack' ? 3 : 1, 'k');
-
-  g.outline('k'); // contorno preto de 1px sempre por último
-  return g;
+  // detalhes sem volume: olho, boca
+  m.paint((g) => {
+    if (mood === 'hurt') g.rect(X - 4, 8 + Y, 2, 1, 'k');
+    else { g.rect(X - 4, 7 + Y, 2, 2, 'k'); g.set(X - 4, 7 + Y, 'o4'); }
+    g.rect(X - 4, 11 + Y, 4, mood === 'attack' ? 2 : 1, 'k');
+  });
+  return m.render();   // contorno, linhas internas e ampliação para 64x64 saem sozinhos
 }
 
-/** idle (4 frames), attack (4) e hurt (2): cada animação é uma folha horizontal de frames 64x64. */
-export function espantalhoSheets() {
-  const f = (o) => espantalho(o);
-  return {
-    espantalho: {
-      idle: sheet([f({}), f({ dy: 1 }), f({ dy: 1, lean: -1 }), f({ lean: -1 })]),
-      attack: sheet([f({ lean: 1 }), f({ lean: -2, arm: 1, mood: 'attack' }), f({ lean: -4, arm: 1.5, mood: 'attack' }), f({ lean: -1 })]),
-      hurt: sheet([f({ lean: 3, mood: 'hurt' }), f({ lean: 2, mood: 'hurt' })]),
-    },
-  };
-}
+export const espantalhoSheets = () => ({
+  espantalho: folhas(espantalho, {
+    idle: [{}, { dy: 1 }, { dy: 1, lean: -1 }, { lean: -1 }],
+    attack: [{ lean: 1 }, { lean: -1, arm: 1, mood: 'attack' }, { lean: -2, arm: 1.5, mood: 'attack' }, { lean: -1 }],
+    hurt: [{ lean: 2, mood: 'hurt' }, { lean: 1, mood: 'hurt' }],
+  }),
+});
 
 O padrão que vale copiar: UMA função de frame com parâmetros de pose (dx, dy, lean, braço, humor) e
 as animações como listas dessas poses. O exemplo é simples de propósito: faça o seu mais caprichado
@@ -212,11 +225,11 @@ PERSONAGEM
 
 ──────────────── 8. CONFIRA ANTES DE ENTREGAR ────────────────
 [ ] Só chaves da paleta (nenhum hex, nenhuma cor inventada)
-[ ] Todos os frames são Grid 64x64, montados com sheet()
+[ ] Inimigo: peças com m.part() numa grade 32x32 e frame com m.render(); personagem: Grid 64x64
 [ ] Nomes e quantidades das animações exatamente como na seção 5
-[ ] Inimigo olha para a esquerda; pés em y = 59 (ou flutua perto de y = 32)
-[ ] g.outline('k') no fim de cada frame; partes com .shade()
-[ ] Sem Math.random(); o arquivo só importa de '../lib/grid.mjs'
+[ ] Inimigo olha para a esquerda; pés em y = 29 da grade 32x32 (ou flutua perto de y = 16)
+[ ] Personagem: g.outline('k') no fim de cada frame e partes com .shade()
+[ ] Sem Math.random(); só importa de '../lib/grid.mjs', '../lib/volume.mjs', './materiais.mjs' e './enemies.mjs'
 [ ] Ficha preenchida
 
 ═══════════════════════ MINHA FICHA ═══════════════════════
@@ -245,8 +258,12 @@ frame idle 1:
 ```
 
 Também vale desenhar num editor de pixel art (Aseprite, Piskel, LibreSprite) seguindo as mesmas
-regras: frames de 64x64 lado a lado numa folha por animação, fundo transparente, só as cores da
-paleta e contorno preto de 1px. Mande o PNG que ele é convertido para o formato do projeto.
+regras: frames lado a lado numa folha por animação, fundo transparente, só as cores da paleta e
+contorno preto de 1px. Mande o PNG que ele é convertido para o formato do projeto.
+
+Para **inimigos**, desenhe em **32x32** (pixels grossos, sombra em faixas de 4–5 tons com luz vindo de
+cima à esquerda, linhas escuras separando as peças), que é o estilo de volume. Para **personagens**,
+use 64x64 como no texto acima.
 
 ---
 

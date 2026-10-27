@@ -1,123 +1,78 @@
 // Ícones do Ateliê (editor de avatar em pixel art) e as notas do aviso e do botão de música.
-import { Grid } from '../lib/grid.mjs';
-
-const finish = (g, { shade = true } = {}) => {
-  if (shade) g.shade();
-  g.outline('k');
-  return g;
-};
-
-/** Barra diagonal com largura `w` entre dois pontos. */
-function bar(g, x0, y0, x1, y1, w, c) {
-  const len = Math.hypot(x1 - x0, y1 - y0);
-  const nx = -(y1 - y0) / len * w / 2, ny = (x1 - x0) / len * w / 2;
-  g.poly([[x0 + nx, y0 + ny], [x1 + nx, y1 + ny], [x1 - nx, y1 - ny], [x0 - nx, y0 - ny]], c);
-}
+// Estilo de volume (lib/volume.mjs), como os outros ícones.
+import { icone, MADEIRA, METAL, PRATA, VERMELHO, BRANCO, VIDRO, CIANO, AZUL, ROXO, LILAS, AMARELO, CINZA, CINZA_ESCURO } from './materiais.mjs';
+import { mat } from '../lib/volume.mjs';
+import { faisca } from './icons.mjs';
 
 /** Colcheia: a música que está tocando. Desligada, ela fica cinza e riscada. */
 function nota({ off = false } = {}) {
-  const g = new Grid();
-  const c = off ? 'g4' : 'c4';
-  g.ellipse(22, 48, 9, 7, c);
-  g.rect(28, 12, 4, 37, c);
-  g.poly([[30, 12], [48, 20], [48, 30], [32, 22]], c);
-  g.shade({ depth: 2 });
-  g.px([[18, 45], [19, 44]], 'w');
-  if (off) {
-    const X = new Grid();
-    X.stroke(10, 10, 54, 54, 5, 'r3');
-    X.shade();
-    g.blit(X);
-  }
-  return finish(g, { shade: false });
+  return icone((m) => {
+    const cor = off ? CINZA : CIANO;
+    m.part(cor, 'cylinder', (p) => { p.rect(15, 5, 3, 20, 'x'); p.poly([[16, 4], [26, 9], [26, 15], [17, 11]], 'x'); });
+    m.part(cor, 'sphere', (p) => p.ellipse(11, 24, 6, 5, 'x'));
+    if (off) m.part(VERMELHO, 'cylinder', (p) => p.stroke(4, 4, 28, 28, 3, 'x'));
+  });
 }
 
-function pincel() {
-  const g = new Grid();
-  bar(g, 50, 10, 30, 32, 8, 'm4');
-  g.poly([[26, 32], [32, 38], [30, 40], [24, 34]], 't4');
-  g.poly([[24, 36], [28, 40], [18, 54], [10, 56], [12, 48]], 'r3');
-  g.shade({ depth: 2 });
-  g.px([[14, 50], [16, 48]], 'r5');
-  return finish(g, { shade: false });
-}
+const pincel = () => icone((m) => {
+  m.part(MADEIRA, 'cylinder', (p) => p.stroke(26, 4, 16, 15, 4, 'x'));
+  m.part(METAL, 'cylinder', (p) => p.stroke(16, 15, 13, 18, 4, 'x'));
+  m.part(VERMELHO, 'sphere', (p) => p.poly([[12, 17], [15, 20], [8, 28], [4, 29], [5, 25]], 'x'));
+});
 
-function borracha() {
-  const g = new Grid();
-  g.poly([[10, 40], [32, 18], [54, 34], [32, 56]], 'r4');
-  g.poly([[10, 40], [21, 29], [43, 45], [32, 56]], 'q3');
-  g.shade({ depth: 2 });
-  g.line(21, 29, 43, 45, 'k2');
-  return finish(g, { shade: false });
-}
+const borracha = () => icone((m) => {
+  m.part(mat('r4', { line: 'r2' }), 'sphere', (p) => p.poly([[16, 4], [28, 16], [20, 24], [8, 12]], 'x'));
+  m.part(BRANCO, 'sphere', (p) => p.poly([[8, 12], [20, 24], [16, 28], [4, 16]], 'x'));
+});
 
-function balde() {
-  const g = new Grid();
-  g.poly([[14, 22], [46, 22], [42, 54], [18, 54]], 't4');
-  g.shade({ depth: 2 });
-  g.ellipse(30, 22, 16, 5, 't2');
-  g.ellipse(30, 22, 13, 3, 'b3');
-  const handle = new Grid();
-  handle.ring(30, 22, 17, 2, 'g4');
-  handle.erase((x, y) => y > 20);
-  g.blit(handle);
-  // tinta escorrendo
-  g.poly([[44, 22], [52, 26], [54, 40], [50, 44], [48, 30]], 'b3');
-  g.circle(52, 48, 3, 'b4');
-  return finish(g, { shade: false });
-}
+const balde = () => icone((m) => {
+  m.part(CINZA, 'flat', (p) => { p.ring(15, 11, 9, 1, 'x'); p.erase((x, y) => y > 10); }, { edge: false });
+  m.part(METAL, 'cylinder', (p) => p.poly([[6, 11], [24, 11], [22, 28], [8, 28]], 'x'));
+  m.part(AZUL, 'hcylinder', (p) => p.ellipse(15, 11, 8, 2, 'x'), { light: 1 });
+  m.part(AZUL, 'sphere', (p) => { p.poly([[22, 11], [27, 13], [28, 21], [25, 22], [24, 15]], 'x'); p.circle(27, 25, 2, 'x'); });
+});
 
-function contaGotas() {
-  const g = new Grid();
-  bar(g, 46, 18, 22, 42, 7, 'gh3');
-  g.circle(50, 14, 7, 'r3');
-  g.poly([[18, 42], [22, 46], [12, 54], [10, 52]], 'g4');
-  g.shade({ depth: 2 });
-  g.circle(10, 58, 3, 'b4');
-  return finish(g, { shade: false });
-}
+const contaGotas = () => icone((m) => {
+  m.part(VIDRO, 'cylinder', (p) => p.stroke(22, 10, 9, 23, 4, 'x'));
+  m.part(VERMELHO, 'sphere', (p) => p.circle(25, 7, 4, 'x'));
+  m.part(CINZA_ESCURO, 'cylinder', (p) => p.stroke(9, 23, 5, 27, 2, 'x'));
+  m.part(AZUL, 'sphere', (p) => p.ellipse(4, 30, 1, 1, 'x'));
+});
 
 /** Espelho: desenha dos dois lados de uma vez. */
-function espelho() {
-  const g = new Grid();
-  g.rect(31, 6, 2, 52, 'y3');
-  g.poly([[26, 16], [8, 32], [26, 48]], 'p4');
-  g.poly([[38, 16], [56, 32], [38, 48]], 'p2');
-  g.shade({ depth: 2 });
-  return finish(g, { shade: false });
-}
+const espelho = () => icone((m) => {
+  m.part(ROXO, 'sphere', (p) => p.poly([[13, 7], [3, 16], [13, 25]], 'x'));
+  m.part(LILAS, 'sphere', (p) => p.poly([[19, 7], [29, 16], [19, 25]], 'x'), { light: -1 });
+  m.part(AMARELO, 'cylinder', (p) => p.rect(15, 2, 2, 28, 'x'));
+});
 
 function seta(dir) {
-  const g = new Grid();
-  g.ring(32, 36, 16, 6, 'w');
-  g.erase((x, y) => y > 36);
-  if (dir === 'undo') g.poly([[6, 34], [26, 34], [16, 50]], 'w');
-  else g.poly([[58, 34], [38, 34], [48, 50]], 'w');
-  return finish(g);
+  return icone((m) => {
+    m.part(BRANCO, 'sphere', (p) => {
+      p.ring(16, 19, 9, 4, 'x');
+      p.erase((x, y) => y > 19);
+      if (dir === 'undo') p.poly([[2, 17], [13, 17], [7, 26]], 'x');
+      else p.poly([[30, 17], [19, 17], [25, 26]], 'x');
+    });
+  });
 }
 
-function lixeira() {
-  const g = new Grid();
-  g.poly([[16, 20], [48, 20], [44, 56], [20, 56]], 't4');
-  g.shade({ depth: 2 });
-  for (const x of [25, 32, 39]) g.rect(x, 26, 2, 24, 't2');
-  g.rect(12, 14, 40, 5, 't5');
-  g.rect(26, 9, 12, 5, 't5');
-  return finish(g, { shade: false });
-}
+const lixeira = () => icone((m) => {
+  m.part(PRATA, 'cylinder', (p) => p.poly([[7, 10], [25, 10], [23, 29], [9, 29]], 'x'));
+  m.part(PRATA, 'hcylinder', (p) => { p.rect(5, 6, 22, 3, 'x'); p.rect(12, 3, 8, 3, 'x'); }, { light: 1 });
+  m.paint((g) => { for (const x of [12, 16, 20]) g.rect(x, 13, 1, 13, 't2'); });
+});
 
 /** Mostrar/esconder as linhas da grade. */
-function grade() {
-  const g = new Grid();
-  g.rect(10, 10, 44, 44, 'k2');
-  for (let i = 0; i <= 4; i++) {
-    g.rect(10 + i * 11, 10, 2, 44, 'g4');
-    g.rect(10, 10 + i * 11, 44, 2, 'g4');
-  }
-  g.rect(23, 23, 9, 9, 'y3');
-  g.rect(34, 34, 9, 9, 'c4');
-  return finish(g, { shade: false });
-}
+const grade = () => icone((m) => {
+  m.part(CINZA_ESCURO, 'flat', (p) => p.rect(4, 4, 24, 24, 'x'));
+  m.paint((g) => {
+    for (let i = 0; i <= 4; i++) { g.rect(4 + i * 6, 4, 1, 24, 'g4'); g.rect(4, 4 + i * 6, 24, 1, 'g4'); }
+    g.rect(11, 11, 5, 5, 'y3');
+    g.rect(17, 17, 5, 5, 'c4');
+  });
+  m.overlay((g) => faisca(g, 28, 3, 'y4'));
+});
 
 export function editorIconSheets() {
   return {
