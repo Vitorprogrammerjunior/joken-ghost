@@ -14,6 +14,8 @@ export class StoryScene extends Scene {
     this.el.addEventListener('click', () => this.advance());
   }
 
+  music({ ending = null }) { return ending ? ENDINGS[ending].music : 'conto'; }
+
   /** Abre a carta de uma fase (`levelId`) ou um final (`ending`, chave de ENDINGS). */
   enter({ levelId, ending = null }) {
     this.ending = ending ? ENDINGS[ending] : null;
@@ -22,7 +24,6 @@ export class StoryScene extends Scene {
     this.chars = 0;
     this.scenery = new Scenery(this.game.assets, this.ending ? this.ending.scenery : this.level.scenery);
     this.textEl.textContent = '';
-    this.game.audio.playMusic(this.ending ? this.ending.music : 'mapa');
   }
 
   get done() { return this.chars >= this.full.length; }

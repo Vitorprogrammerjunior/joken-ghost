@@ -1,21 +1,19 @@
 'use strict';
 // Filas de partida: ranqueada e casual (1x1), 2x2 e chefe cooperativo.
-// Se ninguém aparecer em `rules.botAfterMs`, bots completam a partida (sem troféus).
+// Só caçadores de verdade: a partida começa quando a fila junta gente suficiente.
 
 const QUEUES = ['ranked', 'casual', 'duo', 'raid'];
 
 class Matchmaker {
   /**
    * @param {object} o
-   * @param {object} o.rules
    * @param {() => number} o.now
    * @param {() => number} o.rng
-   * @param {(trophies: number) => object} o.createBot
    * @param {(teams: object[][], opts: { kind: string, ranked: boolean }) => void} o.startDuel  times de "assentos" ({ player, socketId })
    * @param {(seats: object[]) => void} o.startRaid
    */
-  constructor({ rules, now, rng, createBot, startDuel, startRaid }) {
-    Object.assign(this, { rules, now, rng, createBot, startDuel, startRaid });
+  constructor({ now, rng, startDuel, startRaid }) {
+    Object.assign(this, { now, rng, startDuel, startRaid });
     this.queues = Object.fromEntries(QUEUES.map(q => [q, new Map()])); // playerId -> { s, since }
   }
 
@@ -36,9 +34,9 @@ class Matchmaker {
 
   tick() {
     this.#pairRanked();
-    this.#pairInOrder('casual', 2, (group) => this.startDuel([[seat(group[0])], [seat(group[1])]], { kind: 'casual', ranked: false }));
-    this.#pairInOrder('duo', 4, (group) => this.startDuel(this.#duoTeams(group.map(seat)), { kind: 'duo', ranked: false }));
-    this.#pairInOrder('raid', 2, (group) => this.startRaid(group.map(seat)));
+    this.#pairInOrder('casual', 2, (group) => this.startDuel([[group[0]], [group[1]]], { kind: 'casual', ranked: false }));
+    this.#pairInOrder('duo', 4, (group) => this.startDuel(this.#duoTeams(group), { kind: 'duo', ranked: false }));
+    this.#pairInOrder('raid', 2, (group) => this.startRaid(group));
   }
 
   #waiting(mode) {
@@ -47,9 +45,7 @@ class Matchmaker {
 
   #take(mode, list) { for (const w of list) this.queues[mode].delete(w.s.player.id); }
 
-  #botSeat(trophies) { return { player: this.createBot(trophies), socketId: null }; }
-
-  /** Ranqueada: troféus parecidos; a tolerância cresce com a espera. Sozinho demais: bot sem troféus. */
+  /** Ranqueada: troféus parecidos; a tolerância cresce com a espera. */
   #pairRanked() {
     const now = this.now();
     const waiting = this.#waiting('ranked');
@@ -63,51 +59,30 @@ class Matchmaker {
         const tol = Math.max(150 + 25 * ((now - a.since) / 1000), 150 + 25 * ((now - b.since) / 1000));
         if (diff <= tol && (!best || diff < best.diff)) best = { b, diff };
       }
-      if (best) {
-        used.add(a); used.add(best.b);
-        this.#take('ranked', [a, best.b]);
-        this.startDuel([[seat(a)], [seat(best.b)]], { kind: 'ranked', ranked: true });
-      } else if (now - a.since >= this.rules.botAfterMs) {
-        used.add(a);
-        this.#take('ranked', [a]);
-        this.startDuel([[seat(a)], [this.#botSeat(a.s.player.trophies)]], { kind: 'bot', ranked: false });
-      }
+      if (!best) continue;
+      used.add(a); used.add(best.b);
+      this.#take('ranked', [a, best.b]);
+      this.startDuel([[seat(a)], [seat(best.b)]], { kind: 'ranked', ranked: true });
     }
   }
 
-  /** Filas por ordem de chegada; quem espera demais completa o grupo com bots. */
+  /** Filas por ordem de chegada: a cada `size` caçadores, uma partida. */
   #pairInOrder(mode, size, start) {
     const waiting = this.#waiting(mode);
     while (waiting.length >= size) {
       const group = waiting.splice(0, size);
       this.#take(mode, group);
-      start(group);
-    }
-    if (waiting.length && this.now() - waiting[0].since >= this.rules.botAfterMs) {
-      this.#take(mode, waiting);
-      const trophies = waiting[0].s.player.trophies;
-      const humans = waiting.map(w => ({ s: w.s }));
-      while (humans.length < size) humans.push({ bot: this.#botSeat(trophies) });
-      start(humans);
+      start(group.map(seat));
     }
   }
 
-  /** 2x2: humanos juntos no mesmo time quando possível (2 humanos + 2 bots = humanos contra bots). */
+  /** 2x2: as duplas são sorteadas. */
   #duoTeams(seats) {
-    const humans = seats.filter(s => !s.player.isBot);
-    const bots = seats.filter(s => s.player.isBot);
-    if (humans.length === 4) {
-      const shuffled = [...humans].sort(() => this.rng() - 0.5);
-      return [shuffled.slice(0, 2), shuffled.slice(2)];
-    }
-    const ordered = [...humans, ...bots];
-    return [ordered.slice(0, 2), ordered.slice(2)];
+    const shuffled = [...seats].sort(() => this.rng() - 0.5);
+    return [shuffled.slice(0, 2), shuffled.slice(2)];
   }
 }
 
-/** Fila guarda { s } (sessão) ou { bot } (assento pronto de bot). */
-function seat(w) {
-  return w.bot ?? { player: w.s.player, socketId: w.s.socket.id };
-}
+const seat = (w) => ({ player: w.s.player, socketId: w.s.socket.id });
 
 module.exports = { Matchmaker, QUEUES };

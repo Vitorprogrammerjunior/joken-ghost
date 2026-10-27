@@ -16,7 +16,6 @@ import { $, h, icon, show, retrigger } from '../ui/dom.js';
 const REASONS = { nocaute: 'Nocaute!', abandono: 'Um caçador abandonou a partida.', 'desistência': 'Desistência.' };
 const KIND_NOTES = {
   casual: 'Partida casual: sem troféus.',
-  bot: 'Contra um bot: sem troféus.',
   duo: 'Partida 2x2: sem troféus.',
   room: 'Sala privada: sem troféus.',
   challenge: 'Desafio amistoso: sem troféus.',
@@ -24,7 +23,7 @@ const KIND_NOTES = {
   king: 'Rei da Arena.',
 };
 /** Para onde o "jogar de novo" leva (fila do mesmo modo). */
-const AGAIN = { ranked: 'ranked', casual: 'casual', bot: 'casual', duo: 'duo' };
+const AGAIN = { ranked: 'ranked', casual: 'casual', duo: 'duo' };
 
 /** Onde fica cada caçador: embaixo (de costas) e em cima (de lado), por quantidade no lado. */
 const SPOTS = {
@@ -80,9 +79,11 @@ export class DuelScene extends Scene {
   }
   /** Assento "de referência" embaixo: eu, ou o 1º do lado 0 para quem assiste. */
   get #anchor() { return this.spectator ? this.m.fighters.find(f => f.side === 0 && f.lane === 0).seat : this.m.you; }
-  #name(seat) { const f = this.m.fighters[seat]; return f.isBot ? `${f.nickname} (bot)` : f.nickname; }
+  #name(seat) { return this.m.fighters[seat].nickname; }
 
   // ═══════════════════════ início ═══════════════════════
+  music() { return 'duelo'; }
+
   enter({ match }) {
     const { assets } = this.game;
     this.m = match;
@@ -119,7 +120,6 @@ export class DuelScene extends Scene {
     this.#spectators(match.spectators ?? 0);
     this.#syncHp();
     this.#renderHistory();
-    this.game.audio.playMusic('duelo');
 
     if (match.phase === 'card') this.#cardPhase({ round: match.round, hand: match.hand, endsIn: match.endsIn, hp: this.hp });
     else if (match.phase === 'weapon') this.#weaponPhase({ round: match.round, endsIn: match.endsIn, cards: match.cards, forbidden: match.forbidden });
@@ -291,9 +291,9 @@ export class DuelScene extends Scene {
     this.#say(`VISÃO: ${this.#name(seat)} escolheu ${WEAPONS[weapon].name}!`);
   }
 
-  #seatStatus({ seat, connected, graceMs, bot }) {
+  #seatStatus({ seat, connected, graceMs, away }) {
     const who = this.#name(seat);
-    if (bot) this.#say(`${who} caiu. Um bot assumiu o lugar dele.`);
+    if (away) this.#say(`${who} não voltou: o lugar fica parado, repetindo a última arma.`);
     else if (connected) this.#say(`${who} voltou!`);
     else this.#say(`${who} caiu... esperando ${Math.round((graceMs ?? 15000) / 1000)}s para voltar.`);
   }

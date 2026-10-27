@@ -2,12 +2,11 @@
 // Partida do Chefe Cooperativo (regras em src/raid.js).
 // Cada rodada: o chefe decide o golpe contra cada caçador, cada um escolhe a arma, resultado.
 const raidRules = require('../raid');
-const { leagueOf, WEAPONS, BEATS } = require('../catalog');
-const { MOVE_WEAPON } = require('../bots');
+const { leagueOf } = require('../catalog');
+const { publicLook } = require('../cosmetics');
 const { Match } = require('./Match');
 
 const START_DELAY_MS = 2600;
-const counterOf = (weapon) => Object.keys(BEATS).find(w => BEATS[w] === weapon);
 
 class RaidMatch extends Match {
   /**
@@ -37,21 +36,10 @@ class RaidMatch extends Match {
     this.endsAt = this.now() + raidRules.RAID.weaponMs;
     for (const t of this.phaseTimers) this.cancel(t);
     this.phaseTimers = [this.later(raidRules.RAID.weaponMs, () => this.#resolve())];
-    this.seats.forEach((s, i) => {
-      const h = raid.hunters[i];
+    raid.hunters.forEach((h, i) => {
       this.send(i, 'raid_phase', { round: raid.round, endsIn: raidRules.RAID.weaponMs, tell: h.tell, alive: h.hp > 0 });
-      if (s.player.isBot && h.hp > 0) {
-        const [min, max] = this.rules.botThinkMs;
-        this.phaseTimers.push(this.later(min + Math.floor(this.rng() * (max - min)), () => this.pickWeapon(i, this.#botWeapon(h))));
-      }
     });
     this.toSpectators('raid_phase', { round: raid.round, endsIn: raidRules.RAID.weaponMs, tell: null, alive: false });
-  }
-
-  /** Parceiro bot: confia nas pistas do chefe metade das vezes; senão joga no escuro. */
-  #botWeapon(h) {
-    if (h.tell && this.rng() < 0.5) return counterOf(MOVE_WEAPON[h.tell]);
-    return WEAPONS[Math.floor(this.rng() * WEAPONS.length)];
   }
 
   pickWeapon(i, weapon) {
@@ -82,9 +70,7 @@ class RaidMatch extends Match {
     h.hp = 0;
     h.locked = true;
     this.toAll('seat_status', { seat: i, connected: false, out: true });
-    // sem nenhum humano de pé, a luta acaba (um bot sozinho não joga para ninguém)
-    const humansUp = this.seats.some((s, k) => !s.player.isBot && this.raid.hunters[k].hp > 0);
-    if (!humansUp) this.finish({ won: false, reason: 'caçadores caíram' });
+    if (!this.raid.hunters.some(hh => hh.hp > 0)) this.finish({ won: false, reason: 'caçadores caíram' });
     else if (raidRules.allLocked(this.raid)) this.#resolve();
   }
 
@@ -96,7 +82,7 @@ class RaidMatch extends Match {
       boss: { id: boss.id, name: boss.def.name, sprite: boss.def.sprite, hp: boss.hp, maxHp: boss.maxHp, phase: boss.phase, phases: boss.def.phases?.length ?? 0 },
       hunters: hunters.map((h, k) => ({
         seat: k, id: h.id, nickname: h.nickname, character: h.character, hp: h.hp, maxHp: h.maxHp,
-        league: leagueOf(this.seats[k].player.trophies ?? 0), frame: this.seats[k].player.equipped?.frame ?? null, isBot: !!this.seats[k].player.isBot,
+        league: leagueOf(this.seats[k].player.trophies ?? 0), ...publicLook(this.seats[k].player),
       })),
       round, phase,
       endsIn: Math.max(0, this.endsAt - this.now()),

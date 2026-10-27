@@ -25,9 +25,9 @@ export const leagueIcon = (id) => `icon/liga_${id}`;
 export const MODES = {
   ranked: { name: 'Ranqueada', desc: 'Vale troféus. Seu deck e seu caçador.', icon: 'icon/trofeu' },
   casual: { name: 'Casual', desc: 'Treino sem troféus.', icon: 'icon/espadas' },
-  duo: { name: '2x2', desc: 'Dupla contra dupla, vida somada. Bots completam se faltar gente.', icon: 'icon/duelo' },
+  duo: { name: '2x2', desc: 'Dupla contra dupla, vida somada. Começa quando 4 caçadores entram na fila.', icon: 'icon/duelo' },
   raid: { name: 'Chefe Cooperativo', desc: 'Você e um parceiro contra um chefe da campanha. Vale Ecto.', icon: 'icon/caveira' },
-  tournament: { name: 'Torneio Relâmpago', desc: '8 caçadores em mata-mata. O campeão leva uma taça e Ecto.', icon: 'icon/taca' },
+  tournament: { name: 'Torneio Relâmpago', desc: 'De 4 a 8 caçadores em mata-mata. O campeão leva uma taça e Ecto.', icon: 'icon/taca' },
   king: { name: 'Rei da Arena', desc: 'Quem vence fica. Cada vitória como rei vale Ecto.', icon: 'icon/coroa' },
 };
 

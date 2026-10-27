@@ -17,6 +17,7 @@ import { uiSheets } from './art/ui.mjs';
 import { tileSheets } from './art/tiles.mjs';
 import { tileSheets2 } from './art/tiles2.mjs';
 import { arenaIconSheets, frameSheets } from './art/arena.mjs';
+import { editorIconSheets } from './art/editor.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const OUT = join(ROOT, 'assets', 'sprites');
@@ -50,7 +51,7 @@ for (const [name, g] of Object.entries(cardSheets())) emit(`card/${name}`, `card
 for (const [enemy, anims] of Object.entries({ ...enemySheets(), ...enemySheets2() })) {
   for (const [anim, g] of Object.entries(anims)) emit(`enemy/${enemy}/${anim}`, `enemies/${enemy}/${anim}`, g);
 }
-for (const [name, g] of Object.entries({ ...iconSheets(), ...arenaIconSheets() })) emit(`icon/${name}`, `icons/${name}`, g);
+for (const [name, g] of Object.entries({ ...iconSheets(), ...arenaIconSheets(), ...editorIconSheets() })) emit(`icon/${name}`, `icons/${name}`, g);
 for (const [name, g] of Object.entries(fxSheets())) emit(`fx/${name}`, `fx/${name}`, g);
 for (const [name, g] of Object.entries({ ...uiSheets(), ...frameSheets() })) emit(`ui/${name}`, `ui/${name}`, g);
 for (const [name, g] of Object.entries({ ...tileSheets(), ...tileSheets2() })) emit(`tile/${name}`, `tiles/${name}`, g);

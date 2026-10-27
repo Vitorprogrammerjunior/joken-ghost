@@ -8,6 +8,7 @@ export const DEFAULT_OPTIONS = {
   shake: true,
   damageNumbers: true,
   toasts: true,
+  nowPlaying: true,       // aviso "Tocando: ..." quando a música muda
   pixelPerfect: false,
   muted: false,
 };

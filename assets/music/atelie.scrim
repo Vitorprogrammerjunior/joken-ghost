@@ -1,0 +1,48 @@
+title    Ateliê de Pixels
+composer Claude
+about    Editor de avatar. Pizzicato saltitante, glockenspiel e xilofone pintando um pixel de cada vez.
+tempo    112
+beats    4
+steps    2
+swing    0.18
+reverb   0.3
+
+voice glock  glock     vol=0.7  pan=0.25
+voice xylo   xylophone vol=0.75 pan=-0.25
+voice pizz   pizz      vol=0.7  pan=-0.15 center=E4
+voice bass   upright   vol=0.85
+voice shaker shaker    vol=0.35 pan=0.4
+voice block  block     vol=0.3  pan=-0.35
+voice kick   kick      vol=0.3
+
+pattern intro
+pizz   | . [C] . [C] . [C] . [C] | . [G] . [G] . [G] . [G] |
+bass   | C2- G2- C3- G2- | G1- D2- G2- B1- |
+shaker | x.x.x.xx | % |
+
+# ------------------------------------------------ A: o primeiro pixel
+pattern A
+glock  | E5 G5 C6- B5 G5 E5- | A5- G5 E5 C5--- | F5 A5 C6- A5 F5 C5- | D5--- G5--- |
+glock  | E5 G5 C6- D6 C6 B5- | A5- C6- E6- D6- | F5 E5 D5- B4 C5 D5- | C5----- . . |
+pizz   | . [C] . [C] . [C] . [C] | . [Am] . [Am] . [Am] . [Am] | . [F] . [F] . [F] . [F] | . [G] . [G] . [G] . [G] |
+pizz   | . [C] . [C] . [C] . [C] | . [Am] . [Am] . [Am] . [Am] | . [Dm] . [Dm] . [G] . [G] | . [C] . [C] . [C] . [C] |
+bass   | C2- G2- C3- G2- | A1- E2- A2- E2- | F1- C2- F2- C2- | G1- D2- G2- B1- |
+bass   | C2- G2- C3- G2- | A1- E2- A2- G2- | D2- A2- G1- B1- | C2- G2- C2- . . |
+shaker | x.x.x.xx | % | % | % | % | % | % | % |
+block  | ..x...x. | % | % | % | % | % | % | ..x.x.xx |
+kick   | x...x... | % | % | % | % | % | % | % |
+
+# ------------------------------------------------ B: o xilofone pinta o fundo
+pattern B
+xylo   | A5- C6- A5- F5- | B5- D6- B5- G5- | G5 F#5 E5- B4- E5- | C6--- A5--- |
+xylo   | D6- C6- A5- F5- | G5- B5- D6--- | E6- D6- C6- G5- | F5 G5 A5 B5 D6--- |
+pizz   | . [F] . [F] . [F] . [F] | . [G] . [G] . [G] . [G] | . [Em] . [Em] . [Em] . [Em] | . [Am] . [Am] . [Am] . [Am] |
+pizz   | . [Dm] . [Dm] . [Dm] . [Dm] | . [G] . [G] . [G] . [G] | . [C] . [C] . [C] . [C] | . [G7] . [G7] . [G7] . [G7] |
+bass   | F1- C2- F2- C2- | G1- D2- G2- D2- | E2- B2- E2- B1- | A1- E2- A2- E2- |
+bass   | D2- A2- D3- A2- | G1- D2- G2- D2- | C2- G2- C3- G2- | G1- B1- D2- F2- |
+shaker | x.x.x.xx | % | % | % | % | % | % | % |
+block  | ..x...x. | % | % | % | % | % | % | ..x.x.xx |
+kick   | x...x... | % | % | % | % | % | % | % |
+
+play intro
+loop A B

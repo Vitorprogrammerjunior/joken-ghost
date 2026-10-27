@@ -25,8 +25,9 @@
   cursor: pointer;
   image-rendering: pixelated;
 }
-.btn:hover:not(:disabled), .btn:focus-visible { border-image-source: url('../assets/sprites/ui/btn_hover.svg'); outline: none; }
-.btn:active:not(:disabled) { border-image-source: url('../assets/sprites/ui/btn_pressed.svg'); padding-top: 18px; padding-bottom: 10px; }
+.btn { transition: transform 0.1s steps(2); }
+.btn:hover:not(:disabled), .btn:focus-visible { border-image-source: url('../assets/sprites/ui/btn_hover.svg'); outline: none; transform: translateY(-2px); }
+.btn:active:not(:disabled) { border-image-source: url('../assets/sprites/ui/btn_pressed.svg'); padding-top: 18px; padding-bottom: 10px; transform: none; }
 .btn:disabled { border-image-source: url('../assets/sprites/ui/btn_disabled.svg'); color: var(--mist); cursor: default; }
 
 .btn-primary { border-image-source: url('../assets/sprites/ui/btn_primary.svg'); }
@@ -48,7 +49,7 @@
 .panel {
   border: 2px solid transparent;
   border-image: url('../assets/sprites/ui/panel.svg') 16 fill / 32px / 0 stretch;
-  padding: 36px 40px;
+  padding: 40px 48px;
 }
 .panel-stone {
   border: 2px solid transparent;
@@ -96,9 +97,9 @@
   align-items: center;
   justify-content: center;
   background: rgba(14, 11, 22, 0.72);
-  animation: fade-in 0.15s ease both;
+  animation: fade-in 0.2s ease both;
 }
-.modal.closing { animation: fade-in 0.15s ease reverse both; }
+.modal.closing { animation: fade-out 0.2s ease both; pointer-events: none; }
 .modal-card {
   display: flex;
   flex-direction: column;
@@ -106,8 +107,22 @@
   gap: 20px;
   min-width: 560px;
   max-height: 688px; /* cabe na tela de 720; o conteúdo longo rola por dentro */
-  animation: pop 0.25s ease-out both;
+  animation: card-in 0.32s steps(6) both;
 }
+.modal.closing .modal-card { animation: card-out 0.2s steps(4) both; }
+
+/* Os itens das listas (.cascade) entram em cascata só na abertura: Modals põe .opening por um instante,
+   assim atualizar a lista depois (comprar, escolher...) não faz tudo piscar de novo. */
+.cascade > * { --i: 8; }
+.cascade > :nth-child(1) { --i: 0; }
+.cascade > :nth-child(2) { --i: 1; }
+.cascade > :nth-child(3) { --i: 2; }
+.cascade > :nth-child(4) { --i: 3; }
+.cascade > :nth-child(5) { --i: 4; }
+.cascade > :nth-child(6) { --i: 5; }
+.cascade > :nth-child(7) { --i: 6; }
+.cascade > :nth-child(8) { --i: 7; }
+.modal.opening .cascade > * { animation: item-in 0.28s steps(4) calc(var(--i) * 40ms) both; }
 .modal-sm { min-width: 480px; }
 .modal-title { font-size: 32px; line-height: 40px; font-weight: normal; color: var(--gold); text-shadow: var(--outline); }
 .modal .menu { display: flex; flex-direction: column; gap: 12px; width: 360px; }
@@ -140,6 +155,30 @@
 }
 .toast.out { animation: toast-in 0.25s steps(5) reverse both; }
 @keyframes toast-in { from { transform: translateY(-24px); opacity: 0; } }
+
+/* ─── aviso de música (canto de baixo, não bloqueia cliques) ─── */
+.now-playing {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 460px;
+  padding: 6px 14px 6px 10px;
+  background: rgba(14, 11, 22, 0.82);
+  box-shadow: 0 0 0 2px var(--ink-3);
+  color: var(--fog);
+  text-shadow: var(--outline);
+  pointer-events: none;
+}
+.now-playing span { color: var(--mist); }
+.now-playing b { overflow: hidden; font-weight: normal; color: var(--white); text-overflow: ellipsis; white-space: nowrap; }
+.now-playing.in { animation: np-in 0.35s steps(5) both; }
+.now-playing.out { animation: np-out 0.4s steps(5) both; }
+@keyframes np-in { from { transform: translateX(-24px); opacity: 0; } }
+@keyframes np-out { to { transform: translateX(-24px); opacity: 0; } }
 
 /* ─── campos ─── */
 .field-label { align-self: flex-start; color: var(--gold); text-shadow: var(--outline); }
@@ -174,7 +213,7 @@
 .chip.muted { color: var(--mist); padding-left: 10px; }
 
 /* ─── opções ─── */
-.opt-group { display: flex; flex-direction: column; gap: 10px; width: 600px; }
+.opt-group { display: flex; flex-direction: column; gap: 14px; width: 620px; }
 .opt { display: grid; grid-template-columns: 260px 1fr 56px; align-items: center; gap: 16px; text-shadow: var(--outline); }
 .opt .btn-toggle { grid-column: 2 / 4; justify-self: start; }
 .opt b { color: var(--gold); text-align: right; font-weight: normal; }
@@ -203,7 +242,7 @@
 }
 
 /* ─── arquivos ─── */
-.save-list { display: flex; flex-direction: column; gap: 12px; width: 720px; }
+.save-list { display: flex; flex-direction: column; gap: 16px; width: 720px; }
 .save-slot {
   display: grid;
   grid-template-columns: 56px 1fr auto;
@@ -283,14 +322,14 @@
 .book-close { position: absolute; top: -16px; right: -16px; }
 
 /* ─── oficina e recompensas da campanha ─── */
-.workshop-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; width: 100%; min-height: 0; overflow-y: auto; pointer-events: auto; }
+.workshop-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 4px 8px 4px 4px; width: 100%; min-height: 0; overflow-y: auto; pointer-events: auto; }
 .up-card {
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
-  column-gap: 12px;
-  row-gap: 4px;
-  padding: 12px 14px;
+  column-gap: 16px;
+  row-gap: 8px;
+  padding: 18px 20px;
   border: 2px solid transparent;
   border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 24px / 0 stretch;
   text-shadow: var(--outline);
@@ -306,20 +345,20 @@
 .up-card .btn .ico-xs { width: 24px; height: 24px; }
 .up-card.maxed { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
 
-.reward-list { list-style: none; display: flex; flex-direction: column; gap: 8px; width: 100%; min-height: 0; overflow-y: auto; pointer-events: auto; }
+.reward-list { list-style: none; display: flex; flex-direction: column; gap: 14px; width: 100%; min-height: 0; padding: 4px 8px 4px 4px; overflow-y: auto; pointer-events: auto; }
 .reward-row {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto auto;
+  grid-template-columns: 56px minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 14px;
-  padding: 8px 14px;
+  gap: 24px;
+  padding: 16px 24px;
   background: var(--ink-2);
   box-shadow: 0 0 0 2px var(--ink-3);
   text-shadow: var(--outline);
 }
-.reward-row > .ico { width: 48px; height: 48px; }
+.reward-row > .ico { width: 56px; height: 56px; }
 .reward-row b { font-weight: normal; color: var(--white); }
-.reward-row p { color: var(--fog); }
+.reward-row p { margin-top: 4px; color: var(--fog); }
 .reward-need { display: flex; align-items: center; gap: 4px; color: var(--gold); }
 .reward-row.locked { opacity: 0.6; }
 .reward-row.locked b { color: var(--mist); }

@@ -7,7 +7,6 @@ const catalog = require('./catalog');
 const { RULES, CARDS, DECK, CHARACTERS, LEAGUES, leagueOf, unlockedCards, unlockedCharacters, validateDeck, deckOf } = catalog;
 const { applyResult, FarmGuard } = require('./trophies');
 const { cleanNickname } = require('./store');
-const { createBot, simulateDuel } = require('./bots');
 const cosmetics = require('./cosmetics');
 const missions = require('./missions');
 const seasons = require('./seasons');
@@ -39,7 +38,7 @@ class Hub {
    * @param {object} opts
    * @param {object} opts.shared   regras compartilhadas (src/shared.js)
    */
-  constructor(io, store, { shared, rng = Math.random, rules = RULES, now = Date.now, tournamentFillMs = 45000, kingBotMs, ratePerSec = 25 } = {}) {
+  constructor(io, store, { shared, rng = Math.random, rules = RULES, now = Date.now, tournamentFillMs = 45000, ratePerSec = 25 } = {}) {
     this.io = io;
     this.store = store;
     this.shared = shared;
@@ -58,16 +57,14 @@ class Hub {
     this.lastSeasonCheck = 0;
 
     this.matchmaker = new Matchmaker({
-      rules, now, rng,
-      createBot: (t) => createBot(t, rng),
+      now, rng,
       startDuel: (teams, o) => this.#play(teams.flat(), o),
       startRaid: (seats) => this.#startRaid(seats),
     });
     this.tournament = this.#newTournament();
     this.runningTournaments = new Set();
     this.king = new KingOfHill({
-      now, botChallengeMs: kingBotMs,
-      createBot: (t) => createBot(t, rng),
+      now,
       play: (king, challenger, onStart) => this.#playKing(king, challenger, onStart),
       broadcast: (k) => this.#broadcastKing(k),
       onWin: (p, streak) => this.#updatePlayer(p.id, (pl) => { pl.ecto += KING_WIN_ECTO + 5 * Math.min(streak - 1, 6); }),
@@ -117,6 +114,9 @@ class Hub {
     on('missions_claim', as((s, d) => this.#claimMission(s, d.id)));
     on('shop_buy', as((s, d) => this.#apply(s, cosmetics.buy(s.player, d.id))));
     on('equip_frame', as((s, d) => this.#apply(s, cosmetics.equipFrame(s.player, d.id ?? null))));
+    on('set_avatar', as((s, d) => this.#apply(s, cosmetics.setAvatar(s.player, d, {
+      unlocked: unlockedCharacters(s.player.best), isValidArt: this.shared.isValidArt,
+    }))));
     // filas e modos
     on('queue_join', as((s, d) => this.#queueJoin(s, d.mode ?? 'ranked')));
     on('queue_leave', as((s) => this.#queueLeave(s)));
@@ -235,6 +235,7 @@ class Hub {
       ecto: p.ecto ?? 0, cups: p.cups ?? 0,
       cosmetics: [...new Set([...cosmetics.FREE, ...(p.cosmetics ?? [])])],
       equipped: p.equipped ?? { frame: null },
+      avatar: p.avatar ?? cosmetics.DEFAULT_AVATAR,
       missions: missions.missionsView(p),
       season: { ...seasons.seasonInfo(new Date(this.now())), best: p.seasonBest ?? 0 },
     };
@@ -290,7 +291,10 @@ class Hub {
   async #ranking(s) {
     const top = await this.store.top(50);
     s.socket.emit('ranking', {
-      top: top.map((p, i) => ({ rank: i + 1, id: p.id, nickname: p.nickname, trophies: p.trophies, wins: p.wins, character: p.character, league: leagueOf(p.trophies), frame: p.equipped?.frame ?? null })),
+      top: top.map((p, i) => ({
+        rank: i + 1, id: p.id, nickname: p.nickname, trophies: p.trophies, wins: p.wins, character: p.character,
+        league: leagueOf(p.trophies), ...cosmetics.publicLook(p),
+      })),
       me: { rank: await this.store.rankOf(s.player), trophies: s.player.trophies },
       total: await this.store.count(),
     });
@@ -313,7 +317,7 @@ class Hub {
   #lobbyState() {
     const online = [...this.sessions.values()].map(s => ({
       id: s.player.id, nickname: s.player.nickname, trophies: s.player.trophies, character: s.player.character,
-      league: leagueOf(s.player.trophies), frame: s.player.equipped?.frame ?? null, status: s.status,
+      league: leagueOf(s.player.trophies), ...cosmetics.publicLook(s.player), status: s.status,
     }));
     online.sort((a, b) => b.trophies - a.trophies);
     return {
@@ -434,7 +438,6 @@ class Hub {
   #seat(sOrPlayer) {
     if (sOrPlayer.socket) return { player: sOrPlayer.player, socketId: sOrPlayer.socket.id };
     const p = sOrPlayer;
-    if (p.isBot) return { player: p, socketId: null };
     const s = this.#session(p.id);
     return { player: s?.player ?? p, socketId: s?.socket.id ?? null };
   }
@@ -447,9 +450,9 @@ class Hub {
     let resolveDone;
     const done = new Promise(r => { resolveDone = r; });
     const match = new DuelMatch({
-      io: this.io, rules: this.rules, now: this.now, rng: this.rng, chooseMove: this.shared.chooseMove,
+      io: this.io, rules: this.rules, now: this.now, rng: this.rng,
       kind, ranked, seats, stage: STAGES[Math.floor(this.rng() * STAGES.length)],
-      botTakesOver: kind === 'duo',
+      partnerCarries: kind === 'duo',
       onRound: (m, r) => this.#onDuelRound(m, r),
       onEnd: async (m, result) => {
         const personal = await this.#onDuelEnd(m, result, returnTo);
@@ -474,7 +477,7 @@ class Hub {
   /** Registra a partida, põe os jogadores dentro e começa. */
   #begin(match) {
     this.matches.set(match.id, match);
-    for (const seat of match.humans) {
+    for (const seat of match.seats) {
       const s = this.#session(seat.player.id);
       if (!s) continue;
       this.matchmaker.leave(s);
@@ -484,15 +487,14 @@ class Hub {
       s.matchId = match.id;
     }
     match.start();
-    // humano sem conexão (ex.: saiu entre as rodadas do torneio): a carência começa já
-    match.seats.forEach((seat, i) => { if (!seat.player.isBot && !seat.socketId) match.disconnect(i); });
+    // jogador sem conexão (ex.: saiu entre as rodadas do torneio): a carência começa já
+    match.seats.forEach((seat, i) => { if (!seat.socketId) match.disconnect(i); });
     this.#broadcastLobby();
   }
 
   /** Missões que andam a cada rodada: rodadas vencidas por arma, empates e cartas usadas. */
   #onDuelRound(match, r) {
     match.seats.forEach((seat, i) => {
-      if (seat.player.isBot) return;
       const p = seat.player;
       missions.ensureMissions(p, this.#today);
       const lane = r.lanes.find(l => l.a === i || l.b === i);
@@ -514,7 +516,6 @@ class Hub {
     }
     const personal = [];
     for (const [i, seat] of match.seats.entries()) {
-      if (seat.player.isBot) { personal.push({}); continue; }
       const p = seat.player;
       const won = sideOf(i) === winnerSide;
       missions.ensureMissions(p, this.#today);
@@ -537,7 +538,6 @@ class Hub {
   async #onRaidEnd(match, { won }) {
     const personal = [];
     for (const seat of match.seats) {
-      if (seat.player.isBot) { personal.push({}); continue; }
       const p = seat.player;
       missions.ensureMissions(p, this.#today);
       missions.track(p, 'match');
@@ -552,7 +552,7 @@ class Hub {
   /** Fim da partida: tira dos registros e devolve os jogadores ao lugar certo. */
   #release(match, returnTo) {
     this.matches.delete(match.id);
-    for (const seat of match.humans) {
+    for (const seat of match.seats) {
       const s = this.#session(seat.player.id);
       if (s && s.matchId === match.id) { s.matchId = null; s.status = returnTo; }
     }
@@ -563,13 +563,11 @@ class Hub {
   #newTournament() {
     return new Tournament({
       now: this.now, rng: this.rng, fillAfterMs: this.tournamentFillMs,
-      createBot: (t) => createBot(t, this.rng),
       play: async (a, b) => {
         const seats = [this.#seat(a), this.#seat(b)];
         const { winnerSide } = await this.#play(seats, { kind: 'tournament', returnTo: 'tournament' }).done;
         return seats[winnerSide].player.id;
       },
-      simulate: (a, b) => simulateDuel(a, b, { chooseMove: this.shared.chooseMove, rng: this.rng }),
       broadcast: (t) => this.#broadcastTournament(t),
       onFinish: (t, placements) => this.#finishTournament(t, placements),
     });
@@ -589,7 +587,7 @@ class Hub {
 
   #broadcastTournament(t) {
     const view = t.view();
-    for (const p of t.humans) this.#session(p.id)?.socket.emit('tournament_state', view);
+    for (const p of t.entrants) this.#session(p.id)?.socket.emit('tournament_state', view);
     this.#broadcastLobby();
   }
 
@@ -599,7 +597,7 @@ class Hub {
     await this.#updatePlayer(placements.champion, (p) => { p.ecto += PRIZES.champion; p.cups = (p.cups ?? 0) + 1; });
     await this.#updatePlayer(placements.finalist, (p) => { p.ecto += PRIZES.finalist; });
     for (const id of placements.semifinal) await this.#updatePlayer(id, (p) => { p.ecto += PRIZES.semifinal; });
-    for (const p of t.humans) {
+    for (const p of t.entrants) {
       const s = this.#session(p.id);
       if (s?.status === 'tournament') this.#setStatus(s, 'lobby');
     }

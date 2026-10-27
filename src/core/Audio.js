@@ -33,6 +33,11 @@ export class AudioManager {
     this.options = options;
     this.music = new Music();
     this.music.preload(['menu', 'mapa', 'batalha']);
+    this.music.onStart = (track) => this.onTrack?.(track);
+    /** Avisado quando uma música começa a tocar. */
+    this.onTrack = null;
+    this.screenMusic = null;   // trilha da tela atual
+    this.windowMusic = null;   // trilha de uma janela aberta por cima (ex.: o Ateliê)
     this.impact = new Audio(IMPACT_SRC);
     this.impact.preload = 'auto';
     this.ctx = null;
@@ -51,13 +56,13 @@ export class AudioManager {
       const data = this.noiseBuffer.getChannelData(0);
       for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    this.resume();
     this.music.attach(this.ctx);
   }
 
-  /** Pausa/retoma tudo (ex.: ao trocar de aba). */
+  /** Pausa/retoma tudo (ex.: ao trocar de aba). No iOS o estado também pode ser "interrupted". */
   suspend() { this.ctx?.suspend(); }
-  resume() { if (this.ctx?.state === 'suspended') this.ctx.resume(); }
+  resume() { if (this.ctx && this.ctx.state !== 'running') this.ctx.resume(); }
 
   applyVolumes() {
     const o = this.options;
@@ -65,8 +70,18 @@ export class AudioManager {
     this.impact.volume = o.sfxVol / 100;
   }
 
-  /** Troca a música de fundo (nome do arquivo em assets/music, sem extensão). */
-  playMusic(name) { this.music.play(name); }
+  /** Troca a trilha da tela (nome do arquivo em assets/music, sem extensão). */
+  playMusic(name) {
+    this.screenMusic = name;
+    if (!this.windowMusic) this.music.play(name);
+  }
+
+  /** Uma janela com trilha própria toca por cima da tela; `null` devolve a trilha da tela. */
+  setWindowMusic(name) {
+    this.windowMusic = name;
+    const track = name ?? this.screenMusic;
+    if (track) this.music.play(track);
+  }
 
   stopMusic() { this.music.stop(); }
 

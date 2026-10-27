@@ -4,11 +4,11 @@ Node.js + Socket.io. Toda a regra roda aqui (o cliente só manda escolhas):
 
 - Duelos 1x1 e 2x2 com cartas de perk e deck (`src/duel.js`), troféus e ranking global
 - Ranqueada, Casual, 2x2, Chefe Cooperativo (`src/raid.js`), Torneio e Rei da Arena (`src/modes/`)
-- Bots com as IAs dos monstros da campanha (`src/bots.js`), espectadores e expressões (`src/match/`)
+- Espectadores e expressões (`src/match/`)
 - Missões diárias, Ecto, cosméticos e temporadas mensais (`missions.js`, `cosmetics.js`, `seasons.js`)
 - Ranking do Desafio do Dia, conferido refazendo a corrida (`src/daily.js`)
 
-O servidor usa as mesmas regras do jogo para os bots, o chefe cooperativo e o Desafio do Dia
+O servidor usa as mesmas regras do jogo para a IA do chefe cooperativo e para o Desafio do Dia
 (`src/shared.js` importa `../src/domain` e `../src/config`). Por isso ele precisa do repositório inteiro,
 não só da pasta `server/` (no Render isso já acontece: ele clona tudo e só roda os comandos em `server/`).
 
@@ -83,7 +83,9 @@ Servidor → cliente: `welcome {token, profile, catalog}`, `profile`, `lobby`, `
 - 2x2: duas pistas (cada um contra o adversário da frente) e vida somada da dupla (75%).
 - Troféus só na Ranqueada: vencedor ganha 10–40 (mais contra quem tem mais troféus), perdedor perde um pouco menos.
   O mesmo par só vale troféus 3 vezes por hora. Desbloqueios usam a melhor marca, então perder troféus não tira nada.
-- Fila sem ninguém por 20s: um bot entra (sem troféus).
-- Quem cair tem 15s para reconectar antes de perder por abandono (no 2x2 um bot assume o lugar).
+- Não há bots: cada fila espera os caçadores de que precisa (2 na Casual, Ranqueada e Chefe Cooperativo, 4 no 2x2).
+- Torneio: começa com 8 inscritos ou, 45s depois do 1º, com pelo menos 4 (com 5 a 7, alguns passam direto da 1ª fase).
+- Quem cair tem 15s para reconectar antes de perder por abandono. No 2x2 o parceiro segue: o lugar de quem caiu
+  fica parado (sem carta, repetindo a última arma) e o time só perde por abandono se os dois saírem.
 - Temporada: todo dia 1º (Brasília), troféus acima de 1000 perdem metade do excedente e cada jogador
   ganha Ecto (e uma moldura a partir da Prata) pela melhor liga da temporada.

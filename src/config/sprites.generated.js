@@ -43,6 +43,10 @@ export const SPRITES = {
     "src": "assets/sprites/characters/cacador/back/ko.svg",
     "frames": 1
   },
+  "char/cacador/portrait/idle": {
+    "src": "assets/sprites/characters/cacador/portrait/idle.svg",
+    "frames": 10
+  },
   "char/luna/side/idle": {
     "src": "assets/sprites/characters/luna/side/idle.svg",
     "frames": 4
@@ -82,6 +86,10 @@ export const SPRITES = {
   "char/luna/back/ko": {
     "src": "assets/sprites/characters/luna/back/ko.svg",
     "frames": 1
+  },
+  "char/luna/portrait/idle": {
+    "src": "assets/sprites/characters/luna/portrait/idle.svg",
+    "frames": 10
   },
   "char/bento/side/idle": {
     "src": "assets/sprites/characters/bento/side/idle.svg",
@@ -123,6 +131,10 @@ export const SPRITES = {
     "src": "assets/sprites/characters/bento/back/ko.svg",
     "frames": 1
   },
+  "char/bento/portrait/idle": {
+    "src": "assets/sprites/characters/bento/portrait/idle.svg",
+    "frames": 10
+  },
   "char/helga/side/idle": {
     "src": "assets/sprites/characters/helga/side/idle.svg",
     "frames": 4
@@ -162,6 +174,10 @@ export const SPRITES = {
   "char/helga/back/ko": {
     "src": "assets/sprites/characters/helga/back/ko.svg",
     "frames": 1
+  },
+  "char/helga/portrait/idle": {
+    "src": "assets/sprites/characters/helga/portrait/idle.svg",
+    "frames": 10
   },
   "char/ze/side/idle": {
     "src": "assets/sprites/characters/ze/side/idle.svg",
@@ -203,6 +219,10 @@ export const SPRITES = {
     "src": "assets/sprites/characters/ze/back/ko.svg",
     "frames": 1
   },
+  "char/ze/portrait/idle": {
+    "src": "assets/sprites/characters/ze/portrait/idle.svg",
+    "frames": 10
+  },
   "char/sombra/side/idle": {
     "src": "assets/sprites/characters/sombra/side/idle.svg",
     "frames": 4
@@ -242,6 +262,10 @@ export const SPRITES = {
   "char/sombra/back/ko": {
     "src": "assets/sprites/characters/sombra/back/ko.svg",
     "frames": 1
+  },
+  "char/sombra/portrait/idle": {
+    "src": "assets/sprites/characters/sombra/portrait/idle.svg",
+    "frames": 10
   },
   "card/card_comum": {
     "src": "assets/sprites/cards/card_comum.svg",
@@ -749,6 +773,46 @@ export const SPRITES = {
   },
   "icon/assistir": {
     "src": "assets/sprites/icons/assistir.svg",
+    "frames": 1
+  },
+  "icon/nota": {
+    "src": "assets/sprites/icons/nota.svg",
+    "frames": 1
+  },
+  "icon/pincel": {
+    "src": "assets/sprites/icons/pincel.svg",
+    "frames": 1
+  },
+  "icon/borracha": {
+    "src": "assets/sprites/icons/borracha.svg",
+    "frames": 1
+  },
+  "icon/balde": {
+    "src": "assets/sprites/icons/balde.svg",
+    "frames": 1
+  },
+  "icon/conta_gotas": {
+    "src": "assets/sprites/icons/conta_gotas.svg",
+    "frames": 1
+  },
+  "icon/espelho": {
+    "src": "assets/sprites/icons/espelho.svg",
+    "frames": 1
+  },
+  "icon/desfazer": {
+    "src": "assets/sprites/icons/desfazer.svg",
+    "frames": 1
+  },
+  "icon/refazer": {
+    "src": "assets/sprites/icons/refazer.svg",
+    "frames": 1
+  },
+  "icon/lixeira": {
+    "src": "assets/sprites/icons/lixeira.svg",
+    "frames": 1
+  },
+  "icon/grade": {
+    "src": "assets/sprites/icons/grade.svg",
     "frames": 1
   },
   "fx/hit": {

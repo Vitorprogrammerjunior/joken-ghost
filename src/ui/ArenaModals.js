@@ -2,6 +2,7 @@
 // (O deck fica em DeckModal.js; modos, missões e loja em ArenaShop.js.)
 import { $, h, icon } from './dom.js';
 import { spriteCanvas } from './SpriteCanvas.js';
+import { avatarEl } from './Avatar.js';
 import { LEAGUE_NAMES, leagueIcon } from '../config/multiplayer.js';
 import { selectCharacter } from '../config/characters.js';
 
@@ -79,7 +80,7 @@ export class ArenaModals {
     $('rank-me').textContent = `Sua posição: ${me.rank}º de ${total} · ${me.trophies} troféus`;
     $('rank-list').replaceChildren(...top.map(r => h('li', { class: `rank-row${r.id === myId ? ' me' : ''}${r.rank <= 3 ? ` top${r.rank}` : ''}` },
       h('span', { class: 'rank-pos' }, `${r.rank}º`),
-      spriteCanvas(this.game.assets, `char/${r.character}/side/idle`, { size: 48, msPerFrame: 220 }),
+      avatarEl(this.game.assets, r, { size: 48 }),
       h('span', { class: 'rank-nick' }, r.nickname),
       icon(leagueIcon(r.league), 'ico ico-sm', LEAGUE_NAMES[r.league]),
       h('span', { class: 'rank-tr' }, r.trophies, ' ', icon('icon/trofeu', 'ico ico-xs')),

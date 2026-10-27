@@ -1,6 +1,7 @@
 // Janelas de progresso da Arena: modos, missões diárias e loja de Ecto (cosméticos).
 import { $, h, icon } from './dom.js';
-import { MODES, frameSprite, emoteIcon } from '../config/multiplayer.js';
+import { MODES, emoteIcon } from '../config/multiplayer.js';
+import { avatarEl } from './Avatar.js';
 
 export class ArenaShop {
   /**
@@ -78,7 +79,8 @@ export class ArenaShop {
     const p = this.net.profile;
     const { frames, emotes } = this.net.catalog.cosmetics;
     $('shop-sub').replaceChildren('Seu Ecto: ', icon('icon/ecto', 'ico ico-sm'), h('b', {}, p.ecto), ' · ganhe em missões, torneios, no Rei da Arena e no fim de cada temporada.');
-    $('shop-frames').replaceChildren(...frames.map(f => this.#item(f, icon(frameSprite(f.id), 'shop-frame'), {
+    // a moldura aparece em volta do seu avatar: dá para ver como fica antes de comprar
+    $('shop-frames').replaceChildren(...frames.map(f => this.#item(f, avatarEl(this.game.assets, { avatar: p.avatar, frame: f.id }, { size: 72 }), {
       equipped: p.equipped.frame === f.id,
       onUse: () => this.net.equipFrame(p.equipped.frame === f.id ? null : f.id),
     })));

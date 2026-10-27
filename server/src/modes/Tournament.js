@@ -1,10 +1,16 @@
 'use strict';
-// Torneio relâmpago: 8 caçadores em mata-mata (quartas, semi e final).
-// Se em `fillAfterMs` não juntar 8 pessoas, bots completam a chave.
-// Partidas de bot contra bot são simuladas na hora; as outras são duelos de verdade (sem troféus).
+// Torneio relâmpago: até 8 caçadores em mata-mata (sem troféus, com prêmios em Ecto).
+// Começa quando junta 8, ou `fillAfterMs` depois do 1º inscrito se já houver pelo menos 4.
+// Com 5 a 7 inscritos a chave é de 8 e alguns passam direto da primeira fase.
+
+const { publicLook } = require('../cosmetics');
 
 const SIZE = 8;
+const MIN_PLAYERS = 4;
 const PRIZES = { champion: 80, finalist: 30, semifinal: 15 };
+
+/** Tamanho da chave (potência de 2) para `n` inscritos. */
+const bracketSize = (n) => (n <= MIN_PLAYERS ? MIN_PLAYERS : SIZE);
 
 class Tournament {
   /**
@@ -12,9 +18,7 @@ class Tournament {
    * @param {() => number} o.now
    * @param {() => number} o.rng
    * @param {number} o.fillAfterMs
-   * @param {(trophies: number) => object} o.createBot
    * @param {(a: object, b: object) => Promise<string>} o.play       duelo de verdade; resolve com o id do vencedor
-   * @param {(a: object, b: object) => string} o.simulate             bot contra bot; devolve o id do vencedor
    * @param {(t: Tournament) => void} o.broadcast                     avisa os participantes
    * @param {(t: Tournament, placements: object) => void} o.onFinish
    */
@@ -22,17 +26,17 @@ class Tournament {
     Object.assign(this, o);
     this.id = `T${Math.floor(this.now() / 1000).toString(36)}`;
     this.status = 'waiting';
-    this.entrants = [];   // jogadores (objetos do perfil, ou bots)
-    this.rounds = [];     // [[{ a, b, winner }]] por fase, com ids
+    this.entrants = [];   // perfis dos inscritos
+    this.rounds = [];     // [[{ a, b, winner }]] por fase, com ids (b = null: passa direto)
+    this.size = SIZE;
     this.openedAt = this.now();
   }
 
-  get humans() { return this.entrants.filter(p => !p.isBot); }
   has(playerId) { return this.entrants.some(p => p.id === playerId); }
 
   join(player) {
     if (this.status !== 'waiting' || this.has(player.id) || this.entrants.length >= SIZE) return false;
-    if (this.humans.length === 0) this.openedAt = this.now(); // a espera conta a partir do 1º caçador
+    if (this.entrants.length === 0) this.openedAt = this.now(); // a espera conta a partir do 1º caçador
     this.entrants.push(player);
     if (this.entrants.length === SIZE) this.#begin();
     else this.broadcast(this);
@@ -46,36 +50,43 @@ class Tournament {
     return true;
   }
 
-  /** Chamado de tempos em tempos: completa com bots quem esperou demais. */
+  /** Chamado de tempos em tempos: começa quando a espera acabou e há gente suficiente. */
   tick() {
-    if (this.status !== 'waiting' || this.humans.length === 0) return;
-    if (this.now() - this.openedAt < this.fillAfterMs) return;
-    const trophies = this.humans[0].trophies;
-    while (this.entrants.length < SIZE) this.entrants.push(this.createBot(trophies));
-    this.#begin();
+    if (this.status !== 'waiting' || this.entrants.length < MIN_PLAYERS) return;
+    if (this.now() - this.openedAt >= this.fillAfterMs) this.#begin();
   }
 
   get startsIn() { return Math.max(0, this.openedAt + this.fillAfterMs - this.now()); }
 
   #begin() {
     this.status = 'running';
+    this.size = bracketSize(this.entrants.length);
     this.#run().catch((err) => console.error('Torneio:', err));
   }
 
+  /** Primeira fase: quem sobra sem adversário passa direto. */
+  #firstRound() {
+    const players = [...this.entrants].sort(() => this.rng() - 0.5).map(p => p.id);
+    const byes = this.size - players.length;
+    const pairs = [];
+    for (let i = 0; i < byes; i++) pairs.push({ a: players.shift(), b: null });
+    while (players.length) pairs.push({ a: players.shift(), b: players.shift() });
+    return pairs.map(p => ({ ...p, winner: p.b == null ? p.a : null }));
+  }
+
   async #run() {
-    const shuffled = [...this.entrants].sort(() => this.rng() - 0.5);
-    let players = shuffled;
-    while (players.length > 1) {
-      const pairs = [];
-      for (let i = 0; i < players.length; i += 2) pairs.push({ a: players[i].id, b: players[i + 1].id, winner: null });
+    let pairs = this.#firstRound();
+    for (;;) {
       this.rounds.push(pairs);
       this.broadcast(this);
-      await Promise.all(pairs.map(async (pair) => {
-        const a = this.#player(pair.a), b = this.#player(pair.b);
-        pair.winner = a.isBot && b.isBot ? this.simulate(a, b) : await this.play(a, b);
+      await Promise.all(pairs.filter(p => !p.winner).map(async (pair) => {
+        pair.winner = await this.play(this.#player(pair.a), this.#player(pair.b));
         this.broadcast(this);
       }));
-      players = pairs.map(p => this.#player(p.winner));
+      if (pairs.length === 1) break;
+      const next = [];
+      for (let i = 0; i < pairs.length; i += 2) next.push({ a: pairs[i].winner, b: pairs[i + 1].winner, winner: null });
+      pairs = next;
     }
     this.status = 'done';
     this.broadcast(this);
@@ -92,19 +103,19 @@ class Tournament {
     return {
       champion: final.winner,
       finalist: final.winner === final.a ? final.b : final.a,
-      semifinal: semis.map(p => (p.winner === p.a ? p.b : p.a)),
+      semifinal: semis.filter(p => p.b != null).map(p => (p.winner === p.a ? p.b : p.a)),
     };
   }
 
   /** Dados para a tela (chave do torneio). */
   view() {
-    const card = (p) => ({ id: p.id, nickname: p.nickname, character: p.character, isBot: !!p.isBot });
+    const card = (p) => ({ id: p.id, nickname: p.nickname, character: p.character, ...publicLook(p) });
     return {
-      id: this.id, status: this.status, size: SIZE, startsIn: this.startsIn,
+      id: this.id, status: this.status, size: this.size, min: MIN_PLAYERS, startsIn: this.startsIn,
       entrants: this.entrants.map(card),
       rounds: this.rounds.map(r => r.map(({ a, b, winner }) => ({ a, b, winner }))),
     };
   }
 }
 
-module.exports = { Tournament, SIZE, PRIZES };
+module.exports = { Tournament, SIZE, MIN_PLAYERS, PRIZES };

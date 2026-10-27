@@ -1,6 +1,9 @@
 // Abre/fecha janelas modais e cuida do ESC e do clique fora.
 import { $ } from './dom.js';
 
+const OPENING_MS = 700;   // tempo da cascata de itens ao abrir (styles/components.css)
+const CLOSING_MS = 200;   // tempo da animação de saída
+
 export class Modals {
   constructor(game) {
     this.game = game;
@@ -27,6 +30,7 @@ export class Modals {
     if (locked) this.locked.add(id);
     const el = $(id);
     el.classList.remove('hidden', 'closing');
+    this.#cascade(el);
     this.stack.push(id);
     el.style.zIndex = String(50 + this.stack.length); // o mais recente fica por cima
     this.game.modalOpen = this.stack.length;
@@ -37,7 +41,7 @@ export class Modals {
     if (!this.isOpen(id)) return;
     const el = $(id);
     el.classList.add('closing');
-    setTimeout(() => { el.classList.add('hidden'); el.classList.remove('closing'); }, 160);
+    setTimeout(() => { if (el.classList.contains('closing')) el.classList.add('hidden'); el.classList.remove('closing'); }, CLOSING_MS);
     this.stack = this.stack.filter(x => x !== id);
     this.locked.delete(id);
     this.game.modalOpen = this.stack.length;
@@ -47,6 +51,13 @@ export class Modals {
   }
 
   closeTop() { if (this.top) this.close(this.top); }
+
+  /** Liga a cascata de entrada dos itens só durante a abertura. */
+  #cascade(el) {
+    el.classList.add('opening');
+    clearTimeout(el.openingTimer);
+    el.openingTimer = setTimeout(() => el.classList.remove('opening'), OPENING_MS);
+  }
 
   /** Pergunta sim/não. */
   confirm(text) {

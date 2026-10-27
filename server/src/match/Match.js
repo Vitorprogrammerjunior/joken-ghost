@@ -1,5 +1,5 @@
 'use strict';
-// Base de toda partida: assentos (jogadores ou bots), mensagens, temporizadores,
+// Base de toda partida: assentos dos jogadores, mensagens, temporizadores,
 // reconexão, espectadores e expressões. As regras ficam nas subclasses
 // (DuelMatch para duelos 1x1/2x2, RaidMatch para o chefe cooperativo).
 const crypto = require('crypto');
@@ -12,7 +12,7 @@ class Match {
    * @param {import('socket.io').Server} o.io
    * @param {object} o.rules           regras (catalog.RULES)
    * @param {() => number} o.now
-   * @param {string} o.kind            'ranked' | 'casual' | 'duo' | 'raid' | 'tournament' | 'king' | 'room' | 'challenge' | 'bot'
+   * @param {string} o.kind            'ranked' | 'casual' | 'duo' | 'raid' | 'tournament' | 'king' | 'room' | 'challenge'
    * @param {{ player: object, socketId: string|null }[]} o.seats
    * @param {(match: Match, result: object) => Promise<object[]>} o.onEnd  devolve o pedaço pessoal do fim para cada assento
    */
@@ -30,7 +30,6 @@ class Match {
   }
 
   get room() { return `match:${this.id}`; }
-  get humans() { return this.seats.filter(s => !s.player.isBot); }
 
   seatOf(playerId) { return this.seats.findIndex(s => s.player.id === playerId); }
 

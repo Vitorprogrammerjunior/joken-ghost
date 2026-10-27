@@ -16,6 +16,8 @@ export class MenuScene extends Scene {
     $('menu-mp').addEventListener('click', () => game.go('lobby'));
   }
 
+  music() { return 'menu'; }
+
   enter() {
     this.scenery ??= new Scenery(this.game.assets, 'floresta');
     this.hunter = new Fighter(this.game.assets, { base: hunterBase(this.game, 'side'), x: 250, y: GROUND_Y + 40 });
@@ -23,7 +25,6 @@ export class MenuScene extends Scene {
       new Fighter(this.game.assets, { base: ['enemy/fantasma', 'enemy/fogo_fatuo', 'enemy/fantasma'][i], x: 0, y: 0, flying: true }),
       { lane: i, alpha: 0.75 },
     ));
-    this.game.audio.playMusic('menu');
   }
 
   play() {

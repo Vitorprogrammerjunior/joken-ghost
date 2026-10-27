@@ -12,6 +12,8 @@ export class Music {
     this.current = null;
     this.wanted = null;
     this.volume = 0.5;
+    /** @type {((track: { name: string, title: string, loops: boolean }) => void) | null} */
+    this.onStart = null;
   }
 
   /** Liga ao AudioContext (só depois de um gesto do usuário). */
@@ -57,6 +59,7 @@ export class Music {
     this.synth.warm(song);
     const start = this.ctx.currentTime + 0.12;
     this.current = { name, song, sess: this.synth.session(song), phase: 'intro', idx: 0, offset: start };
+    this.onStart?.({ name, title: song.title, loops: song.loop.dur > 0 && song.loop.events.length > 0 });
   }
 
   stop(fade = 0.35) {

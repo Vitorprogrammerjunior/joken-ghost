@@ -163,10 +163,10 @@
 
         <div class="lobby-grid">
           <div class="panel lobby-profile">
-            <div class="lb-avatar-wrap">
-              <canvas id="lb-avatar" class="lb-avatar" width="64" height="64"></canvas>
-              <img class="lb-frame hidden" id="lb-frame" src="" alt="">
-            </div>
+            <button class="lb-avatar-btn" id="lb-avatar-btn" title="Trocar avatar">
+              <span id="lb-avatar"></span>
+              <img class="ico ico-sm lb-avatar-edit" src="assets/sprites/icons/pincel.svg" alt="Editar">
+            </button>
             <button class="lp-name" id="lp-name" title="Editar perfil"><span id="lp-nick">...</span> <small>✎</small></button>
             <div class="lp-trophies"><img class="ico" id="lp-league-ico" src="assets/sprites/icons/liga_bronze.svg" alt=""><b id="lp-trophies">0</b><img class="ico" src="assets/sprites/icons/trofeu.svg" alt="troféus"></div>
             <div class="lp-league" id="lp-league">Liga Bronze</div>
@@ -325,7 +325,7 @@
       <div class="modal hidden" id="modal-saves">
         <div class="panel modal-card">
           <h2 class="modal-title">ARQUIVOS</h2>
-          <div class="save-list" id="save-list"></div>
+          <div class="save-list cascade" id="save-list"></div>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>
@@ -333,12 +333,13 @@
       <div class="modal hidden" id="modal-options">
         <div class="panel modal-card">
           <h2 class="modal-title">OPÇÕES</h2>
-          <div class="opt-group">
+          <div class="opt-group cascade">
             <label class="opt"><span>MÚSICA</span><input type="range" min="0" max="100" data-opt="musicVol"><b data-val="musicVol"></b></label>
             <label class="opt"><span>EFEITOS</span><input type="range" min="0" max="100" data-opt="sfxVol"><b data-val="sfxVol"></b></label>
             <div class="opt"><span>TREMER TELA</span><button class="btn btn-toggle" data-toggle="shake"></button></div>
             <div class="opt"><span>NÚMEROS DE DANO</span><button class="btn btn-toggle" data-toggle="damageNumbers"></button></div>
             <div class="opt"><span>NOTIFICAÇÕES</span><button class="btn btn-toggle" data-toggle="toasts"></button></div>
+            <div class="opt"><span>AVISO DE MÚSICA</span><button class="btn btn-toggle" data-toggle="nowPlaying"></button></div>
             <div class="opt"><span>PIXEL PERFEITO</span><button class="btn btn-toggle" data-toggle="pixelPerfect"></button></div>
             <div class="opt"><span>TELA CHEIA</span><button class="btn btn-toggle" id="opt-fullscreen"></button></div>
           </div>
@@ -357,7 +358,7 @@
       <div class="modal hidden" id="modal-pause">
         <div class="panel modal-card">
           <h2 class="modal-title">PAUSADO</h2>
-          <div class="menu">
+          <div class="menu cascade">
             <button class="btn btn-primary" id="pause-resume"><img class="ico" src="assets/sprites/icons/jogar.svg" alt="">CONTINUAR</button>
             <button class="btn" id="pause-options"><img class="ico" src="assets/sprites/icons/engrenagem.svg" alt="">OPÇÕES</button>
             <button class="btn" id="pause-retry"><img class="ico" src="assets/sprites/icons/repetir.svg" alt="">RECOMEÇAR</button>
@@ -370,7 +371,7 @@
         <div class="panel modal-card modal-wide">
           <h2 class="modal-title">OFICINA DO CAÇADOR</h2>
           <p class="modal-sub">Melhorias permanentes deste arquivo. Valem em todas as fases.</p>
-          <div class="workshop-grid" id="workshop-grid"></div>
+          <div class="workshop-grid cascade" id="workshop-grid"></div>
           <div class="row">
             <div class="coin-pill"><img class="ico ico-sm" src="assets/sprites/icons/moeda.svg" alt=""><span class="coin-value">0</span></div>
             <button class="btn btn-sm" data-close-modal>FECHAR</button>
@@ -382,7 +383,7 @@
         <div class="panel modal-card modal-wide">
           <h2 class="modal-title">RECOMPENSAS</h2>
           <p class="modal-sub" id="rewards-sub"></p>
-          <ul class="reward-list" id="reward-list"></ul>
+          <ul class="reward-list cascade" id="reward-list"></ul>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>
@@ -392,7 +393,7 @@
           <h2 class="modal-title">DESAFIO DO DIA</h2>
           <p class="modal-sub" id="daily-sub"></p>
           <p class="daily-me" id="daily-me"></p>
-          <ol class="rank-list" id="daily-list"></ol>
+          <ol class="rank-list cascade" id="daily-list"></ol>
           <div class="row">
             <button class="btn btn-primary" id="daily-play"><img class="ico" src="assets/sprites/icons/jogar.svg" alt="">JOGAR</button>
             <button class="btn" data-close-modal>FECHAR</button>
@@ -404,7 +405,7 @@
         <div class="panel modal-card modal-wide">
           <h2 class="modal-title">ESCOLHA UMA RELÍQUIA</h2>
           <p class="modal-sub">Ela vale até o fim da corrida. Algumas podem ser escolhidas de novo e somam.</p>
-          <div class="relic-grid" id="relic-grid"></div>
+          <div class="relic-grid cascade" id="relic-grid"></div>
         </div>
       </div>
 
@@ -426,7 +427,7 @@
       <div class="modal hidden" id="modal-modes">
         <div class="panel modal-card modal-wide">
           <h2 class="modal-title">MODOS DA ARENA</h2>
-          <div class="modes-grid" id="modes-grid"></div>
+          <div class="modes-grid cascade" id="modes-grid"></div>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>
@@ -435,7 +436,7 @@
         <div class="panel modal-card">
           <h2 class="modal-title">MISSÕES DE HOJE</h2>
           <p class="modal-sub" id="missions-sub">Novas missões todo dia à meia-noite.</p>
-          <ul class="mission-list" id="mission-list"></ul>
+          <ul class="mission-list cascade" id="mission-list"></ul>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>
@@ -446,9 +447,9 @@
           <p class="modal-sub" id="shop-sub"></p>
           <div class="shop-body">
             <h3 class="shop-section">MOLDURAS</h3>
-            <div class="shop-items" id="shop-frames"></div>
+            <div class="shop-items cascade" id="shop-frames"></div>
             <h3 class="shop-section">EXPRESSÕES</h3>
-            <div class="shop-items" id="shop-emotes"></div>
+            <div class="shop-items cascade" id="shop-emotes"></div>
           </div>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
@@ -457,7 +458,7 @@
       <div class="modal hidden" id="modal-chars">
         <div class="panel modal-card modal-wide">
           <h2 class="modal-title">CAÇADORES</h2>
-          <div class="char-grid" id="chars-grid"></div>
+          <div class="char-grid cascade" id="chars-grid"></div>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>
@@ -466,7 +467,7 @@
         <div class="panel modal-card modal-wide">
           <h2 class="modal-title">RANKING GLOBAL</h2>
           <p class="modal-sub" id="rank-me"></p>
-          <ol class="rank-list" id="rank-list"></ol>
+          <ol class="rank-list cascade" id="rank-list"></ol>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>
@@ -479,6 +480,57 @@
           <div class="row">
             <button class="btn btn-primary" id="challenge-yes">ACEITAR</button>
             <button class="btn" id="challenge-no">RECUSAR</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-avatar">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">SEU AVATAR</h2>
+          <div class="avatar-layout">
+            <div class="avatar-side">
+              <div id="avatar-preview"></div>
+              <p class="avatar-hint" id="avatar-hint"></p>
+              <h3 class="section-title">MEU DESENHO</h3>
+              <div class="avatar-drawing" id="avatar-drawing"></div>
+            </div>
+            <div class="avatar-options">
+              <h3 class="section-title">ROSTO</h3>
+              <div class="pick-grid cascade" id="avatar-faces"></div>
+              <h3 class="section-title">MOLDURA <small>mais molduras na Loja</small></h3>
+              <div class="pick-grid pick-grid-frames cascade" id="avatar-frames"></div>
+            </div>
+          </div>
+          <button class="btn btn-sm" data-close-modal>FECHAR</button>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-atelie">
+        <div class="panel modal-card modal-wide">
+          <h2 class="modal-title">ATELIÊ</h2>
+          <div class="atelie-layout">
+            <div class="atelie-board-wrap show-grid" id="atelie-board-wrap">
+              <canvas class="atelie-board" id="atelie-board" width="16" height="16"></canvas>
+            </div>
+            <div class="atelie-side">
+              <h3 class="section-title">FERRAMENTAS</h3>
+              <div class="atelie-tools cascade" id="atelie-tools"></div>
+              <div class="atelie-tools cascade">
+                <button class="btn btn-icon" id="atelie-mirror" title="Espelho: pinta os dois lados (M)"><img class="ico" src="assets/sprites/icons/espelho.svg" alt="Espelho"></button>
+                <button class="btn btn-icon active" id="atelie-grid-toggle" title="Grade"><img class="ico" src="assets/sprites/icons/grade.svg" alt="Grade"></button>
+                <button class="btn btn-icon" id="atelie-undo" title="Desfazer (Ctrl+Z)"><img class="ico" src="assets/sprites/icons/desfazer.svg" alt="Desfazer"></button>
+                <button class="btn btn-icon" id="atelie-redo" title="Refazer (Ctrl+Y)"><img class="ico" src="assets/sprites/icons/refazer.svg" alt="Refazer"></button>
+                <button class="btn btn-icon" id="atelie-clear" title="Apagar tudo"><img class="ico" src="assets/sprites/icons/lixeira.svg" alt="Apagar tudo"></button>
+              </div>
+              <h3 class="section-title">CORES</h3>
+              <div class="atelie-palette cascade" id="atelie-palette"></div>
+              <h3 class="section-title">PRÉVIA</h3>
+              <div class="atelie-previews" id="atelie-previews"></div>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn btn-primary" id="atelie-save"><img class="ico" src="assets/sprites/icons/check.svg" alt="">SALVAR E USAR</button>
+            <button class="btn" data-close-modal>FECHAR</button>
           </div>
         </div>
       </div>
@@ -510,6 +562,7 @@
       </div>
 
       <div id="toasts"></div>
+      <div class="now-playing hidden" id="now-playing" aria-live="polite"></div>
     </div>
 
     <div id="fade"></div>

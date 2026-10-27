@@ -129,6 +129,8 @@ export class MultiplayerClient extends EventBus {
   claimMission(id) { this.socket.emit('missions_claim', { id }); }
   buy(id) { this.socket.emit('shop_buy', { id }); }
   equipFrame(id) { this.socket.emit('equip_frame', { id }); }
+  /** `{ kind: 'hunter', hunter }` ou `{ kind: 'art', art }` (desenho do Ateliê). */
+  setAvatar(avatar) { this.socket.emit('set_avatar', avatar); }
   /** mode: 'ranked' | 'casual' | 'duo' | 'raid' */
   queueJoin(mode = 'ranked') { this.socket.emit('queue_join', { mode }); }
   queueLeave() { this.socket.emit('queue_leave'); }

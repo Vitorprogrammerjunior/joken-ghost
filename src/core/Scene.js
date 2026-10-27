@@ -26,6 +26,9 @@ export class Scene {
     this.disposers.push(() => target.removeEventListener(event, fn, opts));
   }
 
+  /** Trilha da tela (nome em assets/music). `null` mantém a que está tocando. */
+  music(_params) { return null; }
+
   enter(_params) {}
   exit() {}
 

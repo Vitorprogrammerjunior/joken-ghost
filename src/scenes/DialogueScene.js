@@ -16,6 +16,9 @@ function speaker(who) {
   return def ? { name: def.name.toUpperCase(), side: 'right', def } : HUNTER;
 }
 
+/** O monstro que conversa com o Caçador na fase (se houver). */
+const villainOf = (level) => level.dialogue.map(l => speaker(l.who).def).find(Boolean);
+
 export class DialogueScene extends Scene {
   constructor(game) {
     super(game, 'screen-dialogue');
@@ -27,15 +30,20 @@ export class DialogueScene extends Scene {
     $('dialogue-skip').addEventListener('click', () => this.#toBattle());
   }
 
+  /** Conversa comum: a trilha das histórias. Com um chefe em cena, o tema dele. */
+  music({ levelId }) {
+    const villain = villainOf(levelById(levelId));
+    return villain?.boss ? (villain.music ?? 'chefe') : 'conto';
+  }
+
   enter({ levelId }) {
     this.level = levelById(levelId);
     this.scenery = new Scenery(this.game.assets, this.level.scenery);
     this.hunter = new Fighter(this.game.assets, { base: hunterBase(this.game, 'side'), x: 300, y: GROUND_Y });
     this.hunter.ox = -500;
     this.tweens.to(this.hunter, { ox: 0 }, 700);
-    const villain = this.level.dialogue.map(l => speaker(l.who).def).find(Boolean);
+    const villain = villainOf(this.level);
     this.other = villain ? new Fighter(this.game.assets, { base: villain.sprite, x: 960, y: GROUND_Y, scale: villain.scale ?? 3, flying: !!villain.flying }) : null;
-    this.game.audio.playMusic(villain?.boss ? (villain.music ?? 'chefe') : this.level.music ?? 'mapa');
     this.line = -1;
     this.next();
   }

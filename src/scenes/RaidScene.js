@@ -40,7 +40,9 @@ export class RaidScene extends Scene {
   }
 
   get spectator() { return this.m.you == null; }
-  #name(seat) { const hh = this.m.hunters[seat]; return seat === this.m.you ? 'Você' : hh.isBot ? `${hh.nickname} (bot)` : hh.nickname; }
+  #name(seat) { return seat === this.m.you ? 'Você' : this.m.hunters[seat].nickname; }
+
+  music({ match }) { return ENEMIES[match.boss.id].music ?? 'chefe'; }
 
   enter({ match }) {
     const { assets } = this.game;
@@ -69,7 +71,6 @@ export class RaidScene extends Scene {
     show($('raid-result'), false);
     $('raid-actions').replaceChildren();
     this.#syncHp();
-    this.game.audio.playMusic(this.def.music ?? 'chefe');
 
     if (match.phase === 'weapon') this.#phase({ round: match.round, endsIn: match.endsIn, tell: match.tell, alive: match.hunters[match.you]?.hp > 0 });
     else this.#intro();

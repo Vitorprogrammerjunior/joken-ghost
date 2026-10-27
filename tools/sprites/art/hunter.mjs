@@ -1,7 +1,8 @@
 // Os Caçadores. Todos compartilham o mesmo desenho; cada personagem troca a paleta
-// (jaqueta, cabelo, pele, brilho da mochila...). Duas vistas:
-//   side — de lado, olhando para a direita (cenas, mapa e oponente no multiplayer)
-//   back — de costas, estilo Pokémon (o jogador em primeiro plano na batalha)
+// (jaqueta, cabelo, pele, brilho da mochila...). Três vistas:
+//   side     — de lado, olhando para a direita (cenas, mapa e oponente no multiplayer)
+//   back     — de costas, estilo Pokémon (o jogador em primeiro plano na batalha)
+//   portrait — rosto de frente (avatar do perfil na Arena)
 import { Grid, sheet } from '../lib/grid.mjs';
 
 /** Paletas dos personagens (ids iguais aos do servidor multiplayer). */
@@ -321,6 +322,72 @@ function back(C, {
   return out;
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  RETRATO DE FRENTE (avatar do perfil na Arena)
+// ═══════════════════════════════════════════════════════════════
+function portrait(C, { blink = false } = {}) {
+  const out = new Grid();
+  const skinD = darker[C.skin];
+
+  // ombros: jaqueta, gola da camisa e as alças da mochila
+  const B = new Grid();
+  B.poly([[6, 63], [12, 51], [24, 46], [40, 46], [52, 51], [58, 63]], C.jacket);
+  B.poly([[26, 46], [38, 46], [32, 56]], C.shirt);
+  B.shade({ depth: 2 });
+  B.rect(16, 50, 3, 14, C.strap);
+  B.rect(45, 50, 3, 14, C.strap);
+  if (C.emblem === 'raio') {
+    const [a, b] = C.emblemC;
+    B.line(36, 57, 39, 55, a).line(39, 55, 39, 59, a).line(39, 59, 42, 57, a);
+    B.line(36, 58, 39, 56, b).line(39, 56, 39, 60, b).line(39, 60, 42, 58, b);
+  } else if (C.emblem === 'cruz') {
+    B.rect(38, 53, 2, 8, C.emblemC[0]);
+    B.rect(36, 55, 6, 2, C.emblemC[0]);
+  }
+  out.blit(B);
+
+  // pescoço e orelhas
+  out.rect(28, 40, 8, 7, skinD);
+  out.rect(19, 27, 3, 6, C.skin);
+  out.rect(42, 27, 3, 6, C.skin);
+
+  // black power atrás do rosto
+  const Hr = new Grid();
+  Hr.ellipse(32, 20, 19, 15, C.hair);
+  for (const [cx, cy, r] of [[16, 16, 5], [22, 8, 5], [32, 5, 6], [42, 8, 5], [48, 16, 5], [15, 25, 4], [49, 25, 4]]) Hr.circle(cx, cy, r, C.hair);
+  Hr.shade({ light: 1, dark: 1, depth: 2 });
+  for (const [cx, cy] of [[20, 10], [27, 6], [35, 5], [43, 9], [17, 18], [47, 17], [24, 14], [39, 12], [31, 10]]) Hr.set(cx, cy, C.hairHi);
+  out.blit(Hr);
+
+  // rosto
+  const F = new Grid();
+  F.ellipse(32, 30, 11, 12, C.skin);
+  F.shade();
+  out.blit(F);
+  // franja por cima da testa
+  out.ellipse(32, 18, 12, 4, C.hair);
+  for (const [cx, cy] of [[25, 17], [30, 16], [36, 16], [40, 18]]) out.set(cx, cy, C.hairHi);
+
+  // olhos, sobrancelhas, nariz e boca
+  for (const ex of [26, 36]) {
+    if (blink) {
+      out.rect(ex, 31, 3, 1, 'k');
+    } else {
+      out.rect(ex, 29, 3, 4, 'w');
+      out.rect(ex + 1, 30, 2, 2, 'b2');
+      out.set(ex + 1, 30, 'k');
+    }
+    out.rect(ex - 1, 26, 4, 1, 'k');
+  }
+  out.rect(31, 33, 2, 2, skinD);
+  out.rect(29, 37, 6, 1, 'k');
+  out.set(28, 36, 'k');
+  out.set(35, 36, 'k');
+
+  out.outline('k');
+  return out;
+}
+
 function sideSheets(C) {
   const h = (o) => side(C, o);
   return {
@@ -353,10 +420,16 @@ function backSheets(C) {
   };
 }
 
-/** { personagem: { side: {anim: grid}, back: {anim: grid} } } */
+/** Retrato piscando de vez em quando (o jogo anima devagar). */
+function portraitSheets(C) {
+  const p = (o) => portrait(C, o);
+  return { idle: sheet([...Array.from({ length: 9 }, () => p()), p({ blink: true })]) };
+}
+
+/** { personagem: { side: {anim: grid}, back: {anim: grid}, portrait: {anim: grid} } } */
 export function characterSheets() {
   const out = {};
-  for (const [id, C] of Object.entries(CHARACTERS)) out[id] = { side: sideSheets(C), back: backSheets(C) };
+  for (const [id, C] of Object.entries(CHARACTERS)) out[id] = { side: sideSheets(C), back: backSheets(C), portrait: portraitSheets(C) };
   return out;
 }
 
@@ -370,5 +443,10 @@ export function previewBack() {
   const v = characterSheets().cacador.back;
   const o = { ...v };
   for (const [id, c] of Object.entries(characterSheets())) o[`b_${id}`] = c.back.idle;
+  return o;
+}
+export function previewPortrait() {
+  const o = {};
+  for (const [id, v] of Object.entries(characterSheets())) o[id] = v.portrait.idle;
   return o;
 }

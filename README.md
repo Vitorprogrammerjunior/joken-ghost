@@ -18,9 +18,10 @@ Reino das Sombras até **Morgana**, a Rainha Banshee.
 - **Desafio do Dia:** a mesma corrida para todo mundo, com ranking diário conferido pelo servidor
 
 **Arena dos Caçadores** (multiplayer online)
-- Ranqueada (troféus), Casual, 2x2, Chefe Cooperativo, Torneio Relâmpago (8 caçadores) e Rei da Arena
-- Bots entram quando falta gente; dá para assistir as partidas de quem está online
+- Ranqueada (troféus), Casual, 2x2, Chefe Cooperativo, Torneio Relâmpago (4 a 8 caçadores) e Rei da Arena
+- Só jogadores de verdade (sem bots); dá para assistir as partidas de quem está online
 - Deck de 8 cartas (16 cartas, limite por raridade), 6 caçadores, histórico das armas do adversário
+- Avatar com o rosto de um caçador ou desenhado no **Ateliê** (editor de pixel art 16x16), com moldura
 - Missões diárias, Ecto, loja de molduras e expressões, temporadas mensais com recompensas
 
 - Trilha sonora composta em partituras [Scrimshaw](https://tools.simonwillison.net/scrimshaw-jukebox), tocada ao vivo
@@ -111,15 +112,21 @@ pesam poucos KB. Para compor ou testar, cole o arquivo no editor do
 [Scrimshaw Jukebox](https://tools.simonwillison.net/scrimshaw-jukebox) e confira com
 `node tools/music/check.mjs`.
 
+Cada tela diz a sua trilha (`music()` em `scenes/`); o jogo troca ao entrar na tela e mostra um aviso
+discreto "Tocando: nome da música" (dá para desligar em Opções). Janelas com trilha própria, como o
+Ateliê, tocam por cima da tela e devolvem a música dela ao fechar.
+
 | Arquivo | Onde toca |
 |---------|-----------|
 | `menu` | menu principal |
-| `mapa` | mapa, cartas e diálogos |
+| `mapa` | mapa |
+| `conto` | histórias e diálogos |
 | `batalha` | batalhas do Ato I e o começo das corridas |
 | `sombras` | batalhas do Ato II |
 | `chefe` | chefes |
 | `rainha` | Morgana |
 | `lobby` / `duelo` | Arena e duelos online |
+| `atelie` | Ateliê (editor de avatar) |
 | `vitoria` / `derrota` | vinhetas de resultado |
 
 ## Deploy

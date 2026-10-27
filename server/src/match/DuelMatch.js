@@ -3,7 +3,7 @@
 // Fases de cada rodada: cartas -> armas (com tempo por assento por causa da Visão) -> resultado.
 const duelRules = require('../duel');
 const { leagueOf, deckOf } = require('../catalog');
-const { BotBrain } = require('../bots');
+const { publicLook } = require('../cosmetics');
 const { Match } = require('./Match');
 
 const START_DELAY_MS = 2200;
@@ -14,8 +14,7 @@ class DuelMatch extends Match {
    * @param {boolean} o.ranked                  vale troféus
    * @param {string} o.stage                    cenário
    * @param {() => number} o.rng
-   * @param {Function} o.chooseMove             IA compartilhada (bots)
-   * @param {boolean} [o.botTakesOver]          2x2: um bot assume quem cair (em vez de perder)
+   * @param {boolean} [o.partnerCarries]        2x2: quem cair fica parado no lugar e o parceiro segue (em vez de perder)
    * @param {(match: DuelMatch, r: object) => void} [o.onRound]
    */
   constructor(o) {
@@ -23,13 +22,12 @@ class DuelMatch extends Match {
     this.ranked = !!o.ranked;
     this.stage = o.stage;
     this.rng = o.rng;
-    this.chooseMove = o.chooseMove;
-    this.botTakesOver = !!o.botTakesOver;
+    this.partnerCarries = !!o.partnerCarries;
     this.onRound = o.onRound ?? (() => {});
     const half = this.seats.length / 2;
     const teams = [this.seats.slice(0, half), this.seats.slice(half)].map(t => t.map(s => s.player));
     this.duel = duelRules.createDuel(teams, deckOf, this.rng, this.rules);
-    this.seats.forEach(s => { s.brain = s.player.isBot ? this.#brain(s.player) : null; });
+    this.away = new Set();   // 2x2: assentos de quem caiu (passam a carta e repetem a arma)
     this.deadlines = [];
     this.phaseTimers = [];
     this.endsAt = 0;
@@ -51,12 +49,11 @@ class DuelMatch extends Match {
     const d = duelRules.startRound(this.duel);
     this.endsAt = this.now() + this.rules.cardPhaseMs;
     const common = { round: d.round, endsIn: this.rules.cardPhaseMs, hp: d.sides.map(s => s.hp), sudden: d.round >= this.rules.suddenDeathRound };
-    this.seats.forEach((s, i) => {
-      const f = d.fighters[i];
-      this.send(i, 'card_phase', { ...common, hand: f.hand, deckLeft: this.#deckLeft(i) });
-      if (s.brain && !f.cardLocked) this.later(s.brain.thinkMs(), () => this.pickCard(i, s.brain.chooseCard(f.hand, d.sides[f.side])));
+    this.seats.forEach((_, i) => {
+      this.send(i, 'card_phase', { ...common, hand: d.fighters[i].hand, deckLeft: this.#deckLeft(i) });
     });
     this.toSpectators('card_phase', { ...common, hand: [] });
+    for (const i of this.away) duelRules.pickCard(d, i, null);
     if (duelRules.bothLocked(d, 'cardLocked')) return this.#weaponPhase();
     this.#setPhaseTimers([this.later(this.rules.cardPhaseMs, () => this.#weaponPhase())]);
   }
@@ -67,19 +64,14 @@ class DuelMatch extends Match {
     this.endsAt = Math.max(...this.deadlines);
     const cards = d.fighters.map(f => f.card);
     const timers = [];
-    this.seats.forEach((s, i) => {
-      const f = d.fighters[i];
+    this.seats.forEach((_, i) => {
       const ms = duelRules.weaponTime(d, i);
-      this.send(i, 'weapon_phase', { round: d.round, endsIn: ms, cards, forbidden: f.forbidden });
+      this.send(i, 'weapon_phase', { round: d.round, endsIn: ms, cards, forbidden: d.fighters[i].forbidden });
       timers.push(this.later(ms, () => this.#lockWeapon(i, null)));
-      if (s.brain) {
-        const op = d.fighters[duelRules.laneOpponent(d, i)];
-        const think = Math.min(s.brain.thinkMs(), ms - 400);
-        timers.push(this.later(think, () => this.#lockWeapon(i, s.brain.chooseWeapon(f.history, op.history, f.forbidden))));
-      }
     });
     this.toSpectators('weapon_phase', { round: d.round, endsIn: this.rules.weaponPhaseMs, cards, forbidden: null });
     this.#setPhaseTimers(timers);
+    for (const i of this.away) this.#lockWeapon(i, null);
   }
 
   /** Trava a arma do assento i (null = tempo esgotado: repete a anterior). */
@@ -121,18 +113,28 @@ class DuelMatch extends Match {
   /** Desistir: o lado de quem desistiu perde. */
   forfeit(i) { this.finish({ winnerSide: 1 - this.duel.fighters[i].side, reason: 'desistência' }); }
 
+  /**
+   * Quem caiu e não voltou a tempo. No 2x2 o parceiro segue: o lugar fica parado
+   * (sem carta, repetindo a última arma, como no tempo esgotado). Sem ninguém do time, o time perde.
+   */
   abandon(i) {
-    if (this.botTakesOver) {
-      // 2x2: um bot assume o lugar para o parceiro não ficar sozinho
-      const seat = this.seats[i];
-      seat.brain = this.#brain({ ...seat.player, ai: { type: 'learner', adapt: 0.5 } });
-      this.toAll('seat_status', { seat: i, connected: false, bot: true });
+    const side = this.duel.fighters[i].side;
+    const partnerHere = this.seats.some((s, k) => k !== i && this.duel.fighters[k].side === side && s.socketId && !this.away.has(k));
+    if (!this.partnerCarries || !partnerHere) {
+      this.finish({ winnerSide: 1 - side, reason: 'abandono' });
       return;
     }
-    this.finish({ winnerSide: 1 - this.duel.fighters[i].side, reason: 'abandono' });
+    this.away.add(i);
+    this.toAll('seat_status', { seat: i, connected: false, away: true });
+    const d = this.duel;
+    if (d.phase === 'card' && !d.fighters[i].cardLocked) this.pickCard(i, null);
+    else if (d.phase === 'weapon') this.#lockWeapon(i, null);
   }
 
-  #brain(bot) { return new BotBrain(bot, { chooseMove: this.chooseMove, rng: this.rng, thinkMs: this.rules.botThinkMs }); }
+  reconnect(i, socketId) {
+    this.away.delete(i);
+    super.reconnect(i, socketId);
+  }
 
   // ═══════════════════════ visões ═══════════════════════
   #deckLeft(i) {
@@ -145,7 +147,7 @@ class DuelMatch extends Match {
     const p = this.seats[i].player;
     return {
       seat: i, side: f.side, lane: f.lane, id: f.id, nickname: f.nickname, character: f.character,
-      trophies: f.trophies, league: leagueOf(f.trophies), frame: p.equipped?.frame ?? null, isBot: !!p.isBot,
+      trophies: f.trophies, league: leagueOf(f.trophies), ...publicLook(p),
     };
   }
 

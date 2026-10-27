@@ -30,8 +30,11 @@ async function exercise(store) {
   loaded.equipped = { frame: 'moldura_ouro' };
   loaded.missions = { day: '2026-10-26', list: [{ id: 'vencer', progress: 1, claimed: false }] };
   loaded.ecto = 30;
+  loaded.avatar = { kind: 'art', hunter: 'cacador', art: 'a'.repeat(256) };
   await store.save(loaded);
   const again = await store.getById(loaded.id);
+  assert.deepEqual(again.avatar, loaded.avatar);
+  assert.deepEqual((await store.getById(b.player.id)).avatar, { kind: 'hunter', hunter: 'cacador', art: null });
   assert.deepEqual(again.deck, ['escudo', 'cura']);
   assert.deepEqual(again.equipped, { frame: 'moldura_ouro' });
   assert.equal(again.missions.list[0].id, 'vencer');

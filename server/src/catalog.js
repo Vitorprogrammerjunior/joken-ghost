@@ -15,8 +15,6 @@ const RULES = {
   revealMs: 4200,
   suddenDeathRound: 12,    // a partir daqui o dano dobra
   reconnectGraceMs: 15000,
-  botAfterMs: 20000,       // fila vazia: um bot entra depois disso
-  botThinkMs: [700, 3300], // quanto um bot "pensa" antes de jogar (parece uma pessoa)
 };
 
 /** `weapon`: carta de arma (bônus se vencer com ela). */
@@ -42,7 +40,7 @@ const CARDS = [
 /** Deck: 8 cartas, no máximo 1 lendária e 2 épicas (vale para todos os modos). */
 const DECK = { size: 8, maxByRarity: { lendario: 1, epico: 2 } };
 
-/** Ordem que o deck padrão (e os bots) usam para escolher as cartas. */
+/** Ordem que o deck padrão usa para escolher as cartas. */
 const CARD_PRIORITY = [
   'juizo', 'escudo_sagrado', 'visao', 'vampirismo', 'furia', 'disfarce',
   'golpe_duplo', 'sorte', 'estaca_prata', 'aspirador_turbo', 'cruz_flamejante',
@@ -69,7 +67,7 @@ const LEAGUES = [
 const WEAPONS = ['estaca', 'aspirador', 'cruz'];
 /** estaca (pedra) vence cruz (tesoura); aspirador (papel) vence estaca; cruz vence aspirador. */
 const BEATS = { estaca: 'cruz', aspirador: 'estaca', cruz: 'aspirador' };
-/** Arma -> jogada do jokenpô (para usar as IAs da campanha nos bots). */
+/** Arma -> jogada do jokenpô (para usar a IA dos chefes da campanha no Chefe Cooperativo). */
 const WEAPON_MOVE = { estaca: 'pedra', aspirador: 'papel', cruz: 'tesoura' };
 
 const cardById = (id) => CARDS.find(c => c.id === id);

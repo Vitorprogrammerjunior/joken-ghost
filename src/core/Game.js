@@ -24,6 +24,7 @@ export class Game {
     this.renderer = new Renderer(this.canvas, assets);
     this.viewport = new Viewport(this.root, () => this.options);
     this.audio = new AudioManager(this.options);
+    this.audio.onTrack = (track) => this.bus.emit('track', track);
     this.saves = new SaveManager(storage);
     this.economy = new Economy(0);
     this.profile = null;
@@ -47,8 +48,7 @@ export class Game {
   register(name, scene) { this.scenes[name] = scene; }
 
   start(name, params) {
-    this.scene = this.scenes[name];
-    this.scene._enter(params);
+    this.#enter(name, params);
     requestAnimationFrame((ts) => { this.lastTs = ts; this.#loop(ts); });
   }
 
@@ -59,14 +59,21 @@ export class Game {
     try {
       await this.fade(1);
       this.scene?._exit();
-      this.scene = this.scenes[name];
-      this.scene._enter(params);
+      this.#enter(name, params);
     } catch (err) {
       console.error(`Erro ao abrir a cena "${name}":`, err);
     } finally {
       await this.fade(0);
       this.transitioning = false;
     }
+  }
+
+  /** A trilha da cena começa antes de ela montar a tela: um erro ao montar não deixa a música antiga tocando. */
+  #enter(name, params) {
+    this.scene = this.scenes[name];
+    const track = this.scene.music(params);
+    if (track) this.audio.playMusic(track);
+    this.scene._enter(params);
   }
 
   fade(to, ms = 280) {

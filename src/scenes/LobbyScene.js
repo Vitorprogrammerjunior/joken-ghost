@@ -4,10 +4,11 @@ import { Scene } from '../core/Scene.js';
 import { GW, GH } from '../core/Renderer.js';
 import { Scenery } from '../world/Scenery.js';
 import { $, h, icon, show } from '../ui/dom.js';
-import { setSprite, spriteCanvas } from '../ui/SpriteCanvas.js';
 import { DeckModal } from '../ui/DeckModal.js';
 import { ArenaShop } from '../ui/ArenaShop.js';
-import { LEAGUE_NAMES, MODES, leagueIcon, frameSprite } from '../config/multiplayer.js';
+import { AvatarModal } from '../ui/AvatarModal.js';
+import { avatarEl } from '../ui/Avatar.js';
+import { LEAGUE_NAMES, MODES, leagueIcon } from '../config/multiplayer.js';
 import { selectCharacter } from '../config/characters.js';
 
 const STATUS = {
@@ -17,6 +18,13 @@ const STATUS = {
 /** Nome das fases pelo tamanho da chave (8 caçadores = quartas, semi e final). */
 const ROUND_NAMES = { 8: ['QUARTAS', 'SEMIFINAL', 'FINAL'], 4: ['SEMIFINAL', 'FINAL'], 2: ['FINAL'] };
 const DAY_MS = 24 * 3600 * 1000;
+/** O que a fila de cada modo espera para começar. */
+const SEARCH_NOTES = {
+  ranked: 'Procurando alguém com troféus parecidos com os seus.',
+  casual: 'A partida começa assim que outro caçador entrar na fila.',
+  duo: 'A partida começa quando 4 caçadores estiverem na fila.',
+  raid: 'A luta começa quando outro caçador entrar na fila.',
+};
 
 export class LobbyScene extends Scene {
   /** @param {import('../net/MultiplayerClient.js').MultiplayerClient} net */
@@ -25,6 +33,7 @@ export class LobbyScene extends Scene {
     this.ui = ui;
     this.net = net;
     this.deck = new DeckModal(game, ui.modals, net);
+    this.avatar = new AvatarModal(game, ui.modals, net);
     this.shop = new ArenaShop(game, ui.modals, net, {
       queue: (mode) => this.#queue(mode),
       tournament: () => this.#ready() && net.tournamentJoin(),
@@ -49,6 +58,7 @@ export class LobbyScene extends Scene {
     $('lb-missions').addEventListener('click', () => this.#ready() && this.shop.openMissions());
     $('lb-shop').addEventListener('click', () => this.#ready() && this.shop.openShop());
     $('lp-name').addEventListener('click', () => this.#ready() && ui.arena.openProfile());
+    $('lb-avatar-btn').addEventListener('click', () => this.#ready() && this.avatar.open());
     $('tour-leave').addEventListener('click', () => { net.tournamentLeave(); show($('lb-tournament'), false); });
     $('king-leave').addEventListener('click', () => { net.kingLeave(); show($('lb-king'), false); });
 
@@ -72,6 +82,8 @@ export class LobbyScene extends Scene {
   }
 
   /** @param {{ room?: string, autoQueue?: string|false }} params  autoQueue: modo para entrar na fila ao chegar */
+  music() { return 'lobby'; }
+
   enter({ room, autoQueue = false } = {}) {
     this.scenery ??= new Scenery(this.game.assets, 'mansao');
     this.pendingRoom = room ?? null;
@@ -79,7 +91,6 @@ export class LobbyScene extends Scene {
     this.searchingSince = 0;
     show($('lb-searching'), false);
     show($('lb-room-wait'), false);
-    this.game.audio.playMusic('lobby');
     if (this.net.connected) this.#onWelcome();
     else this.#connect();
   }
@@ -141,7 +152,7 @@ export class LobbyScene extends Scene {
     show($('lb-searching'), searching);
     if (!searching) return;
     $('lb-search-title').textContent = `PROCURANDO: ${MODES[mode]?.name.toUpperCase() ?? 'PARTIDA'}`;
-    $('lb-search-note').textContent = 'Se ninguém aparecer em 20s, um bot entra (sem troféus).';
+    $('lb-search-note').textContent = SEARCH_NOTES[mode] ?? '';
   }
 
   // ─── perfil ───────────────────────────────────────────────────
@@ -158,10 +169,7 @@ export class LobbyScene extends Scene {
     $('lp-cups').textContent = p.cups;
     const days = Math.max(0, Math.ceil((p.season.endsAt - Date.now()) / DAY_MS));
     $('lp-season').textContent = `${p.season.name} · acaba em ${days} dia${days === 1 ? '' : 's'}`;
-    setSprite(this.game.assets, $('lb-avatar'), `char/${p.character}/side/idle`);
-    const frame = $('lb-frame');
-    if (p.equipped.frame) frame.src = icon(frameSprite(p.equipped.frame)).src;
-    show(frame, !!p.equipped.frame);
+    $('lb-avatar').replaceChildren(avatarEl(this.game.assets, { avatar: p.avatar, frame: p.equipped.frame }, { size: 152 }));
     const claimable = p.missions.filter(m => m.progress >= m.n && !m.claimed).length;
     $('lb-missions-badge').textContent = claimable;
     show($('lb-missions-badge'), claimable > 0);
@@ -178,9 +186,9 @@ export class LobbyScene extends Scene {
     $('lb-count').textContent = count;
     const others = online.filter(p => p.id !== me);
     $('lb-online').replaceChildren(...(others.length ? others.map(p => h('li', { class: `online-row s-${p.status}` },
-      spriteCanvas(this.game.assets, `char/${p.character}/side/idle`, { size: 48, msPerFrame: 200 }),
+      avatarEl(this.game.assets, p, { size: 48 }),
       h('span', { class: 'on-info' }, h('b', {}, p.nickname), h('small', {}, icon(leagueIcon(p.league), 'ico ico-xs'), ` ${p.trophies} · ${STATUS[p.status] ?? ''}`)),
-      this.#onlineAction(p))) : [h('li', { class: 'online-empty' }, 'Ninguém mais online agora. Chame um amigo com uma sala privada ou jogue contra bots!')]));
+      this.#onlineAction(p))) : [h('li', { class: 'online-empty' }, 'Ninguém mais online agora. Chame um amigo com uma sala privada!')]));
     if (this.net.king) this.#renderKing();
   }
 
@@ -204,16 +212,20 @@ export class LobbyScene extends Scene {
     const names = ROUND_NAMES[t.size] ?? [];
     $('tour-bracket').replaceChildren(...(t.rounds.length ? t.rounds.map((round, k) => h('div', { class: 'bracket-col' },
       h('b', { class: 'bracket-title' }, names[k] ?? `FASE ${k + 1}`),
-      ...round.map(m => h('div', { class: 'bracket-match' }, ...[m.a, m.b].map(id => h('span', {
-        class: `bracket-name${m.winner === id ? ' won' : m.winner ? ' lost' : ''}${id === this.net.profile.id ? ' me' : ''}`,
-      }, name(id)))))))
+      ...round.map(m => h('div', { class: 'bracket-match' }, ...[m.a, m.b].map(id => (id == null
+        ? h('span', { class: 'bracket-name bye' }, 'passa direto')
+        : h('span', {
+          class: `bracket-name${m.winner === id ? ' won' : m.winner ? ' lost' : ''}${id === this.net.profile.id ? ' me' : ''}`,
+        }, name(id))))))))
       : t.entrants.map(e => h('span', { class: `bracket-name${e.id === this.net.profile.id ? ' me' : ''}` }, e.nickname))));
   }
 
   #tourWaitText() {
     const t = this.net.tournament;
     const left = Math.max(0, t.startsIn - (performance.now() - (this.tourAt ?? 0)));
-    return `Inscritos: ${t.entrants.length}/${t.size}. Bots completam a chave em ${Math.ceil(left / 1000)}s.`;
+    const missing = t.min - t.entrants.length;
+    if (missing > 0) return `Inscritos: ${t.entrants.length}/${t.size}. Faltam ${missing} caçador${missing === 1 ? '' : 'es'} para começar.`;
+    return `Inscritos: ${t.entrants.length}/${t.size}. Começa em ${Math.ceil(left / 1000)}s (ou na hora, com ${t.size}).`;
   }
 
   // ─── Rei da Arena ─────────────────────────────────────────────
@@ -223,7 +235,7 @@ export class LobbyScene extends Scene {
     if (!k) return;
     const me = this.net.profile?.id;
     $('king-throne').replaceChildren(...(k.king ? [
-      spriteCanvas(this.game.assets, `char/${k.king.character}/side/idle`, { size: 96 }),
+      avatarEl(this.game.assets, k.king, { size: 96 }),
       h('div', {}, h('b', {}, k.king.nickname), h('p', {}, `${k.king.streak} vitória${k.king.streak === 1 ? '' : 's'} seguida${k.king.streak === 1 ? '' : 's'}`)),
     ] : [h('p', {}, 'O trono está vazio...')]));
     const pos = k.line.findIndex(p => p.id === me);

@@ -45,13 +45,14 @@ export class MapScene extends Scene {
 
   get profile() { return this.game.profile; }
 
+  music() { return 'mapa'; }
+
   enter({ focus } = {}) {
     const p = this.profile;
     this.focus = focus ?? Math.min(p.unlocked, ACTS.at(-1).levels.at(-1));
     this.act = this.#actOf(this.focus).id;
     this.#makeHunter();
     this.#render();
-    this.game.audio.playMusic('mapa');
   }
 
   #actOf(levelId) { return ACTS.find(a => a.levels.includes(levelId)) ?? ACTS[0]; }

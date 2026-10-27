@@ -13,14 +13,14 @@ const { Hub } = require('../src/hub');
 const { loadShared } = require('../src/shared');
 const { RULES } = require('../src/catalog');
 
-const FAST = { ...RULES, cardPhaseMs: 250, weaponPhaseMs: 250, visionWeaponMs: 150, revealMs: 30, reconnectGraceMs: 1500, botAfterMs: 150, botThinkMs: [5, 20] };
+const FAST = { ...RULES, cardPhaseMs: 250, weaponPhaseMs: 250, visionWeaponMs: 150, revealMs: 30, reconnectGraceMs: 1500 };
 const RAID_FAST = { weaponMs: 250, revealMs: 30 };
 
 async function setup(opts = {}) {
   const store = await new JsonStore(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'jg-')), 'p.json')).init();
   const server = http.createServer();
   const io = new Server(server);
-  const hub = new Hub(io, store, { shared: await loadShared(), rules: FAST, tournamentFillMs: 200, kingBotMs: 200, ratePerSec: 1000, ...opts });
+  const hub = new Hub(io, store, { shared: await loadShared(), rules: FAST, tournamentFillMs: 200, ratePerSec: 1000, ...opts });
   await new Promise(r => server.listen(0, r));
   const url = `http://localhost:${server.address().port}`;
   const clients = [];
@@ -66,6 +66,21 @@ function autoplay(c, weapon) {
   c.on('raid_phase', (d) => { if (d.alive) c.emit('pick_weapon', { weapon }); });
 }
 
+/** Joga com uma arma por lado: o lado 0 vence sempre (cruz vence aspirador), então a partida acaba. */
+function autoplayBySide(c) {
+  let weapon = 'cruz';
+  c.on('match_start', (m) => { weapon = m.fighters[m.you].side === 0 ? 'cruz' : 'aspirador'; });
+  c.on('card_phase', () => c.emit('pick_card', { cardId: null }));
+  c.on('weapon_phase', () => c.emit('pick_weapon', { weapon }));
+}
+
+/** Armas sorteadas: entre vários jogadores alguém sempre acaba vencendo. */
+function autoplayRandom(c) {
+  const weapons = ['estaca', 'aspirador', 'cruz'];
+  c.on('card_phase', () => c.emit('pick_card', { cardId: null }));
+  c.on('weapon_phase', (d) => c.emit('pick_weapon', { weapon: weapons.filter(w => w !== d.forbidden)[Math.floor(Math.random() * 2)] }));
+}
+
 test('ranqueada completa: fila, cartas, armas, troféus e ranking', async () => {
   const { client, close } = await setup();
   try {
@@ -97,77 +112,120 @@ test('ranqueada completa: fila, cartas, armas, troféus e ranking', async () => 
   } finally { await close(); }
 });
 
-test('fila vazia: um bot entra (sem troféus) e joga até o fim', async () => {
+test('fila sozinho: ninguém entra no lugar de um caçador', async () => {
   const { client, close } = await setup();
   try {
     const a = await client('Sozinho');
-    autoplay(a.c, 'cruz');
     a.c.emit('queue_join', { mode: 'casual' });
+    await new Promise(r => setTimeout(r, 2500)); // mais de dois ciclos do matchmaker
+    assert.equal(a.c.seen.some(([e]) => e === 'match_start'), false);
+  } finally { await close(); }
+});
+
+test('casual: dois caçadores, sem troféus', async () => {
+  const { client, close } = await setup();
+  try {
+    const a = await client('Ana');
+    const b = await client('Bia');
+    autoplay(a.c, 'cruz');
+    autoplay(b.c, 'aspirador');
+    a.c.emit('queue_join', { mode: 'casual' });
+    b.c.emit('queue_join', { mode: 'casual' });
     const ms = await once(a.c, 'match_start');
-    assert.equal(ms.fighters[1 - ms.you].isBot, true);
+    assert.equal(ms.kind, 'casual');
     const end = await once(a.c, 'match_end');
     assert.equal(end.ranked, false);
     assert.equal(end.trophies, null);
   } finally { await close(); }
 });
 
-test('2x2 com bots: quatro caçadores, vida somada por lado', async () => {
+test('2x2: quatro caçadores, vida somada por lado, e quem cai fica parado', async () => {
   const { client, close } = await setup();
   try {
-    const a = await client('Dupla');
-    autoplay(a.c, 'aspirador');
-    a.c.emit('queue_join', { mode: 'duo' });
-    const ms = await once(a.c, 'match_start');
-    assert.equal(ms.fighters.length, 4);
-    assert.equal(ms.sides[0].maxHp, 150);
-    await once(a.c, 'match_end');
+    const players = await Promise.all(['Um', 'Dois', 'Tres', 'Quatro'].map(n => client(n)));
+    players.forEach(p => autoplayBySide(p.c));
+    const starts = players.map(p => once(p.c, 'match_start'));
+    players.forEach(p => p.c.emit('queue_join', { mode: 'duo' }));
+    const views = await Promise.all(starts);
+    assert.equal(views[0].fighters.length, 4);
+    assert.equal(views[0].sides[0].maxHp, 150);
+    // um caçador cai: depois da carência o parceiro segue jogando, sem perder por abandono
+    const dropped = views.findIndex(v => v.fighters[v.you].side === 0);
+    const watcher = players.find((_, k) => k !== dropped);
+    const away = waitFor(watcher.c, 'seat_status', d => d.away === true);
+    players[dropped].c.close();
+    await away;
+    const end = await once(watcher.c, 'match_end');
+    assert.notEqual(end.reason, 'abandono');
   } finally { await close(); }
 });
 
-test('chefe cooperativo com parceiro bot', async () => {
+test('chefe cooperativo com dois caçadores', async () => {
   const { client, close } = await setup();
   try {
     const raid = require('../src/raid');
     Object.assign(raid.RAID, RAID_FAST);
     const a = await client('Caçadora');
+    const b = await client('Parceiro');
     autoplay(a.c, 'cruz');
+    autoplay(b.c, 'estaca');
     a.c.emit('queue_join', { mode: 'raid' });
+    b.c.emit('queue_join', { mode: 'raid' });
     const ms = await once(a.c, 'match_start');
     assert.equal(ms.kind, 'raid');
     assert.equal(ms.hunters.length, 2);
     assert.ok(ms.boss.maxHp > 0);
     const result = await once(a.c, 'raid_result');
-    assert.ok(result.exchanges.length >= 1);
+    assert.equal(result.exchanges.length, 2);
     const end = await once(a.c, 'match_end');
     assert.equal(typeof end.won, 'boolean');
   } finally { await close(); }
 });
 
-test('torneio: bots completam a chave e o torneio termina', async () => {
+test('torneio: com 5 inscritos a chave é de 8 e alguns passam direto', async () => {
   const { client, close } = await setup();
   try {
-    const a = await client('Campeão');
-    autoplay(a.c, 'estaca');
-    a.c.emit('tournament_join');
-    const state = await waitFor(a.c, 'tournament_state', d => d.status === 'done');
-    assert.equal(state.entrants.length, 8);
+    const players = await Promise.all(['A', 'B', 'C', 'D', 'E'].map(n => client(`Jog${n}`)));
+    players.forEach(p => autoplayRandom(p.c));
+    for (const p of players) p.c.emit('tournament_join');
+    const state = await waitFor(players[0].c, 'tournament_state', d => d.status === 'done');
+    assert.equal(state.entrants.length, 5);
+    assert.equal(state.size, 8);
     assert.equal(state.rounds.length, 3);
+    assert.equal(state.rounds[0].filter(m => m.b == null).length, 3);
     assert.ok(state.rounds[2][0].winner);
   } finally { await close(); }
 });
 
-test('Rei da Arena: vira rei, um bot desafia e a fila assiste', async () => {
+test('torneio: com menos de 4 inscritos ele espera', async () => {
+  const { client, close } = await setup();
+  try {
+    const a = await client('Cedo');
+    const b = await client('Tambem');
+    a.c.emit('tournament_join');
+    b.c.emit('tournament_join');
+    await new Promise(r => setTimeout(r, 1500)); // a espera (200ms) já passou
+    const last = a.c.seen.filter(([e]) => e === 'tournament_state').at(-1)[1];
+    assert.equal(last.status, 'waiting');
+    assert.equal(last.min, 4);
+  } finally { await close(); }
+});
+
+test('Rei da Arena: o primeiro vira rei, o segundo desafia e o vencedor fica', async () => {
   const { client, close } = await setup();
   try {
     const a = await client('Rei');
+    const b = await client('Desafiante');
     autoplay(a.c, 'cruz');
+    autoplay(b.c, 'aspirador');
     a.c.emit('king_join');
+    await waitFor(a.c, 'king_state', d => d.king?.nickname === 'Rei');
+    b.c.emit('king_join');
     const ms = await once(a.c, 'match_start');
     assert.equal(ms.kind, 'king');
     await once(a.c, 'match_end');
-    // depois da luta o vencedor (o caçador ou o bot) é rei com sequência 1 ou mais
     const state = await waitFor(a.c, 'king_state', d => d.matchId === null && d.king?.streak >= 1);
-    assert.ok(state.king.nickname);
+    assert.equal(state.king.nickname, 'Rei'); // cruz vence aspirador
   } finally { await close(); }
 });
 

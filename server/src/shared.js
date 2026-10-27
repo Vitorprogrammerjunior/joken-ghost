@@ -1,7 +1,7 @@
 'use strict';
 // Regras do jogo compartilhadas com o cliente (src/domain e src/config, em ES modules).
-// O servidor usa o mesmo código para refazer corridas do Desafio do Dia, para os bots
-// e para o chefe cooperativo. No Render o repositório inteiro é clonado, então a pasta
+// O servidor usa o mesmo código para refazer corridas do Desafio do Dia, para a IA
+// do chefe cooperativo e para validar os desenhos de avatar. No Render o repositório inteiro é clonado, então a pasta
 // src/ existe ao lado de server/.
 const path = require('path');
 const { pathToFileURL } = require('url');
@@ -15,7 +15,10 @@ let cache = null;
 function loadShared() {
   cache ??= Promise.all([
     load('domain/run.js'), load('domain/enemyAI.js'), load('domain/random.js'), load('domain/rps.js'), load('config/enemies.js'),
-  ]).then(([run, ai, random, rps, enemies]) => ({ ...run, ...ai, ...random, outcome: rps.outcome, ENEMIES: enemies.ENEMIES }));
+    load('domain/avatar.js'),
+  ]).then(([run, ai, random, rps, enemies, avatar]) => ({
+    ...run, ...ai, ...random, outcome: rps.outcome, ENEMIES: enemies.ENEMIES, isValidArt: avatar.isValidArt,
+  }));
   return cache;
 }
 

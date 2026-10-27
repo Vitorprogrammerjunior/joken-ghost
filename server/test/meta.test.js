@@ -1,15 +1,12 @@
 'use strict';
-// Missões diárias, temporadas, cosméticos e bots (módulos sem rede).
+// Missões diárias, temporadas e cosméticos (módulos sem rede).
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const missions = require('../src/missions');
 const seasons = require('../src/seasons');
 const cosmetics = require('../src/cosmetics');
-const { createBot, simulateDuel, BotBrain } = require('../src/bots');
 const { blankPlayer } = require('../src/store');
 const { loadShared } = require('../src/shared');
-
-const fixed = (v) => () => v;
 
 test('missões: 3 por dia, estáveis, com progresso e resgate', () => {
   const p = blankPlayer('Ana');
@@ -67,21 +64,27 @@ test('cosméticos: grátis, compra com Ecto e moldura equipada', () => {
   assert.equal(p.equipped.frame, 'madeira');
 });
 
-test('bots: estilos de jogo, respeitam a Provocação e terminam um duelo simulado', async () => {
-  const { chooseMove } = await loadShared();
-  const bot = createBot(500, fixed(0.3));
-  assert.equal(bot.isBot, true);
-  const brain = new BotBrain({ ...bot, ai: { type: 'mimic', chance: 1 } }, { chooseMove, rng: fixed(0.1) });
-  assert.equal(brain.chooseWeapon(['cruz'], ['aspirador']), 'aspirador'); // imita a última do adversário
-  assert.notEqual(brain.chooseWeapon(['cruz'], ['aspirador'], 'aspirador'), 'aspirador');
-  const a = createBot(800), b = createBot(800);
-  assert.ok([a.id, b.id].includes(simulateDuel(a, b, { chooseMove })));
+test('avatar: rosto de caçador liberado ou desenho válido; os outros só veem o que está em uso', async () => {
+  const { isValidArt } = await loadShared();
+  const rules = { unlocked: ['cacador', 'luna'], isValidArt };
+  const p = blankPlayer('Artista');
+  assert.deepEqual(cosmetics.publicLook(p).avatar, { kind: 'hunter', hunter: 'cacador' });
+  assert.equal(cosmetics.setAvatar(p, { kind: 'hunter', hunter: 'sombra' }, rules).ok, false);
+  assert.equal(cosmetics.setAvatar(p, { kind: 'hunter', hunter: 'luna' }, rules).ok, true);
+  assert.equal(cosmetics.setAvatar(p, { kind: 'art', art: 'xyz' }, rules).ok, false);
+  const art = '1'.repeat(16) + '0'.repeat(240);
+  assert.equal(cosmetics.setAvatar(p, { kind: 'art', art }, rules).ok, true);
+  assert.deepEqual(cosmetics.publicLook(p).avatar, { kind: 'art', art });
+  // volta para um rosto: o desenho fica guardado, mas não é mostrado para os outros
+  cosmetics.setAvatar(p, { kind: 'hunter', hunter: 'cacador' }, rules);
+  assert.equal(p.avatar.art, art);
+  assert.deepEqual(cosmetics.publicLook(p).avatar, { kind: 'hunter', hunter: 'cacador' });
 });
 
 test('torneio: a espera para completar com bots começa no primeiro inscrito', () => {
   const { Tournament } = require('../src/modes/Tournament');
   let now = 0;
-  const t = new Tournament({ now: () => now, rng: Math.random, fillAfterMs: 1000, createBot: () => ({}), play: async () => '', simulate: () => '', broadcast: () => {}, onFinish: () => {} });
+  const t = new Tournament({ now: () => now, rng: Math.random, fillAfterMs: 1000, play: async () => '', broadcast: () => {}, onFinish: () => {} });
   now = 50000; // o torneio abriu há muito tempo, sem ninguém
   t.join({ id: 'a', trophies: 0 });
   t.tick();

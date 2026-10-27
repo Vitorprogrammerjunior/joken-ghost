@@ -19,8 +19,10 @@ function tick(t) {
  * @param {import('../core/Assets.js').Assets} assets
  * @param {string} key  folha (ex.: 'char/luna/side/idle')
  */
+/** `size: null` deixa o tamanho para o CSS. */
 export function spriteCanvas(assets, key, { size = 128, msPerFrame = 160, cls = '', dim = false } = {}) {
-  const canvas = h('canvas', { width: FRAME_SIZE, height: FRAME_SIZE, class: `sprite-canvas ${cls}`, style: { width: `${size}px`, height: `${size}px` } });
+  const style = size == null ? null : { width: `${size}px`, height: `${size}px` };
+  const canvas = h('canvas', { width: FRAME_SIZE, height: FRAME_SIZE, class: `sprite-canvas ${cls}`, style });
   const sheet = assets.get(key);
   if (!sheet) return canvas;
   const ctx = canvas.getContext('2d');

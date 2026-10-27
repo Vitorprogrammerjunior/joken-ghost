@@ -9,6 +9,7 @@ import { BestiaryModal } from './ui/BestiaryModal.js';
 import { CampaignModals } from './ui/CampaignModals.js';
 import { RelicModal } from './ui/RelicModal.js';
 import { DailyPanel } from './ui/DailyPanel.js';
+import { NowPlaying } from './ui/NowPlaying.js';
 import { MenuScene } from './scenes/MenuScene.js';
 import { MapScene } from './scenes/MapScene.js';
 import { StoryScene } from './scenes/StoryScene.js';
@@ -32,6 +33,7 @@ async function boot() {
   const ui = {
     modals,
     toasts: new Toasts(game),
+    nowPlaying: new NowPlaying(game),
     options: new OptionsModal(game, modals),
     saves: new SavesModal(game, modals),
     bestiary: new BestiaryModal(game, modals),
