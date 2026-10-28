@@ -13,12 +13,17 @@ export class MenuScene extends Scene {
     $('menu-play').addEventListener('click', () => this.play());
     $('menu-saves').addEventListener('click', () => ui.saves.open());
     $('menu-options').addEventListener('click', () => ui.options.open());
+    $('menu-account').addEventListener('click', () => ui.account.open());
+    game.bus.on('account-changed', () => this.#accountLabel());
     $('menu-mp').addEventListener('click', () => game.go('lobby'));
   }
 
   music() { return 'menu'; }
 
+  #accountLabel() { $('menu-account-label').textContent = this.ui.account.loggedIn ? 'CONTA' : 'ENTRAR'; }
+
   enter() {
+    this.#accountLabel();
     this.scenery ??= new Scenery(this.game.assets, 'floresta');
     this.hunter = new Fighter(this.game.assets, { base: hunterBase(this.game, 'side'), x: 250, y: GROUND_Y + 40 });
     this.ghosts = [0, 1, 2].map(i => Object.assign(

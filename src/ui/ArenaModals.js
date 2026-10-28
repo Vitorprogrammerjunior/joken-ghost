@@ -31,6 +31,7 @@ export class ArenaModals {
     $('profile-copy').addEventListener('click', () => {
       navigator.clipboard?.writeText($('profile-code').value).then(() => this.#toast('Código copiado. Guarde em segredo!'));
     });
+    $('profile-account').addEventListener('click', () => game.bus.emit('open-account'));
     $('profile-use').addEventListener('click', () => {
       const code = $('profile-code').value.trim();
       if (code.length < 20 || code === net.accountCode) return;
@@ -111,7 +112,11 @@ export class ArenaModals {
   // ─── perfil ───────────────────────────────────────────────────
   openProfile() {
     $('profile-nick').value = this.net.profile?.nickname ?? '';
-    $('profile-code').value = this.net.accountCode;
+    // com login, a conta entra pelo Google/Discord: o código (agora uma sessão deste aparelho) não aparece
+    const logged = this.net.loggedIn;
+    $('profile-code').value = logged ? '' : this.net.accountCode;
+    $('profile-guest').classList.toggle('hidden', logged);
+    $('profile-account-label').textContent = logged ? 'MINHA CONTA' : 'ENTRAR COM GOOGLE OU DISCORD';
     this.modals.open('modal-profile');
   }
 }

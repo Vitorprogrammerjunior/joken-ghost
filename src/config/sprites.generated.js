@@ -775,6 +775,14 @@ export const SPRITES = {
     "src": "assets/sprites/icons/assistir.svg",
     "frames": 1
   },
+  "icon/conta": {
+    "src": "assets/sprites/icons/conta.svg",
+    "frames": 1
+  },
+  "icon/nuvem": {
+    "src": "assets/sprites/icons/nuvem.svg",
+    "frames": 1
+  },
   "icon/nota": {
     "src": "assets/sprites/icons/nota.svg",
     "frames": 1

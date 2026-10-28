@@ -31,12 +31,16 @@
   text-shadow: var(--outline), 0 4px 0 var(--ink);
 }
 .menu { display: flex; flex-direction: column; align-items: stretch; gap: 10px; width: 400px; }
-#screen-menu .menu .btn:not(.btn-lg) { justify-content: flex-start; padding-left: 32px; }
+/* jogar e multiplayer em cima; arquivos/conta e opções/wiki lado a lado */
+#screen-menu .menu { display: grid; grid-template-columns: 1fr 1fr; width: 460px; }
+#screen-menu .menu .btn-lg, #screen-menu .menu #menu-mp { grid-column: 1 / -1; }
+#screen-menu .menu .btn:not(.btn-lg) { justify-content: flex-start; padding-left: 24px; padding-right: 16px; }
 #screen-menu .menu .btn { animation: slide-up 0.4s ease-out both; }
 #screen-menu .menu .btn:nth-child(2) { animation-delay: 0.05s; }
 #screen-menu .menu .btn:nth-child(3) { animation-delay: 0.1s; }
 #screen-menu .menu .btn:nth-child(4) { animation-delay: 0.15s; }
 #screen-menu .menu .btn:nth-child(5) { animation-delay: 0.2s; }
+#screen-menu .menu .btn:nth-child(6) { animation-delay: 0.25s; }
 .menu-foot { position: absolute; bottom: 20px; color: var(--mist); text-shadow: var(--outline); }
 
 /* ─── barra superior (mapa) ─── */

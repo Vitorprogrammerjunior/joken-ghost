@@ -90,7 +90,7 @@ export class Game {
   }
 
   saveProfile() {
-    if (this.profile) this.saves.save(this.profile);
+    if (this.profile && this.saves.save(this.profile)) this.bus.emit('saved', this.profile); // a nuvem escuta (CloudSync)
   }
 
   setOption(key, value) {

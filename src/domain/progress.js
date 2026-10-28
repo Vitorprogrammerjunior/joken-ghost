@@ -4,6 +4,8 @@
 export const SAVE_VERSION = 2;
 export const SLOT_COUNT = 3;
 const KEY = (slot) => `jokenghost_save_${slot}`;
+const DELETED_KEY = (slot) => `jokenghost_save_${slot}_deleted`; // hora em que o arquivo foi apagado (para a nuvem)
+const OWNER_KEY = 'jokenghost_save_owner';                      // conta dona dos arquivos deste aparelho
 
 export function newProfile(slot) {
   const now = new Date().toISOString();
@@ -68,6 +70,7 @@ export class SaveManager {
     profile.updatedAt = new Date().toISOString();
     try {
       this.storage.setItem(KEY(profile.slot), JSON.stringify(profile));
+      this.storage.removeItem(DELETED_KEY(profile.slot));
       return true;
     } catch {
       return false;
@@ -75,7 +78,44 @@ export class SaveManager {
   }
 
   remove(slot) {
-    try { this.storage.removeItem(KEY(slot)); } catch { /* armazenamento indisponível */ }
+    try {
+      this.storage.removeItem(KEY(slot));
+      this.storage.setItem(DELETED_KEY(slot), new Date().toISOString());
+    } catch { /* armazenamento indisponível */ }
+  }
+
+  // ─── nuvem (src/net/CloudSync.js) ─────────────────────────────
+  /** Cada arquivo com a hora do último save; arquivo apagado vem com data null. */
+  entries() {
+    return Array.from({ length: this.slots }, (_, i) => {
+      const slot = i + 1;
+      const data = this.load(slot);
+      if (data) return { slot, data, updatedAt: data.updatedAt };
+      return { slot, data: null, updatedAt: this.storage.getItem(DELETED_KEY(slot)) };
+    });
+  }
+
+  /** Grava um arquivo que veio da nuvem como ele está (sem mudar a hora); null apaga. */
+  restore(slot, data, updatedAt) {
+    try {
+      if (data) {
+        this.storage.setItem(KEY(slot), JSON.stringify({ ...data, slot, updatedAt }));
+        this.storage.removeItem(DELETED_KEY(slot));
+      } else {
+        this.storage.removeItem(KEY(slot));
+        if (updatedAt) this.storage.setItem(DELETED_KEY(slot), updatedAt);
+        else this.storage.removeItem(DELETED_KEY(slot));
+      }
+    } catch { /* armazenamento indisponível */ }
+  }
+
+  get owner() { return this.storage.getItem(OWNER_KEY); }
+  set owner(id) { if (id) this.storage.setItem(OWNER_KEY, id); else this.storage.removeItem(OWNER_KEY); }
+
+  /** Tira todos os arquivos deste aparelho (ao sair da conta: eles estão na nuvem). */
+  clearAll() {
+    for (let slot = 1; slot <= this.slots; slot++) this.restore(slot, null, null);
+    this.owner = null;
   }
 }
 

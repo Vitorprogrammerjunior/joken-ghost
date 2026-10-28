@@ -7,6 +7,8 @@ const { Server } = require('socket.io');
 const { createStore } = require('./src/store');
 const { Hub } = require('./src/hub');
 const { dailyRoutes } = require('./src/daily');
+const { authRoutes } = require('./src/auth/routes');
+const { saveRoutes } = require('./src/saves');
 const { loadShared } = require('./src/shared');
 const { rollSeason } = require('./src/seasons');
 const { leagueOf, CARDS, CHARACTERS, LEAGUES } = require('./src/catalog');
@@ -23,6 +25,7 @@ async function main() {
   const io = new Server(server, { cors: { origin: CORS_ORIGIN === '*' ? true : CORS_ORIGIN, methods: ['GET', 'POST'] } });
   const hub = new Hub(io, store, { shared });
 
+  app.set('trust proxy', 1); // Render fica na frente (https)
   app.use(cors({ origin: CORS_ORIGIN === '*' ? true : CORS_ORIGIN }));
   app.get('/', (_req, res) => res.json({ ok: true, service: 'jokenghost-multiplayer', version: '3.0.0' }));
   app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -35,6 +38,9 @@ async function main() {
   app.get('/api/catalog', (_req, res) => res.json({ cards: CARDS, characters: CHARACTERS, leagues: LEAGUES }));
   // corrida do Desafio do Dia conferida: conta na missão diária
   app.use(dailyRoutes(store, { onPlayed: (player) => hub.track(player.id, 'daily') }));
+  // login com Google/Discord (o convidado continua valendo) e campanha na nuvem
+  app.use(authRoutes(store, { onDeleted: (playerId) => hub.forget(playerId) }));
+  app.use(saveRoutes(store));
 
   server.listen(PORT, () => console.log(`JokenGhost multiplayer na porta ${PORT} (${process.env.DATABASE_URL ? 'Postgres' : 'arquivo JSON'})`));
 

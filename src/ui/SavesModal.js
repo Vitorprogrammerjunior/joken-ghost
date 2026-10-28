@@ -10,21 +10,41 @@ const fmtDate = (iso) => {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-/** Escolha de arquivo (slot de save). */
+/** Escolha de arquivo (slot de save). Com login, os arquivos também ficam na nuvem. */
 export class SavesModal {
-  constructor(game, modals) {
+  /** @param {import('../net/CloudSync.js').CloudSync} cloud */
+  constructor(game, modals, cloud) {
     this.game = game;
     this.modals = modals;
+    this.cloud = cloud;
     this.list = $('save-list');
+    this.cloudLine = $('saves-cloud');
+    cloud.on('change', () => { if (modals.isOpen('modal-saves')) this.#renderCloud(); });
   }
 
   open() {
     this.render();
     this.modals.open('modal-saves');
+    // traz o que foi jogado em outro aparelho
+    this.cloud.sync().then((changed) => { if (changed && this.modals.isOpen('modal-saves')) this.render(); });
   }
 
   render() {
     this.list.replaceChildren(...this.game.saves.list().map(({ slot, data }) => this.#slot(slot, data)));
+    this.#renderCloud();
+  }
+
+  #renderCloud() {
+    const state = this.cloud.enabled ? this.cloud.state : 'guest';
+    const text = {
+      syncing: 'Sincronizando com a nuvem...',
+      ok: 'Arquivos salvos na nuvem da sua conta',
+      error: 'Sem conexão com a nuvem agora. Os arquivos sobem depois.',
+      guest: 'Os arquivos ficam só neste aparelho. ',
+    }[state] ?? '';
+    this.cloudLine.className = `cloud-line ${state}`;
+    this.cloudLine.replaceChildren(icon('icon/nuvem', 'ico ico-sm'), text,
+      state === 'guest' ? h('button', { class: 'link', onclick: () => this.game.bus.emit('open-account') }, 'Entrar para salvar na nuvem') : '');
   }
 
   #slot(slot, data) {
@@ -49,6 +69,8 @@ export class SavesModal {
       e.stopPropagation();
       if (await this.modals.confirm(`Apagar o Arquivo ${slot}? Isso não pode ser desfeito.`)) {
         this.game.saves.remove(slot);
+        if (this.game.profile?.slot === slot) this.game.profile = null;
+        this.game.bus.emit('save-removed', slot);
         this.render();
       }
     };

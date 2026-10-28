@@ -8,6 +8,7 @@ Node.js + Socket.io. Toda a regra roda aqui (o cliente só manda escolhas):
 - Adversários automáticos na Ranqueada quando falta gente (`src/bots/`)
 - Missões diárias, Ecto, cosméticos e temporadas mensais (`missions.js`, `cosmetics.js`, `seasons.js`)
 - Ranking do Desafio do Dia, conferido refazendo a corrida (`src/daily.js`)
+- Login com Google e Discord, mantendo o convidado (`src/auth/`), e campanha na nuvem (`src/saves.js`)
 
 O servidor usa as mesmas regras do jogo para a IA do chefe cooperativo e para o Desafio do Dia
 (`src/shared.js` importa `../src/domain` e `../src/config`). Por isso ele precisa do repositório inteiro,
@@ -22,6 +23,10 @@ npm start
 ```
 
 Servidor em `http://localhost:3001`. Sem `DATABASE_URL`, os jogadores ficam em `server/data/players.json`.
+
+Para testar o login sem Google/Discord, ligue o login de teste (só funciona fora de produção):
+`AUTH_DEV_LOGIN=1 npm start`. A janela CONTA do jogo mostra "ENTRAR COM TESTE LOCAL", que abre uma
+página do próprio servidor no lugar da tela do Google.
 
 Testes (regras, troféus, banco e uma partida de verdade com dois clientes):
 
@@ -38,7 +43,7 @@ Em produção: `https://joken-ghost.onrender.com`.
 2. **Servidor:** no [Render](https://render.com), **New → Web Service** ligado a este repositório:
    - Language **Node**, Branch `web-game`, Region **Ohio**, Root Directory `server`
    - Build `npm ci --omit=dev`, Start `npm start`, Instance **Free**
-   - Variáveis: `DATABASE_URL` (do Neon) e `CORS_ORIGIN` (`*` ou a URL da Vercel)
+   - Variáveis: `DATABASE_URL` (do Neon), `CORS_ORIGIN` (`*` ou a URL da Vercel) e as do login (abaixo)
    - Health Check Path: `/health`
 3. Cada push no branch faz um deploy novo automaticamente.
 
@@ -48,6 +53,50 @@ Para ele não dormir, dá para usar um monitor gratuito (ex.: UptimeRobot) chama
 
 Sem `DATABASE_URL`, o servidor usa um arquivo JSON (`DATA_FILE`); no Render grátis esse arquivo
 se perde a cada reinício, então use o Neon.
+
+## Login com Google e Discord
+
+Quem não entra continua jogando como **convidado** (como sempre foi). Ao entrar, o convidado deste
+aparelho é **ligado** à conta: troféus, Ecto, deck, avatar e missões continuam. Se aquele Google/Discord
+já tinha conta, o jogo entra nela (as duas não se juntam). Dá para ligar Google e Discord na mesma conta.
+Cada aparelho ganha a sua sessão; o "código da conta" de convidado deixa de valer ao entrar.
+Do Google e do Discord guardamos só o id da pessoa (nada de e-mail, nome ou foto). "Apagar minha conta"
+apaga o jogador e tudo dele (logins, sessões, saves, Desafio do Dia).
+
+Com login, os arquivos da campanha (3 slots) também ficam na nuvem: o jogo sincroniza ao abrir, ao abrir
+ARQUIVOS e alguns segundos depois de cada save; em cada slot fica o salvo por último. Na primeira vez de
+uma conta num aparelho, a nuvem ganha e os slots vazios recebem os arquivos do aparelho. Ao sair, os
+arquivos saem do aparelho (estão na nuvem).
+
+### Configurar (uma vez)
+
+As chaves secretas vão **só nas variáveis do Render**, nunca no código.
+
+**Google** ([console.cloud.google.com](https://console.cloud.google.com)):
+1. Crie um projeto (ex.: JokenGhost).
+2. **Google Auth Platform → Branding**: nome do app, e-mail de suporte. Público **Externo**.
+3. **Clients → Create client → Web application**. Em **Authorized redirect URIs** coloque
+   `https://joken-ghost.onrender.com/api/auth/callback/google`.
+4. Copie o **Client ID** e o **Client secret**.
+5. **Audience → Publish app** (em "Testing" só os usuários de teste conseguem entrar). Como o jogo
+   pede só `openid`, não precisa de verificação do Google.
+
+**Discord** ([discord.com/developers/applications](https://discord.com/developers/applications)):
+1. **New Application** (ex.: JokenGhost).
+2. **OAuth2**: copie o **Client ID**, clique em **Reset Secret** e copie o **Client Secret**.
+3. Em **Redirects** adicione `https://joken-ghost.onrender.com/api/auth/callback/discord` e salve.
+
+**Render → Environment** (o serviço reinicia sozinho):
+
+| Variável | Valor |
+|----------|-------|
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | do Google |
+| `DISCORD_CLIENT_ID` / `DISCORD_CLIENT_SECRET` | do Discord |
+| `CLIENT_ORIGINS` | endereço do jogo, ex. `https://seu-jogo.vercel.app` (vários separados por vírgula). O login só volta para esses endereços. |
+| `NODE_ENV` | `production` (garante que o login de teste nunca liga) |
+
+`PUBLIC_URL` é opcional: o Render já informa o próprio endereço (`RENDER_EXTERNAL_URL`), que é o usado
+nos redirects. Um provedor sem as duas variáveis simplesmente não aparece no jogo.
 
 ## Endpoints HTTP
 
@@ -59,6 +108,12 @@ se perde a cada reinício, então use o Neon.
 | `GET /api/daily?day=AAAA-MM-DD` | top 20 do Desafio do Dia |
 | `POST /api/daily` | envia as jogadas de uma corrida do dia (o servidor refaz e confere) |
 | `POST /api/daily/me` | minha posição no dia (código da conta no corpo, nunca na URL) |
+| `GET /api/auth/providers` | logins ligados neste servidor |
+| `POST /api/auth/intent` | começa um login `{provider, token?, nickname?, returnTo}` → `{url}` para abrir |
+| `GET /api/auth/start`, `GET /api/auth/callback/:provider` | ida e volta do Google/Discord (o navegador passa por aqui) |
+| `POST /api/auth/finish` | troca o código de uso único da volta (`#auth=...`) pelo token da sessão |
+| `POST /api/auth/me`, `/logout`, `/delete` | dono do token, sair neste aparelho, apagar a conta |
+| `POST /api/saves`, `POST /api/saves/put` | arquivos da campanha na nuvem (só com login) |
 
 ## Protocolo Socket.io
 
@@ -69,7 +124,7 @@ Cliente → servidor: `hello {token?, nickname?}`, `set_nickname`, `select_chara
 `room_create`, `room_join {code}`, `room_leave`, `spectate {playerId}`, `spectate_leave`,
 `pick_card {cardId|null}`, `pick_weapon {weapon}`, `forfeit`, `emote {id}`.
 
-Servidor → cliente: `welcome {token, profile, catalog}`, `profile`, `lobby`, `ranking`, `queue_state`,
+Servidor → cliente: `welcome {token, tokenRejected, account, profile, catalog}`, `profile`, `lobby`, `ranking`, `queue_state`,
 `season_reward`, `challenge_received`, `challenge_sent`, `challenge_declined`, `room_created`,
 `tournament_state`, `king_state`, `match_start` (também para espectadores, com `you: null`), `match_resume`,
 `card_phase`, `weapon_phase`, `card_locked`, `weapon_locked`, `seat_ready`, `vision`, `seat_status`,

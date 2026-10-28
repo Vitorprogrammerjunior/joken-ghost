@@ -39,6 +39,7 @@
           <button class="btn btn-primary btn-lg" id="menu-play"><img class="ico" src="assets/sprites/icons/jogar.svg" alt="">JOGAR</button>
           <button class="btn" id="menu-mp"><img class="ico" src="assets/sprites/icons/duelo.svg" alt="">MULTIPLAYER</button>
           <button class="btn" id="menu-saves"><img class="ico" src="assets/sprites/icons/disquete.svg" alt="">ARQUIVOS</button>
+          <button class="btn" id="menu-account"><img class="ico" src="assets/sprites/icons/conta.svg" alt=""><span id="menu-account-label">ENTRAR</span></button>
           <button class="btn" id="menu-options"><img class="ico" src="assets/sprites/icons/engrenagem.svg" alt="">OPÇÕES</button>
           <a class="btn" href="wiki.html" target="_blank" rel="noopener"><img class="ico" src="assets/sprites/icons/pergaminho.svg" alt="">WIKI</a>
         </nav>
@@ -326,6 +327,7 @@
         <div class="panel modal-card">
           <h2 class="modal-title">ARQUIVOS</h2>
           <div class="save-list cascade" id="save-list"></div>
+          <p class="cloud-line" id="saves-cloud"></p>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>
@@ -541,12 +543,25 @@
           <label class="field-label" for="profile-nick">APELIDO</label>
           <input class="field" id="profile-nick" type="text" maxlength="16" autocomplete="off">
           <button class="btn btn-primary btn-sm" id="profile-save">SALVAR APELIDO</button>
-          <label class="field-label" for="profile-code">CÓDIGO DA CONTA <small>(use para jogar em outro aparelho; não compartilhe!)</small></label>
-          <div class="row">
-            <input class="field field-secret" id="profile-code" type="text" autocomplete="off">
-            <button class="btn btn-sm" id="profile-copy">COPIAR</button>
+          <div class="profile-guest" id="profile-guest">
+            <label class="field-label" for="profile-code">CÓDIGO DA CONTA <small>(use para jogar em outro aparelho; não compartilhe!)</small></label>
+            <div class="row">
+              <input class="field field-secret" id="profile-code" type="text" autocomplete="off">
+              <button class="btn btn-sm" id="profile-copy">COPIAR</button>
+            </div>
+            <button class="btn btn-sm" id="profile-use">USAR ESTE CÓDIGO</button>
           </div>
-          <button class="btn btn-sm" id="profile-use">USAR ESTE CÓDIGO</button>
+          <div class="row">
+            <button class="btn btn-sm" id="profile-account"><img class="ico ico-sm" src="assets/sprites/icons/conta.svg" alt=""><span id="profile-account-label">ENTRAR COM GOOGLE OU DISCORD</span></button>
+            <button class="btn btn-sm" data-close-modal>FECHAR</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="modal-account">
+        <div class="panel modal-card account-card">
+          <h2 class="modal-title">CONTA</h2>
+          <div class="account-body cascade" id="account-body"></div>
           <button class="btn btn-sm" data-close-modal>FECHAR</button>
         </div>
       </div>

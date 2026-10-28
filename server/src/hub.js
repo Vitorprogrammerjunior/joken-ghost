@@ -168,6 +168,8 @@ class Hub {
   async #hello(socket, { token, nickname }) {
     let player = token ? await this.store.getByToken(token) : null;
     let newToken = null;
+    // código antigo que não vale mais (a conta passou a entrar pelo login, saiu ou foi apagada)
+    const tokenRejected = !!token && !player;
     if (!player) ({ player, token: newToken } = await this.store.create(nickname));
 
     // já conectado em outra aba: derruba a sessão antiga
@@ -190,7 +192,8 @@ class Hub {
     const s = { socket, player, status: 'lobby', matchId: null, watching: null, room: null };
     this.sessions.set(socket.id, s);
     this.online.set(player.id, socket.id);
-    socket.emit('welcome', { token: newToken, profile: this.#profile(player), catalog: this.#catalog() });
+    const account = { id: player.id, providers: await this.store.identitiesOf(player.id) };
+    socket.emit('welcome', { token: newToken, tokenRejected, account, profile: this.#profile(player), catalog: this.#catalog() });
     if (seasonReward) socket.emit('season_reward', seasonReward);
 
     if (match) {
@@ -215,6 +218,15 @@ class Hub {
     const match = s.matchId && this.matches.get(s.matchId);
     if (match && !match.over) match.disconnect(match.seatOf(s.player.id));
     this.#broadcastLobby();
+  }
+
+  /** A conta foi apagada: desconecta quem estiver usando ela. */
+  forget(playerId) {
+    const s = this.#session(playerId);
+    if (!s) return;
+    s.socket.emit('error_msg', { message: 'Conta apagada.' });
+    this.#disconnect(s.socket);
+    s.socket.disconnect(true);
   }
 
   #session(playerId) {

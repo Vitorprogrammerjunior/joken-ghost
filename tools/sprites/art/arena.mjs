@@ -131,6 +131,21 @@ const coroa = () => icone((m) => {
 /** Olho (assistir uma partida). */
 const assistir = () => visao();
 
+// ─── conta ────────────────────────────────────────────────────
+/** Busto de caçador de chapéu (a conta do jogador). */
+const conta = () => icone((m) => {
+  m.part(ROXO, 'cylinder', (p) => p.poly([[4, 31], [28, 31], [27, 25], [21, 21], [11, 21], [5, 25]], 'x'));
+  m.part(PELE, 'sphere', (p) => p.ellipse(16, 15, 6, 7, 'x'));
+  m.part(MADEIRA, 'cylinder', (p) => { p.rect(4, 9, 24, 3, 'x'); p.poly([[10, 10], [22, 10], [20, 2], [12, 2]], 'x'); });
+  m.paint((g) => { g.rect(11, 8, 10, 1, 'r3'); g.rect(13, 15, 1, 2, 'k'); g.rect(19, 15, 1, 2, 'k'); g.rect(15, 24, 2, 5, 'p4'); });
+});
+
+/** Nuvem com seta para cima (campanha salva na nuvem). */
+const nuvem = () => icone((m) => {
+  m.part(BRANCO, 'sphere', (p) => { p.circle(10, 19, 6, 'x'); p.circle(18, 14, 8, 'x'); p.circle(25, 20, 5, 'x'); p.rect(9, 19, 17, 7, 'x'); });
+  m.paint((g) => g.poly([[16, 12], [11, 18], [14, 18], [14, 23], [18, 23], [18, 18], [21, 18]], 'b2'));
+});
+
 // ─── molduras de avatar (64x64, centro vazio) ─────────────────
 /** Moldura quadrada com cantos decorados. c = [borda, luz, sombra, detalhe]. */
 function frame([edge, light, dark, gem], { spikes = false, ghost = false } = {}) {
@@ -154,6 +169,7 @@ export function arenaIconSheets() {
     emote_risada: emoteRisada(), emote_gg: emoteGg(), emote_susto: emoteSusto(),
     emote_raiva: emoteRaiva(), emote_coracao: emoteCoracao(), emote_caveira: emoteCaveira(),
     ecto: ecto(), taca: taca(), coroa: coroa(), assistir: assistir(),
+    conta: conta(), nuvem: nuvem(),
   };
 }
 

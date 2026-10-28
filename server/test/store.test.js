@@ -59,6 +59,41 @@ async function exercise(store) {
   const after = await store.getById(a.player.id);
   assert.equal(after.trophies, 1300);
   assert.equal((await store.getById(b.player.id)).trophies, 0);
+
+  // login: liga ao jogador, uma sessão por aparelho, e o código de convidado deixa de valer
+  assert.equal(await store.linkIdentity(a.player.id, 'google', 'g-1'), true);
+  assert.equal(await store.linkIdentity(b.player.id, 'google', 'g-1'), false, 'login de outra pessoa');
+  assert.equal((await store.findIdentity('google', 'g-1')).id, a.player.id);
+  assert.equal(await store.findIdentity('discord', 'g-1'), null);
+  await store.linkIdentity(a.player.id, 'discord', 'd-1');
+  assert.deepEqual(await store.identitiesOf(a.player.id), ['discord', 'google']);
+  assert.deepEqual(await store.identitiesOf(b.player.id), []);
+  const pc = await store.createSession(a.player.id);
+  const phone = await store.createSession(a.player.id);
+  assert.equal((await store.getByToken(pc)).id, a.player.id);
+  await store.revokeGuestToken(a.player.id);
+  assert.equal(await store.getByToken(a.token), null);
+  assert.equal(await store.deleteSession(pc), true);
+  assert.equal(await store.getByToken(pc), null);
+  assert.equal((await store.getByToken(phone)).id, a.player.id);
+
+  // saves da campanha: fica o mais novo; null = apagado
+  const save = { version: 2, slot: 1, coins: 9 };
+  assert.deepEqual(await store.putSave(a.player.id, 1, save, '2026-10-28T10:00:00.000Z'), { slot: 1, data: save, updatedAt: '2026-10-28T10:00:00.000Z' });
+  const older = await store.putSave(a.player.id, 1, { ...save, coins: 1 }, '2026-10-28T09:00:00.000Z');
+  assert.equal(older.data.coins, 9);
+  await store.putSave(a.player.id, 2, null, '2026-10-28T11:00:00.000Z');
+  assert.deepEqual((await store.listSaves(a.player.id)).map(s => [s.slot, s.data?.coins ?? null]), [[1, 9], [2, null]]);
+  assert.deepEqual(await store.listSaves(b.player.id), []);
+
+  // apagar a conta leva tudo junto
+  assert.equal(await store.deletePlayer(a.player.id), true);
+  assert.equal(await store.getById(a.player.id), null);
+  assert.equal(await store.getByToken(phone), null);
+  assert.equal(await store.findIdentity('google', 'g-1'), null);
+  assert.deepEqual(await store.listSaves(a.player.id), []);
+  assert.equal((await store.dailyRank('2026-10-26', a.player.id)).rank, null);
+  assert.equal(await store.count(), 1);
 }
 
 test('JsonStore guarda contas e sobrevive a reinício', async () => {
@@ -67,7 +102,7 @@ test('JsonStore guarda contas e sobrevive a reinício', async () => {
   await exercise(store);
   store.flush();
   const again = await new JsonStore(file).init();
-  assert.equal((await again.top(1))[0].trophies, 1300);
+  assert.equal((await again.top(1))[0].nickname, 'Amigo');
 });
 
 test('PgStore funciona com SQL de Postgres', async () => {
