@@ -81,7 +81,7 @@ test('avatar: rosto de caçador liberado ou desenho válido; os outros só veem 
   assert.deepEqual(cosmetics.publicLook(p).avatar, { kind: 'hunter', hunter: 'cacador' });
 });
 
-test('torneio: a espera para completar com bots começa no primeiro inscrito', () => {
+test('torneio: a espera para começar conta a partir do primeiro inscrito', () => {
   const { Tournament } = require('../src/modes/Tournament');
   let now = 0;
   const t = new Tournament({ now: () => now, rng: Math.random, fillAfterMs: 1000, play: async () => '', broadcast: () => {}, onFinish: () => {} });

@@ -16,6 +16,9 @@ const { RaidMatch } = require('./match/RaidMatch');
 const { Matchmaker } = require('./modes/Matchmaker');
 const { Tournament, PRIZES } = require('./modes/Tournament');
 const { KingOfHill } = require('./modes/KingOfHill');
+const { BotPolicy } = require('./bots/policy');
+const { BotBrain } = require('./bots/BotBrain');
+const { createBotPersona } = require('./bots/persona');
 
 const STAGES = ['floresta', 'patio', 'mansao', 'camara', 'cemiterio', 'catacumbas', 'torre', 'portal'];
 const BOSS_STAGES = { kastle: 'camara', coveiro: 'catacumbas', relojoeiro: 'torre', morgana: 'portal' };
@@ -56,10 +59,13 @@ class Hub {
     this.lobbyTimer = null;
     this.lastSeasonCheck = 0;
 
+    this.bots = new BotPolicy({ rules: rules.rankedBot, now, rng });
     this.matchmaker = new Matchmaker({
       now, rng,
       startDuel: (teams, o) => this.#play(teams.flat(), o),
       startRaid: (seats) => this.#startRaid(seats),
+      botPolicy: this.bots,
+      botSeat: (player) => this.#botSeat(player),
     });
     this.tournament = this.#newTournament();
     this.runningTournaments = new Set();
@@ -434,6 +440,16 @@ class Hub {
   }
 
   // ═══════════════════════ partidas ═══════════════════════
+  /** Assento de um adversário automático da ranqueada, com a dificuldade certa para `player`. */
+  #botSeat(player) {
+    const persona = createBotPersona(player, this.rng);
+    const brain = new BotBrain({
+      skill: this.bots.skill(player), style: persona.style, chooseMove: this.shared.chooseMove,
+      rules: this.rules.rankedBot, rng: this.rng,
+    });
+    return { player: persona, socketId: null, brain };
+  }
+
   /** Assento de um jogador: o objeto da sessão (se online) e o socket. */
   #seat(sOrPlayer) {
     if (sOrPlayer.socket) return { player: sOrPlayer.player, socketId: sOrPlayer.socket.id };
@@ -477,7 +493,7 @@ class Hub {
   /** Registra a partida, põe os jogadores dentro e começa. */
   #begin(match) {
     this.matches.set(match.id, match);
-    for (const seat of match.seats) {
+    for (const seat of match.humans) {
       const s = this.#session(seat.player.id);
       if (!s) continue;
       this.matchmaker.leave(s);
@@ -488,13 +504,14 @@ class Hub {
     }
     match.start();
     // jogador sem conexão (ex.: saiu entre as rodadas do torneio): a carência começa já
-    match.seats.forEach((seat, i) => { if (!seat.socketId) match.disconnect(i); });
+    match.seats.forEach((seat, i) => { if (!seat.brain && !seat.socketId) match.disconnect(i); });
     this.#broadcastLobby();
   }
 
   /** Missões que andam a cada rodada: rodadas vencidas por arma, empates e cartas usadas. */
   #onDuelRound(match, r) {
     match.seats.forEach((seat, i) => {
+      if (seat.brain) return;
       const p = seat.player;
       missions.ensureMissions(p, this.#today);
       const lane = r.lanes.find(l => l.a === i || l.b === i);
@@ -511,13 +528,16 @@ class Hub {
     let results = [];
     if (match.ranked) {
       const [w, l] = [0, 1].map(k => match.seats.find((_, i) => (sideOf(i) === winnerSide) === (k === 0)).player);
-      ranked = this.farm.allow(w.id, l.id, this.now());
+      // contra bot o limite de "farm" do par não se aplica (o bot é outro a cada partida; bots/policy.js limita)
+      ranked = w.isBot || l.isBot ? true : this.farm.allow(w.id, l.id, this.now());
       results = applyResult(w, l, { ranked });
     }
     const personal = [];
     for (const [i, seat] of match.seats.entries()) {
+      if (seat.brain) { personal.push({}); continue; }
       const p = seat.player;
       const won = sideOf(i) === winnerSide;
+      if (match.ranked) this.bots.record(p.id, won);
       missions.ensureMissions(p, this.#today);
       missions.track(p, 'match');
       if (won) missions.track(p, 'win');
@@ -552,7 +572,7 @@ class Hub {
   /** Fim da partida: tira dos registros e devolve os jogadores ao lugar certo. */
   #release(match, returnTo) {
     this.matches.delete(match.id);
-    for (const seat of match.seats) {
+    for (const seat of match.humans) {
       const s = this.#session(seat.player.id);
       if (s && s.matchId === match.id) { s.matchId = null; s.status = returnTo; }
     }

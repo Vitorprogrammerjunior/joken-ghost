@@ -1,5 +1,5 @@
 'use strict';
-// Base de toda partida: assentos dos jogadores, mensagens, temporizadores,
+// Base de toda partida: assentos (jogadores, ou um bot da ranqueada com `brain`), mensagens, temporizadores,
 // reconexão, espectadores e expressões. As regras ficam nas subclasses
 // (DuelMatch para duelos 1x1/2x2, RaidMatch para o chefe cooperativo).
 const crypto = require('crypto');
@@ -13,7 +13,7 @@ class Match {
    * @param {object} o.rules           regras (catalog.RULES)
    * @param {() => number} o.now
    * @param {string} o.kind            'ranked' | 'casual' | 'duo' | 'raid' | 'tournament' | 'king' | 'room' | 'challenge'
-   * @param {{ player: object, socketId: string|null }[]} o.seats
+   * @param {{ player: object, socketId: string|null, brain?: object }[]} o.seats  `brain`: assento controlado pelo servidor
    * @param {(match: Match, result: object) => Promise<object[]>} o.onEnd  devolve o pedaço pessoal do fim para cada assento
    */
   constructor({ io, rules, now, kind, seats, onEnd }) {
@@ -23,13 +23,15 @@ class Match {
     this.now = now;
     this.kind = kind;
     this.onEnd = onEnd;
-    this.seats = seats.map(s => ({ player: s.player, socketId: s.socketId ?? null, grace: null, lastEmote: 0 }));
+    this.seats = seats.map(s => ({ player: s.player, socketId: s.socketId ?? null, brain: s.brain ?? null, grace: null, lastEmote: 0 }));
     this.timers = new Set();
     this.spectators = new Set();
     this.over = false;
   }
 
   get room() { return `match:${this.id}`; }
+  /** Assentos de gente de verdade (os de bot não têm conexão nem perfil salvo). */
+  get humans() { return this.seats.filter(s => !s.brain); }
 
   seatOf(playerId) { return this.seats.findIndex(s => s.player.id === playerId); }
 

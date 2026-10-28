@@ -112,6 +112,48 @@ test('ranqueada completa: fila, cartas, armas, troféus e ranking', async () => 
   } finally { await close(); }
 });
 
+const BOT_FAST = { ...FAST, rankedBot: { ...RULES.rankedBot, waitMs: [200, 300], newPlayerWaitMs: [100, 150], cardThinkMs: [5, 30], weaponThinkMs: [5, 30] } };
+
+test('ranqueada sozinho: um adversário completa a partida sem se revelar e vale troféus', async () => {
+  const { client, close } = await setup({ rules: BOT_FAST });
+  try {
+    const a = await client('Solitario');
+    autoplay(a.c, 'cruz');
+    a.c.emit('queue_join', { mode: 'ranked' });
+    const ms = await once(a.c, 'match_start');
+    assert.equal(ms.kind, 'ranked');
+    assert.equal(ms.ranked, true);
+    const opp = ms.fighters[1 - ms.you];
+    assert.equal('isBot' in opp, false, 'a visão da partida não diz que é bot');
+    assert.ok(opp.nickname.length >= 2);
+    assert.ok(Math.abs(opp.trophies - 0) <= 70);
+    const end = await once(a.c, 'match_end');
+    assert.equal(end.ranked, true);
+    assert.notEqual(end.trophies, null);
+    // o bot não fica salvo: não aparece no ranking
+    const rank = once(a.c, 'ranking');
+    a.c.emit('ranking');
+    const r = await rank;
+    assert.equal(r.top.some(p => p.id === opp.id || p.nickname === opp.nickname), false);
+    assert.equal(r.total, 1);
+  } finally { await close(); }
+});
+
+test('ranqueada no topo: sem bot, só jogadores', async () => {
+  const { client, close, store } = await setup({ rules: BOT_FAST });
+  try {
+    const a = await client('Lenda');
+    const p = await store.getByToken(a.welcome.token);
+    a.c.close();
+    p.trophies = RULES.rankedBot.maxTrophies + 100; p.best = p.trophies; p.wins = 30;
+    await store.save(p);
+    const b = await client('Lenda', a.welcome.token);
+    b.c.emit('queue_join', { mode: 'ranked' });
+    await new Promise(r => setTimeout(r, 2500));
+    assert.equal(b.c.seen.some(([e]) => e === 'match_start'), false);
+  } finally { await close(); }
+});
+
 test('fila sozinho: ninguém entra no lugar de um caçador', async () => {
   const { client, close } = await setup();
   try {

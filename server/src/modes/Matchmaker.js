@@ -1,6 +1,7 @@
 'use strict';
 // Filas de partida: ranqueada e casual (1x1), 2x2 e chefe cooperativo.
-// Só caçadores de verdade: a partida começa quando a fila junta gente suficiente.
+// As partidas começam quando a fila junta gente suficiente. Só a ranqueada, com pouca gente,
+// pode completar a partida com um adversário automático (regras em bots/policy.js).
 
 const QUEUES = ['ranked', 'casual', 'duo', 'raid'];
 
@@ -11,17 +12,20 @@ class Matchmaker {
    * @param {() => number} o.rng
    * @param {(teams: object[][], opts: { kind: string, ranked: boolean }) => void} o.startDuel  times de "assentos" ({ player, socketId })
    * @param {(seats: object[]) => void} o.startRaid
+   * @param {import('../bots/policy').BotPolicy} o.botPolicy   quando a ranqueada completa com bot
+   * @param {(player: object) => object} o.botSeat            assento de bot para enfrentar `player`
    */
-  constructor({ now, rng, startDuel, startRaid }) {
-    Object.assign(this, { now, rng, startDuel, startRaid });
-    this.queues = Object.fromEntries(QUEUES.map(q => [q, new Map()])); // playerId -> { s, since }
+  constructor({ now, rng, startDuel, startRaid, botPolicy, botSeat }) {
+    Object.assign(this, { now, rng, startDuel, startRaid, botPolicy, botSeat });
+    this.queues = Object.fromEntries(QUEUES.map(q => [q, new Map()])); // playerId -> { s, since, botAfter }
   }
 
   static isMode(mode) { return QUEUES.includes(mode); }
 
   join(s, mode) {
     this.leave(s);
-    this.queues[mode].set(s.player.id, { s, since: this.now() });
+    const botAfter = mode === 'ranked' ? this.botPolicy.waitFor(s.player) : Infinity;
+    this.queues[mode].set(s.player.id, { s, since: this.now(), botAfter });
   }
 
   /** Sai de qualquer fila. Retorna true se estava em alguma. */
@@ -45,7 +49,7 @@ class Matchmaker {
 
   #take(mode, list) { for (const w of list) this.queues[mode].delete(w.s.player.id); }
 
-  /** Ranqueada: troféus parecidos; a tolerância cresce com a espera. */
+  /** Ranqueada: troféus parecidos; a tolerância cresce com a espera. Sozinho na fila: talvez um bot. */
   #pairRanked() {
     const now = this.now();
     const waiting = this.#waiting('ranked');
@@ -59,10 +63,16 @@ class Matchmaker {
         const tol = Math.max(150 + 25 * ((now - a.since) / 1000), 150 + 25 * ((now - b.since) / 1000));
         if (diff <= tol && (!best || diff < best.diff)) best = { b, diff };
       }
-      if (!best) continue;
-      used.add(a); used.add(best.b);
-      this.#take('ranked', [a, best.b]);
-      this.startDuel([[seat(a)], [seat(best.b)]], { kind: 'ranked', ranked: true });
+      if (best) {
+        used.add(a); used.add(best.b);
+        this.#take('ranked', [a, best.b]);
+        this.startDuel([[seat(a)], [seat(best.b)]], { kind: 'ranked', ranked: true });
+      } else if (this.botPolicy.canFill(a.s.player, { waitedMs: now - a.since, waitFor: a.botAfter, othersWaiting: waiting.length > 1 })) {
+        used.add(a);
+        this.#take('ranked', [a]);
+        this.botPolicy.noteBotMatch(a.s.player.id);
+        this.startDuel([[seat(a)], [this.botSeat(a.s.player)]], { kind: 'ranked', ranked: true });
+      }
     }
   }
 

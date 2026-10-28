@@ -15,6 +15,17 @@ const RULES = {
   revealMs: 4200,
   suddenDeathRound: 12,    // a partir daqui o dano dobra
   reconnectGraceMs: 15000,
+  // Ranqueada com pouca gente: um adversário controlado pelo servidor completa a partida.
+  // Ele não é anunciado; a dificuldade acompanha o nível do jogador (src/bots/).
+  rankedBot: {
+    maxTrophies: 1600,              // acima disso a ranqueada é só entre jogadores
+    waitMs: [18000, 30000],         // espera (sorteada) antes de completar com bot
+    newPlayerWaitMs: [6000, 10000], // contas novas esperam menos nas primeiras partidas
+    newPlayerMatches: 3,
+    perHour: 5,                     // partidas contra bot por jogador, por hora
+    cardThinkMs: [900, 3800],       // tempo de "pensar" (parece uma pessoa)
+    weaponThinkMs: [1300, 5600],
+  },
 };
 
 /** `weapon`: carta de arma (bônus se vencer com ela). */
