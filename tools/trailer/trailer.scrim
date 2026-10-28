@@ -1,0 +1,105 @@
+title    Caçada Noturna
+composer Claude
+about    Trilha do comercial (30s, 120 BPM). Cada parte tem 2 ou 3 compassos de 2s e casa com uma cena do vídeo.
+tempo    120
+beats    4
+steps    4
+reverb   0.4
+
+voice pad     pad      vol=0.45 center=A3
+voice choir   choir    vol=0.4  pan=-0.1
+voice bell    bell     vol=0.45 pan=0.3
+voice lead    chip     vol=0.7  pan=-0.1
+voice trumpet trumpet  vol=0.75 pan=0.1
+voice brass   brass    vol=0.55 center=A4
+voice arp     square   vol=0.32 pan=0.3 gate=0.6
+voice bass    synbass  vol=0.9
+voice glock   glock    vol=0.5  pan=0.25
+voice timp    timpani  vol=0.8
+voice kick    kick     vol=0.85
+voice snare   snare    vol=0.55
+voice clap    clap     vol=0.5
+voice hat     hat      vol=0.32 pan=0.3
+voice tom     tommid   vol=0.55 pan=-0.2
+voice tomlo   tomlo    vol=0.6
+voice crash   crash    vol=0.45 pan=-0.2
+voice gong    gong     vol=0.5
+voice thunder thunder  vol=0.75
+
+# 0-4s: floresta à meia-noite, o fantasma aparece, trovão em 3,5s
+pattern open
+pad     | [Am]--------------- | [Am]--------------- |
+choir   | A4--------------- | C5------- B4------- |
+bell    | A5------- . . . . . . . . | E5------- . . . . . . . . |
+timp    | _ | A1!--- . . . . . . . . A1 A1 A1 A1 |
+tomlo   | _ | .... .... x.x. xxxx |
+thunder | _ | .... .... .... X... |
+
+# 4-8s: o logo cai (gong e prato em 4s)
+pattern logo
+pad     | [Am]--------------- | [F]------- [G]------- |
+brass   | [Am]!------- . . . . . . . . | [F]--- . . . . [G]--- . . . . |
+lead    | A4--- C5--- E5--- A5--- | G5--- F5--- E5------- |
+bass    | A1- A1- A2- A1- A1- A1- A2- A1- | F1- F1- F2- F1- G1- G1- G2- G1- |
+kick    | X... .... x... .... | x... .... x... x.x. |
+snare   | .... x... .... x... | .... x... .... xxxx |
+hat     | x.x. x.x. x.x. x.x. | % |
+crash   | X... .... .... .... | _ |
+gong    | X... .... .... .... | _ |
+
+# 8-12s: as três armas entram em 8s, 9s e 10s; as setas em 11s
+pattern mech
+arp     | A3 C4 E4 A4 E4 C4 A3 C4 E4 A4 E4 C4 A3 C4 E4 C4 | F3 A3 C4 F4 C4 A3 F3 A3 G3 B3 D4 G4 D4 B3 G3 B3 |
+lead    | E5------- A5------- | C6------- B5------- |
+bass    | A1- A1- A2- A1- A1- A1- A2- A1- | F1- F1- F2- F1- G1- G1- G2- G1- |
+kick    | x... x... x... x... | % |
+clap    | X... .... X... .... | X... .... X... .... |
+hat     | .x.x .x.x .x.x .x.x | % |
+
+# 12-18s: batalha; o golpe super efetivo em 15s, o chefe cai em 16s
+pattern battle
+lead    | A5- A5- C6- E6- D6--- C6- B5- | A5--- C6- E6--- D6- C6- B5- | G5- G5- B5- D6- E6------- |
+brass   | [Am]--- . . . . [Am]--- . . . . | [F]--- . . . . [F]--- . . . . | [G]--- . . . . [E]!------- |
+arp     | A3 C4 E4 A4 E4 C4 A3 C4 E4 A4 E4 C4 A3 C4 E4 C4 | F3 A3 C4 F4 C4 A3 F3 A3 C4 F4 C4 A3 F3 A3 C4 A3 | G3 B3 D4 G4 D4 B3 G3 B3 E3 G#3 B3 E4 B3 G#3 E3 G#3 |
+bass    | A1- A1- A2- A1- A1- A1- A2- A1- | F1- F1- F2- F1- F1- F1- F2- F1- | G1- G1- G2- G1- E1- E1- E2- E1- |
+kick    | x... ..x. x... ..x. | % | x... ..x. x.x. xxxx |
+snare   | .... x... .... x... | % | .... x... ..x. XXXX |
+hat     | x.x. x.x. x.x. x.x. | % | % |
+crash   | X... .... .... .... | .... .... X... .... | X... .... .... .... |
+timp    | _ | _ | A1! . . . . . . . E1 E1 E1 E1 E1! E1! E1! E1! |
+
+# 18-22s: desfile dos 16 monstros
+pattern parade
+arp     | A4 E5 A5 E5 C5 E5 A5 E5 A4 E5 A5 E5 C5 E5 A5 E5 | F4 C5 F5 C5 A4 C5 F5 C5 G4 D5 G5 D5 B4 D5 G5 D5 |
+lead    | A5------- E5------- | F5------- G5------- |
+bass    | A1- A2- A1- A2- A1- A2- A1- A2- | F1- F2- F1- F2- G1- G2- G1- G2- |
+kick    | x... x... x... x... | % |
+snare   | .... x... .... x... | .... x... .x.x xxxx |
+hat     | xxxx xxxx xxxx xxxx | % |
+tom     | _ | .... .... x.x. x.x. |
+crash   | X... .... .... .... | _ |
+
+# 22-26s: Arena online (VS em 22s)
+pattern arena
+trumpet | E5- E5- A5--- E5- A5- C6--- | A5------- E5------- |
+brass   | [Am]!------- [F]------- | [G]------- [E]------- |
+bass    | A1- A1- A2- A1- F1- F1- F2- F1- | G1- G1- G2- G1- E1- E1- E2- E1- |
+kick    | x..x ..x. x..x ..x. | % |
+snare   | .... x... .... x... | .... x... .... x.xx |
+hat     | x.x. x.x. x.x. x.x. | % |
+crash   | X... .... .... .... | X... .... .... .... |
+gong    | X... .... .... .... | _ |
+
+# 26-30s: chamada final (acorde em 26s e em 28s)
+pattern cta
+pad     | [Am]--------------- | [Am]--------------- |
+choir   | A4--------------- | A4--------------- |
+brass   | [F]--- [G]--- [Am]!------- | [Am]!--------------- |
+lead    | C6--- B5--- A5------- | A5--------------- |
+bass    | F1- F1- G1- G1- A1------- | A1--------------- |
+glock   | _ | A6 E6 C6 A5------------ |
+timp    | A1!--- . . . . A1!--- . . . . | A1!--- . . . . . . . . . . . . |
+kick    | X... .... X... .... | X... .... .... .... |
+crash   | X... .... .... .... | X... .... .... .... |
+
+play open logo mech battle parade arena cta

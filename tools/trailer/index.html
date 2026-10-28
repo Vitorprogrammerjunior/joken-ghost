@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JokenGhost - Comercial</title>
+  <!-- tudo é carregado a partir da raiz do projeto (sprites, fonte, música, src/) -->
+  <base href="../../">
+  <style>
+    @font-face { font-family: 'JokenPixel'; src: url('assets/fonts/jokenpixel.otf') format('opentype'); font-display: block; }
+    html, body { height: 100%; margin: 0; background: #0e0b16; color: #f4f2fa; font-family: 'JokenPixel', monospace; }
+    body { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px; box-sizing: border-box; }
+    #stage { height: calc(100vh - 110px); aspect-ratio: 9 / 16; image-rendering: pixelated; box-shadow: 0 0 0 2px #4a4559; }
+    .bar { display: flex; align-items: center; gap: 12px; width: min(100%, 720px); }
+    #time { flex: 1; }
+    button { font: inherit; padding: 8px 16px; color: #f4f2fa; background: #2f2a3d; border: 2px solid #4a4559; cursor: pointer; }
+    button:hover { border-color: #f6d548; }
+    #status { color: #7cf0dc; }
+  </style>
+</head>
+<body>
+  <canvas id="stage" width="1080" height="1920"></canvas>
+  <div class="bar">
+    <button id="play">PRÉVIA</button>
+    <input id="time" type="range" min="0" value="0">
+    <span id="clock">0.00s</span>
+    <button id="export">EXPORTAR MP4</button>
+  </div>
+  <p id="status">Carregando...</p>
+  <script type="module" src="tools/trailer/src/main.js"></script>
+</body>
+</html>

@@ -5,7 +5,7 @@ const IMPACT_SRC = 'assets/audio/impact.mp3';
 const MUSIC_GAIN = 0.9;
 
 /** Receitas dos efeitos: lista de notas [freqInicial, freqFinal, duraçãoMs, onda, atrasoMs, volume]. */
-const SFX = {
+export const SFX = {
   click: [[660, 880, 50, 'square', 0, 0.25]],
   hover: [[520, 520, 25, 'square', 0, 0.08]],
   select: [[440, 660, 60, 'square', 0, 0.2], [880, 880, 60, 'square', 60, 0.15]],
@@ -27,6 +27,47 @@ const SFX = {
   lose: [[392, 392, 200, 'triangle', 0, 0.25], [330, 330, 200, 'triangle', 220, 0.25], [262, 196, 600, 'triangle', 440, 0.25]],
   type: [[1400, 1400, 12, 'square', 0, 0.04]],
 };
+
+/** Ruído branco de meio segundo (base dos efeitos de "noise"). */
+export function createNoiseBuffer(ctx) {
+  const len = Math.floor(ctx.sampleRate * 0.5);
+  const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+/**
+ * Agenda um efeito (receita de SFX) a partir do instante `when` do contexto.
+ * Serve tanto para o jogo (ao vivo) quanto para renderizar áudio offline (o comercial).
+ */
+export function scheduleSfx(ctx, destination, recipe, when, { volume = 1, noise }) {
+  for (const [f0, f1, ms, wave, delay, vol] of recipe) {
+    const t0 = when + delay / 1000, t1 = t0 + ms / 1000;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(vol * volume, t0);
+    gain.gain.exponentialRampToValueAtTime(0.001, t1);
+    gain.connect(destination);
+    let src;
+    if (wave === 'noise') {
+      src = ctx.createBufferSource();
+      src.buffer = noise;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(f0 * 4, t0);
+      filter.frequency.exponentialRampToValueAtTime(Math.max(40, f1 * 4), t1);
+      src.connect(filter).connect(gain);
+    } else {
+      src = ctx.createOscillator();
+      src.type = wave;
+      src.frequency.setValueAtTime(f0, t0);
+      src.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t1);
+      src.connect(gain);
+    }
+    src.start(t0);
+    src.stop(t1 + 0.02);
+  }
+}
 
 export class AudioManager {
   constructor(options) {
@@ -51,10 +92,7 @@ export class AudioManager {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       this.ctx = new AC();
-      const len = this.ctx.sampleRate * 0.5;
-      this.noiseBuffer = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-      const data = this.noiseBuffer.getChannelData(0);
-      for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+      this.noiseBuffer = createNoiseBuffer(this.ctx);
     }
     this.resume();
     this.music.attach(this.ctx);
@@ -98,32 +136,6 @@ export class AudioManager {
     }
     const recipe = SFX[name];
     if (!recipe || !this.ctx) return;
-    const master = this.options.sfxVol / 100;
-    const now = this.ctx.currentTime;
-    for (const [f0, f1, ms, wave, delay, vol] of recipe) {
-      const t0 = now + delay / 1000, t1 = t0 + ms / 1000;
-      const gain = this.ctx.createGain();
-      gain.gain.setValueAtTime(vol * master, t0);
-      gain.gain.exponentialRampToValueAtTime(0.001, t1);
-      gain.connect(this.ctx.destination);
-      let src;
-      if (wave === 'noise') {
-        src = this.ctx.createBufferSource();
-        src.buffer = this.noiseBuffer;
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(f0 * 4, t0);
-        filter.frequency.exponentialRampToValueAtTime(Math.max(40, f1 * 4), t1);
-        src.connect(filter).connect(gain);
-      } else {
-        src = this.ctx.createOscillator();
-        src.type = wave;
-        src.frequency.setValueAtTime(f0, t0);
-        src.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t1);
-        src.connect(gain);
-      }
-      src.start(t0);
-      src.stop(t1 + 0.02);
-    }
+    scheduleSfx(this.ctx, this.ctx.destination, recipe, this.ctx.currentTime, { volume: this.options.sfxVol / 100, noise: this.noiseBuffer });
   }
 }

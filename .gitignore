@@ -156,3 +156,6 @@ tools/node_modules/
 
 # Dados locais do servidor multiplayer (modo arquivo JSON)
 server/data/
+
+# Saída do comercial (quadros, áudio e o MP4 gerados)
+tools/trailer/out/
