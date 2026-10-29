@@ -3,7 +3,8 @@
 //
 // Um duelo tem dois lados; cada lado tem 1 caçador (1x1) ou 2 (2x2) e uma vida
 // compartilhada. Os caçadores se enfrentam em "pistas": o 1º de um lado contra o
-// 1º do outro, e assim por diante. Cada rodada: (1) todos escolhem uma carta
+// 1º do outro, e assim por diante. No 1x1, antes da 1ª rodada, cada um vê a build
+// do outro e bane uma carta dela. Cada rodada: (1) todos escolhem uma carta
 // (opcional), (2) as cartas são reveladas e todos escolhem a arma, (3) cada pista
 // resolve o seu jokenpô e o dano vai para a vida do lado.
 const { RULES, WEAPONS, BEATS, characterById, cardById } = require('./catalog');
@@ -26,6 +27,9 @@ function createFighter(player, side, lane, deck) {
     forbidden: null,  // arma proibida nesta rodada (Provocação do oponente)
     cardLocked: false,
     weaponLocked: false,
+    ban: null,        // carta que este lutador baniu da build do adversário
+    banLocked: false,
+    dodged: false,    // Sombra: já desviou do primeiro golpe
   };
 }
 
@@ -58,6 +62,44 @@ function sample(list, n, rng) {
   const out = [];
   while (out.length < n && pool.length) out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
   return out;
+}
+
+// ─── banimento (1x1, antes da 1ª rodada) ───
+function startBanPhase(duel) {
+  duel.phase = 'ban';
+  return duel;
+}
+
+/** O lutador i bane uma carta da build do adversário de pista. */
+function pickBan(duel, i, cardId) {
+  const f = duel.fighters[i];
+  const op = duel.fighters[laneOpponent(duel, i)];
+  if (duel.phase !== 'ban' || f.banLocked || !op.deck.includes(cardId)) return false;
+  f.ban = cardId;
+  f.banLocked = true;
+  return true;
+}
+
+/** Tempo esgotado: bane a carta mais cara do adversário (a primeira, se empatar). */
+function autoBan(duel, i) {
+  const op = duel.fighters[laneOpponent(duel, i)];
+  const best = [...op.deck].sort((a, b) => (cardById(b)?.cost ?? 0) - (cardById(a)?.cost ?? 0))[0];
+  if (best) pickBan(duel, i, best);
+  else duel.fighters[i].banLocked = true;
+  return duel.fighters[i].ban;
+}
+
+/** Tira as cartas banidas das builds. Retorna [carta banida da build do lutador 0, do 1, ...]. */
+function applyBans(duel) {
+  duel.fighters.forEach((f, i) => { if (!f.banLocked) autoBan(duel, i); });
+  const removed = duel.fighters.map(() => null);
+  duel.fighters.forEach((f, i) => {
+    if (!f.ban) return;
+    const j = laneOpponent(duel, i);
+    duel.fighters[j].deck = duel.fighters[j].deck.filter(c => c !== f.ban);
+    removed[j] = f.ban;
+  });
+  return removed;
 }
 
 /** Começa uma rodada: cada um recebe cartas que ainda não usou nesta partida. */
@@ -179,6 +221,8 @@ function resolveRound(duel) {
     if (outcome === 'draw') {
       if (a.card === 'empate_forte') hurt(ib, 15 * sudden);
       if (b.card === 'empate_forte') hurt(ia, 15 * sudden);
+      if (a.card === 'sorte') heal(ia, 10);
+      if (b.card === 'sorte') heal(ib, 10);
       return;
     }
     const [w, l] = outcome === 'a' ? [ia, ib] : [ib, ia];
@@ -190,32 +234,37 @@ function resolveRound(duel) {
     if (W.card === 'golpe_duplo') dmg *= 2;
     if (W.card === 'juizo') dmg *= 3;
     if (W.card === 'disfarce') dmg += 10;
-    if (W.card === 'sorte' && rng() < 0.5) { dmg += 20; res[w].lucky = true; }
+    if (W.card === 'sorte') { dmg += 10; res[w].lucky = true; }
     if (W.card === 'furia' && sides[W.side].hp < sides[W.side].maxHp / 2) dmg += 20;
     dmg *= sudden;
     if (L.card === 'escudo') { dmg = 0; res[l].blocked = true; }
     const lChar = characterById(L.character);
-    if (dmg > 0 && lChar.dodge && rng() < lChar.dodge) { dmg = 0; res[l].dodged = true; }
+    if (dmg > 0 && lChar.dodgeFirst && !L.dodged) { dmg = 0; L.dodged = true; res[l].dodged = true; }
     if (L.card === 'juizo') dmg += 10 * sudden; // o risco do Juízo Final
     const dealt = hurt(l, dmg);
     if (W.card === 'vampirismo') heal(w, Math.floor(dealt / 2));
     if (L.card === 'espinhos') res[w].thorns = hurt(w, 12 * sudden);
   });
 
-  // fim da partida?
+  // fim da partida? (nocaute, ou mais vida depois da última rodada)
   const dead = sides.map(s => s.hp <= 0);
   let winner = null;
+  let reason = 'nocaute';
   if (dead[0] && dead[1]) {
     winner = hpBefore[0] === hpBefore[1] ? (rng() < 0.5 ? 0 : 1) : hpBefore[0] > hpBefore[1] ? 0 : 1;
   } else if (dead[0]) winner = 1;
   else if (dead[1]) winner = 0;
+  else if (duel.round >= rules.maxRounds && sides[0].hp !== sides[1].hp) {
+    winner = sides[0].hp > sides[1].hp ? 0 : 1;
+    reason = 'tempo';
+  }
 
   duel.phase = winner == null ? 'reveal' : 'over';
   duel.winner = winner;
-  return { round: duel.round, lanes, fighters: res, hp: sides.map(s => s.hp), winner, sudden: sudden > 1 };
+  return { round: duel.round, lanes, fighters: res, hp: sides.map(s => s.hp), winner, reason, sudden: sudden > 1 };
 }
 
 module.exports = {
-  createDuel, startRound, pickCard, startWeaponPhase, weaponTime, pickWeapon, autoWeapon, visionOf,
+  createDuel, startBanPhase, pickBan, autoBan, applyBans, startRound, pickCard, startWeaponPhase, weaponTime, pickWeapon, autoWeapon, visionOf,
   resolveRound, bothLocked, laneOpponent, cardById,
 };

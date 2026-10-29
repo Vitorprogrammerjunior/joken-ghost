@@ -84,14 +84,13 @@ $('mp-modes').replaceChildren(...Object.values(MODES).map(m => h('article', { cl
 // Multiplayer: catálogo e ranking vêm do servidor
 fetch(`${serverUrl()}/api/catalog`).then(r => r.json()).then(({ cards, characters }) => {
   $('mp-cards').replaceChildren(...cards.map(c => {
-    const wrap = h('div', { class: 'wiki-card' }, cardEl(c, { size: 'md' }), h('small', {}, icon('icon/trofeu', 'ico ico-xs'), ` ${c.trophies}`));
+    const wrap = h('div', { class: 'wiki-card' }, cardEl(c, { size: 'md' }), h('small', {}, `${c.cost} ponto${c.cost === 1 ? '' : 's'}`));
     return wrap;
   }));
   $('mp-chars').replaceChildren(...characters.map(c => h('article', { class: 'card' },
     animated(`char/${c.id}/side/idle`),
     h('h3', {}, c.name),
-    h('p', { class: 'muted' }, c.passive),
-    h('div', { class: 'stat' }, icon('icon/trofeu', 'ico ico-xs'), ` ${c.trophies} troféus`))));
+    h('p', { class: 'muted' }, c.passive))));
 }).catch(() => { $('mp-cards').replaceChildren(h('p', { class: 'lead' }, 'Servidor do multiplayer indisponível agora.')); });
 
 fetch(`${serverUrl()}/api/ranking`).then(r => r.json()).then((top) => {

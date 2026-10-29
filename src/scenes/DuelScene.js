@@ -13,7 +13,7 @@ import { cardEl, flipIn } from '../ui/Card.js';
 import { spriteCanvas } from '../ui/SpriteCanvas.js';
 import { $, h, icon, show, retrigger } from '../ui/dom.js';
 
-const REASONS = { nocaute: 'Nocaute!', abandono: 'Um caçador abandonou a partida.', 'desistência': 'Desistência.' };
+const REASONS = { nocaute: 'Nocaute!', tempo: 'Fim das rodadas: venceu quem tinha mais vida.', abandono: 'Um caçador abandonou a partida.', 'desistência': 'Desistência.' };
 const KIND_NOTES = {
   casual: 'Partida casual: sem troféus.',
   duo: 'Partida 2x2: sem troféus.',
@@ -50,6 +50,8 @@ export class DuelScene extends Scene {
     $('duel-emote').addEventListener('click', () => this.#toggleEmotes());
 
     const here = (fn) => (d) => { if (game.scene === this) fn(d); };
+    net.on('ban_phase', here((d) => this.#banPhase(d)));
+    net.on('bans', here((d) => this.#bans(d)));
     net.on('card_phase', here((d) => this.#cardPhase(d)));
     net.on('weapon_phase', here((d) => this.#weaponPhase(d)));
     net.on('seat_ready', here((d) => this.#seatReady(d)));
@@ -101,6 +103,7 @@ export class DuelScene extends Scene {
     this.suddenShown = false;
     this.endsAt = 0;
     this.total = 1;
+    this.banPicked = false;
 
     const top = match.fighters.filter(f => f.side !== this.mySide);
     const bottom = match.fighters.filter(f => f.side === this.mySide);
@@ -121,7 +124,8 @@ export class DuelScene extends Scene {
     this.#syncHp();
     this.#renderHistory();
 
-    if (match.phase === 'card') this.#cardPhase({ round: match.round, hand: match.hand, endsIn: match.endsIn, hp: this.hp });
+    if (match.phase === 'ban') this.#banPhase({ endsIn: match.endsIn, deck: match.banLocked ? [] : match.oppDeck });
+    else if (match.phase === 'card') this.#cardPhase({ round: match.round, hand: match.hand, endsIn: match.endsIn, hp: this.hp });
     else if (match.phase === 'weapon') this.#weaponPhase({ round: match.round, endsIn: match.endsIn, cards: match.cards, forbidden: match.forbidden });
     else this.#intro();
   }
@@ -196,7 +200,54 @@ export class DuelScene extends Scene {
   }
 
   // ═══════════════════════ fases ═══════════════════════
+  /** 1x1: a build do adversário aparece e você bane uma carta dela. */
+  #banPhase(d) {
+    this.#timer(d.endsIn);
+    $('duel-round').textContent = 'BANIMENTO';
+    $('duel-actions').replaceChildren();
+    if (this.spectator || !d.deck.length) {
+      show($('duel-hand'), false);
+      this.#say(this.spectator ? 'Os caçadores olham as builds um do outro e banem uma carta...' : 'Esperando o adversário banir...');
+      return;
+    }
+    const opp = this.#laneOpp(this.m.you);
+    const char = this.catalog.characters.find(c => c.id === this.m.fighters[opp].character);
+    $('duel-hand-title').replaceChildren(`BANA 1 CARTA DE ${this.#name(opp).toUpperCase()} `, h('small', {}, `(${char?.name ?? ''})`));
+    const els = d.deck.map((id) => {
+      const el = cardEl(this.#card(id), { size: 'md', onPick: (c) => this.#pickBan(c, el) });
+      return el;
+    });
+    $('duel-cards').replaceChildren(...els);
+    show($('duel-hand'), true);
+    retrigger($('duel-hand'), 'deal');
+    this.#say(`Esta é a build de ${this.#name(opp)} (${char?.name}: ${char?.passive}) Escolha uma carta para tirar dela nesta partida.`);
+    this.game.audio.play('select');
+  }
+
+  #pickBan(card, el) {
+    if (this.banPicked) return;
+    this.banPicked = true;
+    this.net.banCard(card.id);
+    document.querySelectorAll('#duel-cards .pcard').forEach(c => { c.disabled = true; c.classList.toggle('picked', c === el); c.classList.toggle('dropped', c !== el); });
+    this.game.audio.play('select');
+    this.#say(`Você baniu ${card.name}. Esperando o adversário...`);
+  }
+
+  #bans({ banned }) {
+    show($('duel-hand'), false);
+    this.endsAt = 0;
+    const name = (id) => this.#card(id)?.name ?? '?';
+    if (this.spectator) {
+      this.#say(this.m.fighters.map(f => `${f.nickname} perdeu ${name(banned[f.seat])}`).join(' · '));
+      return;
+    }
+    const opp = this.#laneOpp(this.m.you);
+    this.#say(`Você tirou ${name(banned[opp])} de ${this.#name(opp)}. Você perdeu ${name(banned[this.m.you])}.`);
+    this.#banner('CARTAS BANIDAS!', 1400);
+  }
+
   #cardPhase(d) {
+    $('duel-hand-title').replaceChildren('ESCOLHA UMA CARTA ', h('small', {}, '(passe o mouse para ler)'));
     this.round = d.round;
     $('duel-round').textContent = `RODADA ${d.round}`;
     this.hp = [...d.hp];
@@ -250,7 +301,7 @@ export class DuelScene extends Scene {
       return;
     }
     const oppCard = d.cards[opp] && this.#card(d.cards[opp]);
-    const hurry = d.endsIn < this.catalog.rules.weaponPhaseMs ? ' Rápido: você tem só 5s!' : '';
+    const hurry = d.endsIn < this.catalog.rules.weaponPhaseMs ? ` Rápido: você tem só ${Math.round(d.endsIn / 1000)}s!` : '';
     this.#say((oppCard ? `${this.#name(opp)} jogou ${oppCard.name}! Escolha sua arma.` : 'Escolha sua arma: pedra, papel ou tesoura!') + hurry);
     $('duel-actions').replaceChildren(...WEAPON_LIST.map(w => h('button', {
       class: `btn btn-action${w.id === d.forbidden ? ' forbidden' : ''}`,
@@ -282,7 +333,7 @@ export class DuelScene extends Scene {
 
   #seatReady({ seat, phase }) {
     if (seat === this.m.you) return;
-    this.#say(`${this.#name(seat)} já escolheu ${phase === 'card' ? 'a carta' : 'a arma'}.`);
+    this.#say(`${this.#name(seat)} já escolheu ${{ ban: 'o que banir', card: 'a carta' }[phase] ?? 'a arma'}.`);
   }
 
   #vision({ weapon, seat }) {

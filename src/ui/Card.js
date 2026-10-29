@@ -22,6 +22,7 @@ export function cardEl(card, { size = 'md', locked = false, faceDown = false, on
   },
   back ? null : icon(cardIcon(card.id), 'pcard-icon'),
   back ? null : h('span', { class: 'pcard-name' }, card.name),
+  back || card.cost == null ? null : h('span', { class: 'pcard-cost', title: `${card.cost} ponto(s) da build` }, card.cost),
   locked ? h('span', { class: 'pcard-lock' }, icon('icon/cadeado', 'ico ico-sm'), `${card.trophies}`, icon('icon/trofeu', 'ico ico-xs')) : null,
   faceDown ? null : h('div', { class: 'pcard-tip' },
     h('b', {}, locked ? '???' : card.name),
@@ -53,6 +54,7 @@ export function flipIn(el, card, delay = 0) {
       el.style.backgroundImage = `url(${Assets.url(RARITY[card.rarity]?.frame ?? RARITY.comum.frame)})`;
       el.prepend(icon(cardIcon(card.id), 'pcard-icon'));
       el.querySelector('.pcard-icon').after(h('span', { class: 'pcard-name' }, card.name));
+      if (card.cost != null) el.append(h('span', { class: 'pcard-cost' }, card.cost));
       el.append(h('div', { class: 'pcard-tip' }, h('b', {}, card.name), h('span', { class: `tip-rarity r-${card.rarity}` }, RARITY[card.rarity]?.name ?? ''), h('p', {}, card.desc)));
     }, 150);
     setTimeout(() => el.classList.remove('flipping'), 320);

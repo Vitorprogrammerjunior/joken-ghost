@@ -4,7 +4,11 @@
 // As regras de cada coisa ficam nos seus módulos; aqui só se liga tudo.
 const crypto = require('crypto');
 const catalog = require('./catalog');
-const { RULES, CARDS, DECK, CHARACTERS, LEAGUES, leagueOf, unlockedCards, unlockedCharacters, validateDeck, deckOf } = catalog;
+const { RULES, CARDS, DECK, BUILD_SLOTS, CHARACTERS, LEAGUES, leagueOf, characterById, validateDeck, deckOf, cleanBuild } = catalog;
+const ALL_CARDS = CARDS.map(c => c.id);
+const ALL_CHARACTERS = CHARACTERS.map(c => c.id);
+/** Modos 1x1 com a fase de banir uma carta da build do adversário. */
+const BAN_KINDS = new Set(['ranked', 'casual', 'room', 'challenge']);
 const { applyResult, FarmGuard } = require('./trophies');
 const { cleanNickname } = require('./store');
 const cosmetics = require('./cosmetics');
@@ -116,12 +120,15 @@ class Hub {
     on('set_nickname', as((s, d) => { s.player.nickname = cleanNickname(d.nickname); return this.#saveAndSync(s); }));
     on('select_character', as((s, d) => this.#selectCharacter(s, d.id)));
     on('set_deck', as((s, d) => this.#setDeck(s, d.cards)));
+    on('save_build', as((s, d) => this.#saveBuild(s, d)));
+    on('use_build', as((s, d) => this.#useBuild(s, d.slot)));
+    on('delete_build', as((s, d) => this.#deleteBuild(s, d.slot)));
     on('ranking', as((s) => this.#ranking(s)));
     on('missions_claim', as((s, d) => this.#claimMission(s, d.id)));
     on('shop_buy', as((s, d) => this.#apply(s, cosmetics.buy(s.player, d.id))));
     on('equip_frame', as((s, d) => this.#apply(s, cosmetics.equipFrame(s.player, d.id ?? null))));
     on('set_avatar', as((s, d) => this.#apply(s, cosmetics.setAvatar(s.player, d, {
-      unlocked: unlockedCharacters(s.player.best), isValidArt: this.shared.isValidArt,
+      unlocked: ALL_CHARACTERS, isValidArt: this.shared.isValidArt,
     }))));
     // filas e modos
     on('queue_join', as((s, d) => this.#queueJoin(s, d.mode ?? 'ranked')));
@@ -138,6 +145,7 @@ class Hub {
     on('spectate', as((s, d) => this.#spectate(s, d.playerId)));
     on('spectate_leave', as((s) => this.#stopWatching(s)));
     // partida
+    on('ban_card', as((s, d) => this.#inMatch(s, (m, i) => m.pickBan?.(i, d.cardId))));
     on('pick_card', as((s, d) => this.#inMatch(s, (m, i) => m.pickCard(i, d.cardId ?? null))));
     on('pick_weapon', as((s, d) => this.#inMatch(s, (m, i) => m.pickWeapon(i, d.weapon))));
     on('forfeit', as((s) => this.#inMatch(s, (m, i) => {
@@ -237,7 +245,7 @@ class Hub {
   // ═══════════════════════ perfil ═══════════════════════
   #catalog() {
     return {
-      cards: CARDS, deck: DECK, characters: CHARACTERS, leagues: LEAGUES, rules: this.rules,
+      cards: CARDS, deck: DECK, buildSlots: BUILD_SLOTS, characters: CHARACTERS, leagues: LEAGUES, rules: this.rules,
       cosmetics: { frames: cosmetics.FRAMES, emotes: cosmetics.EMOTES },
       raid: { bosses: RAID.bosses, reward: RAID.rewardEcto },
       tournament: { prizes: PRIZES },
@@ -248,8 +256,9 @@ class Hub {
     return {
       id: p.id, nickname: p.nickname, trophies: p.trophies, best: p.best, wins: p.wins, losses: p.losses,
       character: p.character, league: leagueOf(p.trophies),
-      unlocked: { cards: unlockedCards(p.best), characters: unlockedCharacters(p.best) },
-      deck: deckOf(p), deckCustom: !!p.deck,
+      unlocked: { cards: ALL_CARDS, characters: ALL_CHARACTERS },
+      deck: deckOf(p), deckCustom: !!p.deck && validateDeck(p.deck).ok,
+      builds: this.#builds(p).list, activeBuild: this.#builds(p).active,
       ecto: p.ecto ?? 0, cups: p.cups ?? 0,
       cosmetics: [...new Set([...cosmetics.FREE, ...(p.cosmetics ?? [])])],
       equipped: p.equipped ?? { frame: null },
@@ -272,17 +281,70 @@ class Hub {
   }
 
   #selectCharacter(s, id) {
-    if (!unlockedCharacters(s.player.best).includes(id)) return s.socket.emit('error_msg', { message: 'Personagem bloqueado.' });
+    if (!characterById(id)) return s.socket.emit('error_msg', { message: 'Caçador inválido.' });
     s.player.character = id;
+    this.#syncActiveBuild(s.player);
     return this.#saveAndSync(s);
   }
 
-  /** Deck montado (lista vazia volta ao deck automático). */
+  /** Cartas montadas (lista vazia volta às cartas padrão). */
   #setDeck(s, cards) {
-    if (Array.isArray(cards) && cards.length === 0) { s.player.deck = null; return this.#saveAndSync(s); }
-    const check = validateDeck(cards, s.player.best);
+    if (Array.isArray(cards) && cards.length === 0) { s.player.deck = null; this.#syncActiveBuild(s.player); return this.#saveAndSync(s); }
+    const check = validateDeck(cards);
     if (!check.ok) return s.socket.emit('error_msg', { message: check.reason });
     s.player.deck = [...cards];
+    this.#syncActiveBuild(s.player);
+    return this.#saveAndSync(s);
+  }
+
+  // ─── builds salvas (caçador + cartas, com nome) ───
+  /** { list: (build|null)[BUILD_SLOTS], active: número do slot em uso ou null } */
+  #builds(p) {
+    const saved = p.builds && Array.isArray(p.builds.list) ? p.builds : { list: [], active: null };
+    const list = Array.from({ length: BUILD_SLOTS }, (_, i) => saved.list[i] ?? null);
+    return { list, active: list[saved.active] ? saved.active : null };
+  }
+
+  /** Mudou o caçador ou as cartas em uso: a build ativa acompanha. */
+  #syncActiveBuild(p) {
+    const b = this.#builds(p);
+    if (b.active == null) return;
+    b.list[b.active] = { ...b.list[b.active], character: p.character, cards: [...deckOf(p)] };
+    p.builds = b;
+  }
+
+  #slot(slot) { return Number.isInteger(slot) && slot >= 0 && slot < BUILD_SLOTS ? slot : null; }
+
+  /** Salva uma build no slot e passa a usar ela. */
+  #saveBuild(s, { slot, name, character, cards }) {
+    const i = this.#slot(slot);
+    const check = cleanBuild({ name, character, cards });
+    if (i == null || !check.ok) return s.socket.emit('error_msg', { message: check.reason ?? 'Slot inválido.' });
+    const b = this.#builds(s.player);
+    b.list[i] = check.build;
+    b.active = i;
+    Object.assign(s.player, { builds: b, character: check.build.character, deck: [...check.build.cards] });
+    return this.#saveAndSync(s);
+  }
+
+  #useBuild(s, slot) {
+    const i = this.#slot(slot);
+    const b = this.#builds(s.player);
+    const build = i == null ? null : b.list[i];
+    const check = build && cleanBuild(build);
+    if (!check?.ok) return s.socket.emit('error_msg', { message: check?.reason ?? 'Essa build não existe.' });
+    b.active = i;
+    Object.assign(s.player, { builds: b, character: build.character, deck: [...build.cards] });
+    return this.#saveAndSync(s);
+  }
+
+  #deleteBuild(s, slot) {
+    const i = this.#slot(slot);
+    if (i == null) return;
+    const b = this.#builds(s.player);
+    b.list[i] = null;
+    if (b.active === i) b.active = null;
+    s.player.builds = b;
     return this.#saveAndSync(s);
   }
 
@@ -481,6 +543,7 @@ class Hub {
       io: this.io, rules: this.rules, now: this.now, rng: this.rng,
       kind, ranked, seats, stage: STAGES[Math.floor(this.rng() * STAGES.length)],
       partnerCarries: kind === 'duo',
+      bans: BAN_KINDS.has(kind),
       onRound: (m, r) => this.#onDuelRound(m, r),
       onEnd: async (m, result) => {
         const personal = await this.#onDuelEnd(m, result, returnTo);

@@ -3,7 +3,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const duel = require('../src/duel');
 const { trophyDelta, applyResult, FarmGuard } = require('../src/trophies');
-const { unlockedCards, unlockedCharacters, leagueOf, validateDeck, defaultDeck, deckOf, RULES } = require('../src/catalog');
+const { leagueOf, validateDeck, deckOf, cleanBuild, deckCost, DEFAULT_DECK, DECK, RULES } = require('../src/catalog');
 
 const player = (over = {}) => ({ id: Math.random().toString(16).slice(2), nickname: 'X', trophies: 0, best: 0, wins: 0, losses: 0, character: 'cacador', ...over });
 const fixed = (v) => () => v;
@@ -111,10 +111,13 @@ test('personagens: passiva de arma, vida extra e esquiva', () => {
   round(d, [null, 'aspirador'], [null, 'estaca']);
   assert.equal(hp(d, 1), 120 - 25);
 
-  const e = duo(player(), player({ character: 'sombra' }), fixed(0.01)); // rng baixo = esquiva
+  const e = duo(player(), player({ character: 'sombra' }), fixed(0.9));
   const r = round(e, [null, 'estaca'], [null, 'cruz']);
-  assert.equal(r.fighters[1].dodged, true);
+  assert.equal(r.fighters[1].dodged, true, 'a Sombra desvia do primeiro golpe');
   assert.equal(hp(e, 1), 100);
+  const r2 = round(e, [null, 'estaca'], [null, 'cruz']);
+  assert.equal(r2.fighters[1].dodged, false, 'só do primeiro');
+  assert.equal(hp(e, 1), 80);
 });
 
 test('2x2: duas pistas, vida somada por lado', () => {
@@ -164,16 +167,50 @@ test('a partida termina quando a vida zera', () => {
   assert.equal(hp(d, 1), 0);
 });
 
-test('deck: 8 cartas, no máximo 1 lendária e 2 épicas', () => {
-  assert.equal(validateDeck(['escudo', 'cura'], 0).ok, true);
-  assert.equal(validateDeck(['juizo'], 0).ok, false);                       // bloqueada
-  assert.equal(validateDeck(['juizo', 'escudo_sagrado'], 5000).ok, false);  // 2 lendárias
-  assert.equal(validateDeck(['visao', 'furia', 'vampirismo'], 5000).ok, false);
-  const auto = defaultDeck(5000);
-  assert.equal(auto.length, 8);
-  assert.equal(validateDeck(auto, 5000).ok, true);
-  assert.deepEqual(defaultDeck(0), ['golpe_duplo', 'escudo', 'cura']);
-  assert.deepEqual(deckOf(player({ best: 5000, deck: ['juizo', 'escudo_sagrado'] })), auto); // inválido: usa o automático
+test('build: até 6 cartas diferentes dentro do orçamento, todas abertas para todo mundo', () => {
+  assert.equal(validateDeck(['juizo', 'escudo_sagrado', 'escudo', 'cura']).ok, true);   // 4+4+1+1 = 10
+  assert.equal(validateDeck(['juizo', 'escudo_sagrado', 'escudo', 'cura', 'golpe_duplo']).ok, false); // 11 pontos
+  assert.equal(validateDeck(['escudo', 'escudo']).ok, false);
+  assert.equal(validateDeck(['bazuca']).ok, false);
+  assert.equal(deckCost(DEFAULT_DECK), DECK.budget);
+  assert.equal(validateDeck(DEFAULT_DECK).ok, true);
+  // build antiga de 8 cartas não cabe: usa a padrão
+  const old = ['juizo', 'visao', 'furia', 'golpe_duplo', 'sorte', 'estaca_prata', 'escudo', 'cura'];
+  assert.deepEqual(deckOf(player({ deck: old })), DEFAULT_DECK);
+  assert.deepEqual(deckOf(player({ deck: ['juizo'] })), ['juizo']);
+  const ok = cleanBuild({ name: '  <Rush> ', character: 'sombra', cards: ['juizo', 'escudo'] });
+  assert.deepEqual(ok.build, { name: 'Rush', character: 'sombra', cards: ['juizo', 'escudo'] });
+  assert.equal(cleanBuild({ character: 'x', cards: ['juizo'] }).ok, false);
+  assert.equal(cleanBuild({ character: 'luna', cards: [] }).ok, false);
+});
+
+test('banir: cada um tira uma carta da build do outro; sem escolher, sai a mais cara', () => {
+  const d = duel.createDuel([[player({ nickname: 'A' })], [player()]], (p) => (p.nickname === 'A' ? ['escudo', 'juizo'] : ['cura', 'visao', 'sorte']), fixed(0.5));
+  duel.startBanPhase(d);
+  assert.equal(duel.pickBan(d, 0, 'escudo'), false, 'só cartas da build do adversário');
+  assert.equal(duel.pickBan(d, 0, 'sorte'), true);
+  assert.deepEqual(duel.applyBans(d), ['juizo', 'sorte'], 'quem não escolheu bane a mais cara');
+  assert.deepEqual(d.fighters[0].deck, ['escudo']);
+  assert.deepEqual(d.fighters[1].deck, ['cura', 'visao']);
+});
+
+test('rodadas: depois da última, vence quem tiver mais vida; empatado, segue', () => {
+  const d = duo();
+  for (let i = 1; i < RULES.maxRounds; i++) round(d, [null, 'estaca'], [null, 'estaca']);
+  let r = round(d, [null, 'estaca'], [null, 'estaca']);
+  assert.equal(r.winner, null, 'empate em vida: segue');
+  r = round(d, [null, 'estaca'], [null, 'cruz']);
+  assert.equal(r.winner, 0);
+  assert.equal(r.reason, 'tempo');
+});
+
+test('trevo da sorte: sem sorteio (+10 se vencer, cura 10 se empatar)', () => {
+  const d = duo(player(), player(), fixed(0.99));
+  round(d, ['sorte', 'estaca'], [null, 'cruz']);
+  assert.equal(hp(d, 1), 100 - 30);
+  d.sides[0].hp = 50;
+  round(d, ['sorte', 'cruz'], [null, 'cruz']);
+  assert.equal(hp(d, 0), 60);
 });
 
 test('troféus: vencer alguém mais forte vale mais e ninguém fica negativo', () => {
@@ -183,14 +220,10 @@ test('troféus: vencer alguém mais forte vale mais e ninguém fica negativo', (
   const [rw, rl] = applyResult(w, l);
   assert.ok(rw.delta > 0 && rl.delta < 0);
   assert.equal(w.best, w.trophies);
-  assert.deepEqual(rw.unlocked.characters, w.trophies >= 150 ? ['luna'] : []);
   assert.equal(l.losses, 1);
 });
 
-test('desbloqueios e ligas por troféus', () => {
-  assert.deepEqual(unlockedCards(0), ['escudo', 'cura', 'golpe_duplo']);
-  assert.ok(unlockedCards(2000).includes('juizo'));
-  assert.deepEqual(unlockedCharacters(0), ['cacador']);
+test('ligas por troféus', () => {
   assert.equal(leagueOf(0), 'bronze');
   assert.equal(leagueOf(750), 'ouro');
   assert.equal(leagueOf(5000), 'lenda');

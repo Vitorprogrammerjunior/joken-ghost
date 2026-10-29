@@ -67,6 +67,13 @@ class BotBrain {
 
   newRound() { this.vision = null; this.preferred = null; }
 
+  /** Bane uma carta da build do adversário: quase sempre a mais cara (bots fracos às vezes erram). */
+  chooseBan(deck) {
+    if (!deck.length) return null;
+    const scored = deck.map(id => [id, (cardById(id)?.cost ?? 0) + (1 - this.skill) * this.rng() * 3]);
+    return scored.sort((a, b) => b[1] - a[1])[0][0];
+  }
+
   see(weapon) { this.vision = weapon; }
 
   /**

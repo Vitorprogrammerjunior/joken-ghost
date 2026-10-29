@@ -293,8 +293,42 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .mode-card p { flex: 1; color: var(--fog); }
 .mode-card small { color: var(--cyan); }
 
-/* ─── deck ─── */
-.deck-slots { display: grid; grid-template-columns: repeat(8, auto); justify-content: center; gap: 10px; min-height: 96px; pointer-events: auto; }
+/* ─── builds ─── */
+.build-card { gap: 8px; }
+.build-slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 100%; }
+.build-slot { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 4px; border: 2px solid transparent; border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 16px / 0 stretch; background: none; color: var(--white); font: inherit; cursor: pointer; overflow: hidden; }
+.build-slot b { font-weight: normal; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.build-slot small { font-size: 14px; color: var(--fog); }
+.build-slot.empty b { color: var(--stone); }
+.build-slot.current { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
+.build-head { display: flex; align-items: center; gap: 16px; width: 100%; }
+.build-head .field { flex: 1; min-width: 0; }
+.build-budget { display: flex; flex-direction: column; gap: 6px; width: 280px; color: var(--white); text-shadow: var(--outline); }
+.build-budget .hpbar-fill { background: var(--gold); }
+.build-chars { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; width: 100%; }
+.build-char { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 2px 4px; border: 2px solid transparent; border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 16px / 0 stretch; background: none; color: var(--white); font: inherit; cursor: pointer; }
+.build-char b { font-weight: normal; font-size: 16px; color: var(--gold); white-space: nowrap; }
+.build-char small { display: none; }
+.build-char.current { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
+.build-actions { flex-wrap: wrap; justify-content: center; }
+.pcard.too-costly { opacity: 0.4; }
+.pcard-cost {
+  position: absolute;
+  right: calc(2 * var(--u));
+  top: calc(2 * var(--u));
+  min-width: calc(9 * var(--u));
+  height: calc(9 * var(--u));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(6 * var(--u));
+  line-height: 1;
+  color: var(--white);
+  background: var(--purple, #6b3fa0);
+  box-shadow: 0 0 0 calc(1 * var(--u)) var(--ink);
+  pointer-events: none;
+}
+.deck-slots { display: grid; grid-template-columns: repeat(6, auto); justify-content: center; gap: 10px; min-height: 96px; pointer-events: auto; }
 .deck-slot-empty { width: calc(46 * 1.5px); height: calc(62 * 1.5px); background: var(--ink-2); box-shadow: inset 0 0 0 2px var(--stone); }
 .deck-label { width: 100%; color: var(--gold); text-shadow: var(--outline); }
 .deck-label small { color: var(--fog); }

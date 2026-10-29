@@ -11,7 +11,7 @@ const SERVER_EVENTS = [
   'welcome', 'profile', 'lobby', 'ranking', 'queue_state', 'season_reward',
   'challenge_received', 'challenge_sent', 'challenge_declined', 'room_created',
   'tournament_state', 'king_state',
-  'match_start', 'match_resume', 'card_phase', 'weapon_phase', 'card_locked', 'weapon_locked',
+  'match_start', 'match_resume', 'ban_phase', 'ban_locked', 'bans', 'card_phase', 'weapon_phase', 'card_locked', 'weapon_locked',
   'seat_ready', 'vision', 'seat_status', 'spectators', 'emote', 'round_result',
   'raid_phase', 'raid_result', 'match_end', 'error_msg',
 ];
@@ -230,6 +230,11 @@ export class MultiplayerClient extends EventBus {
   setNickname(nickname) { this.socket.emit('set_nickname', { nickname }); }
   selectCharacter(id) { this.socket.emit('select_character', { id }); }
   setDeck(cards) { this.socket.emit('set_deck', { cards }); }
+  /** Salva a build no slot (0..buildSlots-1) e passa a usar ela. */
+  saveBuild(slot, { name, character, cards }) { this.socket.emit('save_build', { slot, name, character, cards }); }
+  useBuild(slot) { this.socket.emit('use_build', { slot }); }
+  deleteBuild(slot) { this.socket.emit('delete_build', { slot }); }
+  banCard(cardId) { this.socket.emit('ban_card', { cardId }); }
   requestRanking() { this.socket.emit('ranking'); }
   claimMission(id) { this.socket.emit('missions_claim', { id }); }
   buy(id) { this.socket.emit('shop_buy', { id }); }

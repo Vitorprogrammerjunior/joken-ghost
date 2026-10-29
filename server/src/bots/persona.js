@@ -1,9 +1,9 @@
 'use strict';
 // O perfil de um adversário automático: parece um jogador comum do mesmo nível (troféus perto,
-// caçador, deck, avatar e moldura que aquele nível teria). Existe só durante a partida:
+// caçador, uma build pronta, avatar e moldura que aquele nível teria). Existe só durante a partida:
 // não é salvo, não entra no ranking nem na lista de quem está online.
 const crypto = require('crypto');
-const { unlockedCharacters } = require('../catalog');
+const { CHARACTERS, PRESET_DECKS } = require('../catalog');
 const { botNickname } = require('./names');
 
 /** Estilos de jogo "legíveis" (as IAs dos monstros): o bot cai neles quando não está lendo o jogador. */
@@ -27,7 +27,7 @@ const between = ([min, max], rng) => min + Math.round(rng() * (max - min));
 function createBotPersona(opponent, rng = Math.random) {
   const trophies = Math.max(0, opponent.trophies + between([-70, 70], rng));
   const best = trophies + between([0, 140], rng);
-  const characters = unlockedCharacters(best);
+  const characters = CHARACTERS.map(c => c.id);
   const character = pick(characters, rng);
   const frames = best >= 700 ? [null, 'madeira', 'prata', 'ouro'] : best >= 300 ? [null, 'madeira', 'prata'] : [null, null, 'madeira'];
   const wins = between([0, 12], rng) + Math.floor(best / 25);
@@ -38,7 +38,7 @@ function createBotPersona(opponent, rng = Math.random) {
     trophies, best, seasonBest: best,
     wins, losses: Math.round(wins * (0.7 + rng() * 0.6)),
     character,
-    deck: null,                      // deck automático com as cartas liberadas nesse nível
+    deck: [...pick(PRESET_DECKS, rng)], // uma das builds prontas
     avatar: { kind: 'hunter', hunter: rng() < 0.75 ? character : pick(characters, rng), art: null },
     equipped: { frame: pick(frames, rng) },
     style: pick(STYLES, rng),

@@ -24,16 +24,17 @@ function cleanNickname(raw) {
 /** Campos salvos de cada jogador. Os de JSON_FIELDS são listas/objetos. */
 const FIELDS = [
   'id', 'nickname', 'trophies', 'best', 'wins', 'losses', 'character',
-  'deck', 'ecto', 'cosmetics', 'equipped', 'avatar', 'cups', 'season', 'seasonBest', 'missions',
+  'deck', 'builds', 'ecto', 'cosmetics', 'equipped', 'avatar', 'cups', 'season', 'seasonBest', 'missions',
   'createdAt', 'updatedAt',
 ];
-const JSON_FIELDS = ['deck', 'cosmetics', 'equipped', 'avatar', 'missions'];
+const JSON_FIELDS = ['deck', 'builds', 'cosmetics', 'equipped', 'avatar', 'missions'];
 
 function blankPlayer(nickname) {
   const now = new Date().toISOString();
   return {
     id: newId(), nickname: cleanNickname(nickname), trophies: 0, best: 0, wins: 0, losses: 0, character: 'cacador',
-    deck: null,              // null = deck padrão (todas as cartas liberadas até o limite)
+    deck: null,              // cartas em uso (null = as padrão)
+    builds: null,            // builds salvas { list: [{ name, character, cards } | null], active }
     ecto: 0,                 // moeda dos cosméticos (missões, torneios, temporadas)
     cosmetics: [],           // ids de molduras e expressões compradas ou ganhas
     equipped: { frame: null },
@@ -279,7 +280,7 @@ class PgStore {
       ['deck', "TEXT"], ['ecto', 'INTEGER NOT NULL DEFAULT 0'], ['cosmetics', "TEXT NOT NULL DEFAULT '[]'"],
       ['equipped', "TEXT NOT NULL DEFAULT '{\"frame\":null}'"], ['cups', 'INTEGER NOT NULL DEFAULT 0'],
       ['season', 'INTEGER NOT NULL DEFAULT 0'], ['season_best', 'INTEGER NOT NULL DEFAULT 0'], ['missions', 'TEXT'],
-      ['avatar', 'TEXT'],
+      ['avatar', 'TEXT'], ['builds', 'TEXT'],
     ]) {
       await this.pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS ${col} ${type}`);
     }
@@ -328,7 +329,7 @@ class PgStore {
     const parse = (v, fallback) => (v == null ? fallback : JSON.parse(v));
     return {
       id: r.id, nickname: r.nickname, trophies: r.trophies, best: r.best, wins: r.wins, losses: r.losses, character: r.character,
-      deck: parse(r.deck, null), ecto: r.ecto ?? 0, cosmetics: parse(r.cosmetics, []), equipped: parse(r.equipped, { frame: null }),
+      deck: parse(r.deck, null), builds: parse(r.builds, null), ecto: r.ecto ?? 0, cosmetics: parse(r.cosmetics, []), equipped: parse(r.equipped, { frame: null }),
       avatar: parse(r.avatar, { ...DEFAULT_AVATAR }),
       cups: r.cups ?? 0, season: r.season ?? 0, seasonBest: r.season_best ?? 0, missions: parse(r.missions, null),
       createdAt: new Date(r.created_at).toISOString(), updatedAt: new Date(r.updated_at).toISOString(),
@@ -363,11 +364,11 @@ class PgStore {
     const json = (v) => (v == null ? null : JSON.stringify(v));
     await this.pool.query(
       `UPDATE players SET nickname=$2, trophies=$3, best=$4, wins=$5, losses=$6, character=$7,
-        deck=$8, ecto=$9, cosmetics=$10, equipped=$11, cups=$12, season=$13, season_best=$14, missions=$15, avatar=$16, updated_at=NOW()
+        deck=$8, ecto=$9, cosmetics=$10, equipped=$11, cups=$12, season=$13, season_best=$14, missions=$15, avatar=$16, builds=$17, updated_at=NOW()
        WHERE id=$1`,
       [p.id, p.nickname, p.trophies, p.best, p.wins, p.losses, p.character,
         json(p.deck), p.ecto, json(p.cosmetics ?? []), json(p.equipped ?? { frame: null }), p.cups, p.season, p.seasonBest, json(p.missions),
-        json(p.avatar)],
+        json(p.avatar), json(p.builds)],
     );
   }
 

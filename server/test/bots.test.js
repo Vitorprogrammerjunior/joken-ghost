@@ -2,7 +2,7 @@
 // Adversários automáticos da ranqueada: dificuldade, quando entram, disfarce e jogo.
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { RULES, WEAPONS, BEATS, unlockedCharacters } = require('../src/catalog');
+const { RULES, WEAPONS, BEATS, CHARACTERS, validateDeck, cardById } = require('../src/catalog');
 const { BotPolicy, skillFor } = require('../src/bots/policy');
 const { BotBrain, predict, counterOf } = require('../src/bots/BotBrain');
 const { createBotPersona } = require('../src/bots/persona');
@@ -59,8 +59,9 @@ test('disfarce: parece um jogador comum do mesmo nível', () => {
     assert.match(bot.id, /^[0-9a-f]{16}$/);
     assert.ok(bot.nickname.length >= 2 && bot.nickname.length <= 16);
     assert.ok(Math.abs(bot.trophies - player.trophies) <= 70);
-    assert.ok(unlockedCharacters(bot.best).includes(bot.character));
-    assert.ok(unlockedCharacters(bot.best).includes(bot.avatar.hunter));
+    assert.ok(CHARACTERS.some(c => c.id === bot.character));
+    assert.ok(CHARACTERS.some(c => c.id === bot.avatar.hunter));
+    assert.ok(bot.deck.length && validateDeck(bot.deck).ok, 'usa uma build pronta válida');
     names.add(bot.nickname);
   }
   assert.ok(names.size > 40, 'um nome novo a cada partida');

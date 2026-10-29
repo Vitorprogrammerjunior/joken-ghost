@@ -4,7 +4,7 @@ import { Scene } from '../core/Scene.js';
 import { GW, GH } from '../core/Renderer.js';
 import { Scenery } from '../world/Scenery.js';
 import { $, h, icon, show } from '../ui/dom.js';
-import { DeckModal } from '../ui/DeckModal.js';
+import { BuildModal } from '../ui/BuildModal.js';
 import { ArenaShop } from '../ui/ArenaShop.js';
 import { AvatarModal } from '../ui/AvatarModal.js';
 import { avatarEl } from '../ui/Avatar.js';
@@ -32,7 +32,7 @@ export class LobbyScene extends Scene {
     super(game, 'screen-lobby');
     this.ui = ui;
     this.net = net;
-    this.deck = new DeckModal(game, ui.modals, net);
+    this.deck = new BuildModal(game, ui.modals, net);
     this.avatar = new AvatarModal(game, ui.modals, net);
     this.shop = new ArenaShop(game, ui.modals, net, {
       queue: (mode) => this.#queue(mode),
@@ -173,11 +173,10 @@ export class LobbyScene extends Scene {
     const claimable = p.missions.filter(m => m.progress >= m.n && !m.claimed).length;
     $('lb-missions-badge').textContent = claimable;
     show($('lb-missions-badge'), claimable > 0);
-    // próximo desbloqueio
-    const { cards, characters } = this.net.catalog;
-    const next = [...cards.map(c => ({ ...c, kind: 'carta' })), ...characters.map(c => ({ ...c, kind: 'caçador' }))]
-      .filter(x => x.trophies > p.best).sort((a, b) => a.trophies - b.trophies)[0];
-    $('lp-next').textContent = next ? `Próximo: ${next.kind} ${next.name} com ${next.trophies} troféus` : 'Você desbloqueou tudo!';
+    // build em uso
+    const build = p.builds?.[p.activeBuild];
+    const char = this.net.catalog.characters.find(c => c.id === p.character);
+    $('lp-next').textContent = `Build: ${build ? build.name : 'padrão'} · ${char?.name ?? ''} · ${p.deck.length} cartas`;
   }
 
   #renderOnline() {

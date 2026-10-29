@@ -1,6 +1,5 @@
 'use strict';
 // Troféus: quem vence ganha mais se o oponente era mais forte; quem perde nunca fica negativo.
-const { unlockedCards, unlockedCharacters } = require('./catalog');
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -26,10 +25,6 @@ function applyResult(winner, loser, { ranked = true } = {}) {
       delta,
       before: before.trophies,
       after: p.trophies,
-      unlocked: {
-        cards: unlockedCards(p.best).filter(c => !unlockedCards(before.best).includes(c)),
-        characters: unlockedCharacters(p.best).filter(c => !unlockedCharacters(before.best).includes(c)),
-      },
     });
   }
   return out;

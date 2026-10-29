@@ -13,7 +13,7 @@ const { Hub } = require('../src/hub');
 const { loadShared } = require('../src/shared');
 const { RULES } = require('../src/catalog');
 
-const FAST = { ...RULES, cardPhaseMs: 250, weaponPhaseMs: 250, visionWeaponMs: 150, revealMs: 30, reconnectGraceMs: 1500 };
+const FAST = { ...RULES, banPhaseMs: 150, cardPhaseMs: 250, weaponPhaseMs: 250, visionWeaponMs: 150, revealMs: 30, reconnectGraceMs: 1500 };
 const RAID_FAST = { weaponMs: 250, revealMs: 30 };
 
 async function setup(opts = {}) {
@@ -109,6 +109,39 @@ test('ranqueada completa: fila, cartas, armas, troféus e ranking', async () => 
     a.c.emit('ranking');
     const r = await rank;
     assert.equal(r.top[0].nickname, 'Vitor');
+  } finally { await close(); }
+});
+
+test('ranqueada: cada um vê a build do outro e bane uma carta antes da 1ª rodada', async () => {
+  const { client, close } = await setup();
+  try {
+    const a = await client('Vitor');
+    const b = await client('Amigo');
+    a.c.emit('save_build', { slot: 1, name: 'Juízo', character: 'sombra', cards: ['juizo', 'escudo', 'cura'] });
+    const prof = await waitFor(a.c, 'profile', (p) => p.activeBuild === 1);
+    assert.equal(prof.character, 'sombra');
+    assert.deepEqual(prof.deck, ['juizo', 'escudo', 'cura']);
+    assert.equal(prof.builds[1].name, 'Juízo');
+    a.c.emit('save_build', { slot: 2, character: 'luna', cards: ['juizo', 'escudo_sagrado', 'visao'] });
+    assert.match((await waitFor(a.c, 'error_msg', (e) => /orçamento/.test(e.message))).message, /orçamento/);
+
+    autoplay(a.c, 'cruz');
+    autoplay(b.c, 'aspirador');
+    b.c.on('ban_phase', (d) => b.c.emit('ban_card', { cardId: d.deck.includes('escudo') ? 'escudo' : d.deck[0] }));
+    a.c.emit('queue_join', { mode: 'ranked' });
+    b.c.emit('queue_join', { mode: 'ranked' });
+    const ban = await seenOrWait(b.c, 'ban_phase');
+    assert.deepEqual(ban.deck, ['juizo', 'escudo', 'cura'], 'B vê a build de A');
+    const { banned } = await seenOrWait(a.c, 'bans');
+    const youA = (await seenOrWait(a.c, 'match_start')).you;
+    assert.equal(banned[youA], 'escudo', 'B baniu o Escudo de A');
+    assert.equal(banned[1 - youA], 'vampirismo', 'A não escolheu: bane a carta mais cara de B');
+    const hand = await seenOrWait(a.c, 'card_phase');
+    assert.ok(!hand.hand.includes('escudo'));
+    await seenOrWait(a.c, 'match_end');
+
+    a.c.emit('use_build', { slot: 0 });
+    assert.match((await waitFor(a.c, 'error_msg', (e) => /não existe/.test(e.message))).message, /não existe/);
   } finally { await close(); }
 });
 
@@ -334,13 +367,13 @@ test('sala privada por código e reconexão com o mesmo token', async () => {
   } finally { await close(); }
 });
 
-test('deck, loja de cosméticos e missões', async () => {
+test('build, loja de cosméticos e missões', async () => {
   const { client, close, store } = await setup();
   try {
     const a = await client('Colecionador');
     const err = once(a.c, 'error_msg');
-    a.c.emit('set_deck', { cards: ['juizo'] }); // bloqueada
-    assert.match((await err).message, /bloqueadas/);
+    a.c.emit('set_deck', { cards: ['juizo', 'escudo_sagrado', 'visao'] }); // 11 pontos
+    assert.match((await err).message, /orçamento/);
     let prof = once(a.c, 'profile');
     a.c.emit('set_deck', { cards: ['escudo', 'cura'] });
     assert.deepEqual((await prof).deck, ['escudo', 'cura']);

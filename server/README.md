@@ -2,7 +2,7 @@
 
 Node.js + Socket.io. Toda a regra roda aqui (o cliente só manda escolhas):
 
-- Duelos 1x1 e 2x2 com cartas de perk e deck (`src/duel.js`), troféus e ranking global
+- Duelos 1x1 e 2x2 com cartas de perk e builds montadas (`src/duel.js`), troféus e ranking global
 - Ranqueada, Casual, 2x2, Chefe Cooperativo (`src/raid.js`), Torneio e Rei da Arena (`src/modes/`)
 - Espectadores e expressões (`src/match/`)
 - Adversários automáticos na Ranqueada quando falta gente (`src/bots/`)
@@ -118,31 +118,39 @@ nos redirects. Um provedor sem as duas variáveis simplesmente não aparece no j
 ## Protocolo Socket.io
 
 Cliente → servidor: `hello {token?, nickname?}`, `set_nickname`, `select_character {id}`, `set_deck {cards}`,
+`save_build {slot, name, character, cards}`, `use_build {slot}`, `delete_build {slot}`,
 `ranking`, `missions_claim {id}`, `shop_buy {id}`, `equip_frame {id}`,
 `queue_join {mode: ranked|casual|duo|raid}`, `queue_leave`, `tournament_join`, `tournament_leave`,
 `king_join`, `king_leave`, `challenge {targetId}`, `challenge_answer {fromId, accept}`,
 `room_create`, `room_join {code}`, `room_leave`, `spectate {playerId}`, `spectate_leave`,
-`pick_card {cardId|null}`, `pick_weapon {weapon}`, `forfeit`, `emote {id}`.
+`ban_card {cardId}`, `pick_card {cardId|null}`, `pick_weapon {weapon}`, `forfeit`, `emote {id}`.
 
 Servidor → cliente: `welcome {token, tokenRejected, account, profile, catalog}`, `profile`, `lobby`, `ranking`, `queue_state`,
 `season_reward`, `challenge_received`, `challenge_sent`, `challenge_declined`, `room_created`,
 `tournament_state`, `king_state`, `match_start` (também para espectadores, com `you: null`), `match_resume`,
-`card_phase`, `weapon_phase`, `card_locked`, `weapon_locked`, `seat_ready`, `vision`, `seat_status`,
+`ban_phase {endsIn, deck}`, `ban_locked`, `bans {banned}`, `card_phase`, `weapon_phase`, `card_locked`, `weapon_locked`, `seat_ready`, `vision`, `seat_status`,
 `spectators`, `emote`, `round_result`, `raid_phase`, `raid_result`, `match_end`, `error_msg`.
 
 ## Regras principais (`src/catalog.js`)
 
-- Rodada: escolhe uma carta da mão (10s, opcional) → as cartas são reveladas → escolhe a arma (10s;
-  quem enfrenta a Visão tem 5s). Tempo esgotado repete a arma da rodada anterior.
-- Vencer o jokenpô causa 20 de dano (+5 com a arma preferida do personagem). Da rodada 12 em diante o dano dobra.
-- Deck de até 8 cartas, no máximo 1 lendária e 2 épicas. Cada carta só pode ser usada uma vez por partida.
+- Todas as cartas e caçadores são abertos para todo mundo. Build: 1 caçador + até 6 cartas diferentes que somam
+  no máximo 10 pontos (`cost` de cada carta: comum 1, rara 2, épica 3, lendária 4). Cada jogador guarda 5 builds;
+  a salva (ou escolhida) por último é a que vai para as partidas. Builds antigas que não cabem usam a padrão.
+- 1x1 (Ranqueada, Casual, sala e desafio): antes da 1ª rodada cada um vê a build do outro e bane 1 carta dela (15s;
+  sem escolher, sai a mais cara).
+- Rodada: escolhe uma carta da mão (7s, opcional) → as cartas são reveladas → escolhe a arma (7s;
+  quem enfrenta a Visão tem 3,5s). Tempo esgotado repete a arma da rodada anterior.
+- Vencer o jokenpô causa 20 de dano (+5 com a arma preferida do personagem). Da rodada 8 em diante o dano dobra.
+  Depois da rodada 15 vence quem tiver mais vida (empatados, segue até alguém passar na frente).
+- Cada carta só pode ser usada uma vez por partida. Sem sorteio de dano: Trevo da Sorte é fixo e a Sombra desvia
+  só do primeiro golpe.
 - 2x2: duas pistas (cada um contra o adversário da frente) e vida somada da dupla (75%).
 - Troféus só na Ranqueada: vencedor ganha 10–40 (mais contra quem tem mais troféus), perdedor perde um pouco menos.
-  O mesmo par só vale troféus 3 vezes por hora. Desbloqueios usam a melhor marca, então perder troféus não tira nada.
+  O mesmo par só vale troféus 3 vezes por hora.
 - Casual, 2x2 e Chefe Cooperativo esperam os caçadores de que precisam (2, 4 e 2).
 - Ranqueada: se o jogador está sozinho na fila, depois de 18–30s (6–10s nas 3 primeiras partidas da conta)
   um adversário automático completa a partida. Só até 1600 troféus e no máximo 5 por hora por jogador.
-  Ele não é anunciado: nome genérico novo a cada partida, troféus, caçador, deck e avatar do mesmo nível,
+  Ele não é anunciado: nome genérico novo a cada partida, troféus, caçador, uma build pronta e avatar do mesmo nível,
   tempo de pensar de gente; não é salvo, não aparece no ranking nem na lista de online. Vale troféus.
   A dificuldade (`src/bots/policy.js`) sobe com os troféus e acompanha a fase do jogador (alivia em
   sequência de derrotas, aperta em sequência de vitórias). O bot lê os padrões do jogador

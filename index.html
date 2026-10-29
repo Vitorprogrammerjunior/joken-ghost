@@ -190,7 +190,7 @@
             </div>
             <div class="lobby-tabs">
               <button class="btn btn-sm" id="lb-chars"><img class="ico ico-sm" src="assets/sprites/icons/duelo.svg" alt="">CAÇADORES</button>
-              <button class="btn btn-sm" id="lb-cards"><img class="ico ico-sm" src="assets/sprites/icons/perk_escudo.svg" alt="">DECK</button>
+              <button class="btn btn-sm" id="lb-cards"><img class="ico ico-sm" src="assets/sprites/icons/perk_escudo.svg" alt="">BUILDS</button>
               <button class="btn btn-sm" id="lb-rank"><img class="ico ico-sm" src="assets/sprites/icons/trofeu.svg" alt="">RANKING</button>
               <button class="btn btn-sm" id="lb-missions"><img class="ico ico-sm" src="assets/sprites/icons/pergaminho.svg" alt="">MISSÕES<i class="badge hidden" id="lb-missions-badge"></i></button>
               <button class="btn btn-sm" id="lb-shop"><img class="ico ico-sm" src="assets/sprites/icons/ecto.svg" alt="">LOJA</button>
@@ -268,7 +268,7 @@
         <div class="banner hidden" id="duel-banner"><span id="duel-banner-text"></span></div>
 
         <div class="duel-hand hidden" id="duel-hand">
-          <p class="duel-hand-title">ESCOLHA UMA CARTA <small>(passe o mouse para ler)</small></p>
+          <p class="duel-hand-title" id="duel-hand-title">ESCOLHA UMA CARTA <small>(passe o mouse para ler)</small></p>
           <div class="duel-cards" id="duel-cards"></div>
         </div>
 
@@ -412,15 +412,22 @@
       </div>
 
       <div class="modal hidden" id="modal-cards">
-        <div class="panel modal-card modal-wide">
-          <h2 class="modal-title">SEU DECK</h2>
-          <p class="modal-sub" id="deck-rules"></p>
+        <div class="panel modal-card modal-wide build-card">
+          <h2 class="modal-title">SUAS BUILDS</h2>
+          <div class="build-slots" id="build-slots"></div>
+          <div class="build-head">
+            <input class="field" id="build-name" type="text" maxlength="20" autocomplete="off" placeholder="Nome da build" aria-label="Nome da build">
+            <div class="build-budget"><span id="deck-rules"></span><div class="hpbar"><div class="hpbar-fill" id="build-budget-fill"></div></div></div>
+          </div>
+          <div class="build-chars" id="build-chars"></div>
+          <p class="deck-label">CARTAS <small>todas abertas · cada carta gasta pontos · passe o mouse para ler</small></p>
           <div class="deck-slots" id="deck-slots"></div>
-          <p class="deck-label">COLEÇÃO <small>clique numa carta para pôr ou tirar do deck · passe o mouse para ler</small></p>
           <div class="card-grid deck-collection" id="cards-grid"></div>
-          <div class="row">
-            <button class="btn btn-sm btn-primary" id="deck-save">SALVAR DECK</button>
-            <button class="btn btn-sm" id="deck-auto" title="As melhores cartas liberadas, montadas sozinhas">AUTOMÁTICO</button>
+          <div class="row build-actions">
+            <button class="btn btn-sm btn-primary" id="build-save">SALVAR E USAR</button>
+            <button class="btn btn-sm" id="build-copy" title="Copia um código para passar a build a um amigo">COPIAR CÓDIGO</button>
+            <button class="btn btn-sm" id="build-paste" title="Carrega a build de um código">COLAR CÓDIGO</button>
+            <button class="btn btn-sm" id="build-delete">APAGAR</button>
             <button class="btn btn-sm" data-close-modal>FECHAR</button>
           </div>
         </div>
