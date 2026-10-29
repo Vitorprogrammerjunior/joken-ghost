@@ -16,8 +16,8 @@ import { outcome as rps } from './rps.js';
 
 /**
  * Um monstro de uma onda: o id (config/enemies.js) ou o id com multiplicadores
- * de vida e dano (as corridas ficam mais difíceis a cada onda).
- * @typedef {string | { id: string, hpMult?: number, damageMult?: number }} WaveEntry
+ * de vida e dano (as corridas ficam mais difíceis a cada onda) e `echo` (ataca duas vezes).
+ * @typedef {string | { id: string, hpMult?: number, damageMult?: number, echo?: boolean }} WaveEntry
  */
 
 export class Battle {
@@ -77,7 +77,7 @@ export class Battle {
     this.prepareIntents();
   }
 
-  #spawn(id, { hpMult = 1, damageMult = 1 } = {}) {
+  #spawn(id, { hpMult = 1, damageMult = 1, echo = false } = {}) {
     const def = ENEMIES[id];
     if (!def) throw new Error(`Inimigo desconhecido: ${id}`);
     const hp = Math.round(def.hp * this.stats.enemyHpMult * hpMult);
@@ -85,6 +85,7 @@ export class Battle {
       uid: this.nextUid++, id, def, hp, maxHp: hp,
       damage: Math.round(def.damage * this.stats.enemyDamageMult * damageMult),
       phase: 0, history: [], intent: null, echo: null, tell: null,
+      twoHits: echo || !!def.echo, // ataca duas vezes (chefes com eco ou o Eco das Almas)
     };
   }
 
@@ -104,7 +105,7 @@ export class Battle {
   prepareIntents() {
     for (const e of this.alive()) {
       e.intent = chooseMove(e.def.ai, { playerHistory: this.playerHistory, ownHistory: e.history }, this.rng);
-      e.echo = e.def.echo ? pick(MOVES, this.rng) : null; // o segundo golpe é imprevisível
+      e.echo = e.twoHits ? pick(MOVES, this.rng) : null; // o segundo golpe é imprevisível
       e.tell = rollTell(e.def.tell, e.intent, this.rng);
     }
   }

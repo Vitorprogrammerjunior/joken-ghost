@@ -9,7 +9,7 @@ import { campaignStats, difficultyOf, totalStars, upgradeMods } from '../domain/
 import { Run, createDailyRun, dayKey, daySeed } from '../domain/run.js';
 import { MAIN_LEVELS, ENDINGS, levelById } from '../config/levels.js';
 import { STAR_REWARDS } from '../config/rewards.js';
-import { RUN_RULES, RUN_STAGES, ENDLESS, DAILY } from '../config/runs.js';
+import { RUN_RULES, RUN_STAGES, ENDLESS, DAILY, NIGHT_RULES } from '../config/runs.js';
 
 /** Escolhe o modo pelos parâmetros da cena: { levelId } ou { run: 'endless' | 'daily' }. */
 export function createMode(game, params) {
@@ -111,6 +111,8 @@ class RunMode {
   }
   get offer() { return this.run.offer; }
   get relics() { return this.run.relics; }
+  /** Regra da noite que começa na onda atual (para anunciar), ou null. */
+  get nightRule() { return NIGHT_RULES.find(r => r.from === this.battle.waveIndex + 1) ?? null; }
   get retryParams() { return { run: this.kind.id }; }
   get quitTo() { return ['map', {}]; }
   get retryQuestion() { return 'Começar uma corrida nova?'; }
@@ -118,6 +120,7 @@ class RunMode {
   attack(weaponId, uid) { return this.run.attack(weaponId, uid); }
   useItem(id) { return this.run.useItem(id); }
   chooseRelic(id) { return this.run.chooseRelic(id); }
+  nextWave() { return this.run.nextWave(); }
 
   finish(won) {
     const p = this.game.profile;

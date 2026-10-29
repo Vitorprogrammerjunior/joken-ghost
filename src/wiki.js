@@ -74,7 +74,8 @@ $('rewards').replaceChildren(...STAR_REWARDS.map(r => h('article', { class: 'car
 
 $('relics').replaceChildren(...RELICS.map(r => h('article', { class: 'card' },
   h('h3', {}, icon(r.icon, 'ico ico-lg'), r.name),
-  h('p', { class: 'muted' }, r.desc))));
+  h('p', { class: 'muted' }, r.desc(r.levels[0])),
+  r.levels.length > 1 ? h('div', { class: 'stat' }, `Até o nível ${r.levels.length}`) : null)));
 
 $('mp-modes').replaceChildren(...Object.values(MODES).map(m => h('article', { class: 'card' },
   h('h3', {}, icon(m.icon, 'ico ico-lg'), m.name),

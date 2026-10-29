@@ -2,7 +2,7 @@
 import { $, h, icon, show, retrigger } from './dom.js';
 import { WEAPON_LIST, ENEMY_MOVES, BEATS } from '../config/weapons.js';
 import { ITEMS } from '../config/items.js';
-import { relicById } from '../config/relics.js';
+import { relicById, relicText } from '../config/relics.js';
 import { hpColor } from '../core/Renderer.js';
 
 export class BattleHud {
@@ -164,7 +164,9 @@ export class BattleHud {
     for (const id of ids) counts.set(id, (counts.get(id) ?? 0) + 1);
     $('relic-strip').replaceChildren(...[...counts].map(([id, n]) => {
       const relic = relicById(id);
-      return h('span', { class: 'relic-chip', title: `${relic.name}: ${relic.desc}` }, icon(relic.icon, 'ico'), n > 1 ? h('b', {}, n) : null);
+      const levels = relic.levels.map((_, i) => relicText(id, i + 1)).slice(0, n);
+      const title = `${relic.name} (nível ${n}/${relic.levels.length}): ${[...new Set(levels)].join(' ')}`;
+      return h('span', { class: 'relic-chip', title }, icon(relic.icon, 'ico'), n > 1 ? h('b', {}, n) : null);
     }));
     show($('relic-strip'), ids.length > 0);
   }

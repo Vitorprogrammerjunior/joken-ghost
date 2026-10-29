@@ -493,13 +493,19 @@ export class BattleScene extends Scene {
     this.#syncBag();
     this.spawnWave();
     await this.wait(900);
+    const rule = this.mode.nightRule;
+    if (rule) {
+      this.hud.say(rule.desc);
+      await this.banner(rule.name, 1400, 'danger');
+      this.toast(`${rule.name}: ${rule.desc}`, 'icon/caveira');
+    }
     await this.banner(this.#announce(), 900, 'danger');
   }
 
   /** Corridas: escolhe 1 de 3 relíquias antes da próxima onda. */
   async #chooseRelic() {
     this.hud.say('Onda vencida! Escolha uma relíquia.');
-    const id = await this.ui.relics.choose(this.mode.offer);
+    const id = await this.ui.relics.choose(this.mode.offer, this.mode.relics);
     const info = this.mode.chooseRelic(id);
     this.hud.setRelics(this.mode.relics);
     this.game.audio.play('super');

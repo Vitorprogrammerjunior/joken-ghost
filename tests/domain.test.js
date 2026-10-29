@@ -4,8 +4,9 @@ import assert from 'node:assert/strict';
 import { outcome, counterOf } from '../src/domain/rps.js';
 import { chooseMove, mostFrequent, rollTell, lastWinningMove } from '../src/domain/enemyAI.js';
 import { buildStats } from '../src/domain/loadout.js';
-import { Run, generateWave, createDailyRun, replayDaily, dayKey, daySeed } from '../src/domain/run.js';
-import { DAILY } from '../src/config/runs.js';
+import { Run, generateWave, waveScale, createDailyRun, replayDaily, dayKey, daySeed } from '../src/domain/run.js';
+import { DAILY, RUN_RULES, NIGHT_RULES } from '../src/config/runs.js';
+import { RELICS, relicMods } from '../src/config/relics.js';
 import { buyUpgrade, nextCost, upgradeLevel, campaignStats, totalStars, isRewardUnlocked, difficultyOf, nextReward, isLevelOpen } from '../src/domain/campaign.js';
 import { seeded } from '../src/domain/random.js';
 import { Economy } from '../src/domain/economy.js';
@@ -422,6 +423,69 @@ test('corridas: depois de cada onda oferece 3 relíquias e a escolhida muda os a
   assert.equal(run.offer, null);
   assert.equal(run.battle.waveIndex, 1);
   if (pick === 'coracao') assert.equal(run.battle.player.maxHp, before + 25);
+});
+
+/** Vence a onda atual de uma vez (deixa todos com 1 de vida e acerta o alvo). */
+function clearWave(run) {
+  for (const e of run.battle.alive()) e.hp = 1;
+  while (!run.offer && !run.waiting && run.battle.alive().length) {
+    const t = run.battle.alive()[0];
+    run.attack(weaponThat('win', t.intent), t.uid);
+  }
+}
+
+test('relíquias: repetir sobe o nível, cada nível vale menos e há um nível máximo', () => {
+  const stats = (ids) => buildStats(relicMods(ids));
+  assert.equal(stats(['lamina']).weaponBonus.cruz, 5);
+  assert.equal(stats(['lamina', 'lamina', 'lamina']).weaponBonus.cruz, 14);
+  assert.equal(stats(['estaca', 'estaca']).weaponBonus.estaca, 22);
+  assert.equal(stats(['ouro']).coinMult, 1.25, 'Moedas Malditas soma, não multiplica');
+  const run = new Run({ seed: 3, economy: new Economy() });
+  run.relics = ['ouro', 'presas', 'presas'];
+  clearWave(run);
+  assert.ok(!run.offer.includes('ouro') && !run.offer.includes('presas'), 'relíquia no nível máximo não volta');
+});
+
+test('relíquias: com 6 tipos na bolsa só aparecem as que o Caçador já tem', () => {
+  const run = new Run({ seed: 11, economy: new Economy() });
+  const kinds = ['lamina', 'estaca', 'coracao', 'espinhos', 'furia', 'eco'];
+  assert.equal(kinds.length, RUN_RULES.relicSlots);
+  run.relics = [...kinds];
+  clearWave(run);
+  assert.equal(run.offer.length, 3);
+  assert.ok(run.offer.every(id => kinds.includes(id)));
+});
+
+test('relíquias: sem nada para oferecer, a próxima onda começa com nextWave (e o replay aceita)', () => {
+  const run = new Run({ seed: 5, economy: new Economy() });
+  run.relics = RELICS.flatMap(r => r.levels.map(() => r.id));
+  clearWave(run);
+  assert.equal(run.offer, null);
+  assert.equal(run.waiting, true);
+  assert.throws(() => run.attack('estaca', 1));
+  run.nextWave();
+  assert.equal(run.battle.waveIndex, 1);
+  assert.deepEqual(run.actions.at(-1), ['n']);
+});
+
+test('noite sem fim: depois da onda 20 os monstros crescem em juros e as regras da noite entram', () => {
+  const growth = (n) => waveScale(n + 1).hpMult / waveScale(n).hpMult;
+  assert.ok(growth(25) > growth(10), 'a Madrugada cresce mais rápido');
+  assert.ok(waveScale(40).hpMult > 6);
+  const eco = NIGHT_RULES.find(r => r.echo);
+  assert.equal(generateWave(eco.from - 3, seeded(1))[0].echo, undefined);
+  const late = generateWave(eco.from - 1, seeded(1));
+  assert.ok(late.every(e => e.echo));
+  const run = new Run({ seed: 1, economy: new Economy() });
+  const heal = run.stats().healBetweenWaves;
+  run.wavesCleared = NIGHT_RULES.find(r => r.id === 'nevoa').from - 1;
+  assert.equal(run.stats().healBetweenWaves, heal / 2);
+});
+
+test('noite sem fim: monstros do Eco das Almas atacam duas vezes', () => {
+  const level = { waveAt: () => [{ id: 'fantasma', echo: true }], waveCount: 1 };
+  const battle = new Battle({ level, economy: new Economy(), rng: seeded(2) });
+  assert.ok(battle.alive()[0].echo);
 });
 
 test('desafio do dia: o replay das jogadas chega na mesma pontuação', () => {

@@ -394,6 +394,8 @@
 .relic-card b { font-weight: normal; color: var(--gold); font-size: 24px; line-height: 32px; }
 .relic-card p { color: var(--fog); }
 .relic-card small { color: var(--purple-2); }
+.relic-card em { font-style: normal; font-size: 16px; color: var(--purple-2); }
+.relic-card em.up { color: var(--gold); }
 .relic-card:hover, .relic-card:focus-visible { border-image-source: url('../assets/sprites/ui/slot_active.svg'); outline: none; }
 .relic-card:hover .ico { animation: float 0.8s ease-in-out infinite; }
 

@@ -1,16 +1,25 @@
 // Corridas de ondas: Noite Sem Fim e Desafio do Dia.
 // Tudo que é sorteado sai de geradores com semente e toda jogada fica registrada,
 // então o servidor consegue refazer a corrida e conferir a pontuação (replayRun).
-import { RUN_RULES, RUN_POOLS, RUN_BOSSES, DAILY } from '../config/runs.js';
-import { RELICS, relicById } from '../config/relics.js';
+import { RUN_RULES, RUN_POOLS, RUN_BOSSES, DAILY, nightRulesAt } from '../config/runs.js';
+import { RELICS, relicLevel, relicMods } from '../config/relics.js';
 import { Battle } from './battle.js';
 import { Economy } from './economy.js';
 import { buildStats } from './loadout.js';
 import { seeded, pick } from './random.js';
 
+/** Quanto os monstros da onda `n` (0 = primeira) cresceram: devagar no começo, rápido na Madrugada. */
+export function waveScale(n) {
+  const late = Math.max(0, n + 1 - RUN_RULES.lateFrom); // n é 0 = primeira onda
+  return {
+    hpMult: (1 + n * RUN_RULES.hpGrowth) * (1 + RUN_RULES.lateHpGrowth) ** late,
+    damageMult: (1 + n * RUN_RULES.damageGrowth) * (1 + RUN_RULES.lateDamageGrowth) ** late,
+  };
+}
+
 /** Monstros da onda `n` (0 = primeira), mais fortes a cada onda. */
 export function generateWave(n, rng) {
-  const scale = { hpMult: 1 + n * RUN_RULES.hpGrowth, damageMult: 1 + n * RUN_RULES.damageGrowth };
+  const scale = { ...waveScale(n), ...(nightRulesAt(n).some(r => r.echo) ? { echo: true } : {}) };
   if ((n + 1) % RUN_RULES.bossEvery === 0) {
     const boss = RUN_BOSSES[((n + 1) / RUN_RULES.bossEvery - 1) % RUN_BOSSES.length];
     return [{ id: boss, ...scale }];
@@ -45,6 +54,7 @@ export class Run {
     this.relics = [];
     this.actions = [];
     this.offer = null;
+    this.waiting = false;
     this.wavesCleared = 0;
     const level = { waveAt: (i) => this.#waveAt(i), waveCount: waves };
     this.battle = new Battle({ level, economy, rng: seeded(this.seed ^ 0x9e3779b9), stats: this.stats() });
@@ -55,7 +65,14 @@ export class Run {
     return this.generated[i];
   }
 
-  stats() { return buildStats([...this.baseMods, ...this.relics.map(id => relicById(id).mod)]); }
+  /** Atributos para a próxima onda: oficina, relíquias e as regras da noite que já entraram. */
+  stats() {
+    const night = nightRulesAt(this.wavesCleared).filter(r => r.mod).map(r => r.mod);
+    return buildStats([...this.baseMods, ...relicMods(this.relics), ...night]);
+  }
+
+  /** Relíquias diferentes que o Caçador carrega. */
+  get relicKinds() { return new Set(this.relics).size; }
 
   get over() { return this.battle.player.hp <= 0 || this.won; }
   get won() { return this.wavesCleared >= this.waves; }
@@ -65,7 +82,7 @@ export class Run {
 
   // ─── jogadas (registradas para o replay) ──────────────────────
   attack(weaponId, targetUid) {
-    if (this.over || this.offer) throw new Error('Jogada fora de hora');
+    if (this.over || this.offer || this.waiting) throw new Error('Jogada fora de hora');
     this.actions.push(['a', weaponId, targetUid]);
     const r = this.battle.attack(weaponId, targetUid);
     if (r.waveCleared) this.#waveCleared();
@@ -73,7 +90,7 @@ export class Run {
   }
 
   useItem(itemId) {
-    if (this.over || this.offer) throw new Error('Jogada fora de hora');
+    if (this.over || this.offer || this.waiting) throw new Error('Jogada fora de hora');
     const r = this.battle.useItem(itemId);
     if (r.ok) {
       this.actions.push(['i', itemId]);
@@ -84,15 +101,34 @@ export class Run {
 
   #waveCleared() {
     this.wavesCleared++;
-    if (!this.won) this.offer = this.#drawOffer();
+    if (this.won) return;
+    const offer = this.#drawOffer();
+    if (offer.length) this.offer = offer;
+    else this.waiting = true; // nada para oferecer: a próxima onda começa com nextWave()
   }
 
-  /** Três relíquias diferentes; as únicas que o Caçador já tem não voltam. */
+  /**
+   * Três relíquias diferentes que ainda podem subir de nível. Com a bolsa cheia
+   * (RUN_RULES.relicSlots tipos), só aparecem as que o Caçador já tem.
+   */
   #drawOffer() {
-    const pool = RELICS.filter(r => !(r.unique && this.relics.includes(r.id))).map(r => r.id);
+    const full = this.relicKinds >= RUN_RULES.relicSlots;
+    const pool = RELICS
+      .filter(r => relicLevel(this.relics, r.id) < r.levels.length)
+      .filter(r => !full || this.relics.includes(r.id))
+      .map(r => r.id);
     const out = [];
     while (out.length < RUN_RULES.offerSize && pool.length) out.push(pool.splice(Math.floor(this.relicRng() * pool.length), 1)[0]);
     return out;
+  }
+
+  /** Começa a próxima onda quando não houve relíquia para escolher (todas no nível máximo). */
+  nextWave() {
+    if (!this.waiting) throw new Error('Jogada fora de hora');
+    this.actions.push(['n']);
+    this.waiting = false;
+    this.battle.setStats(this.stats());
+    return this.battle.nextWave();
   }
 
   /** Escolhe uma relíquia da oferta e começa a próxima onda (com a bolsa cheia). Retorna o que a nextWave da batalha retorna. */
@@ -124,6 +160,7 @@ export function replayDaily(seed, actions) {
       if (type === 'a') run.attack(a, b);
       else if (type === 'i') { if (!run.useItem(a).ok) throw new Error('Item inválido'); }
       else if (type === 'r') run.chooseRelic(a);
+      else if (type === 'n') run.nextWave();
       else throw new Error('Jogada desconhecida');
     }
   } catch (err) {
