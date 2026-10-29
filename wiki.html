@@ -31,7 +31,7 @@
     h2 .ico { width: 48px; height: 48px; }
     p, li { line-height: 28px; }
     .lead { color: var(--fog); max-width: 760px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 16px; }
     .card {
       display: flex; flex-direction: column; gap: 10px;
       padding: 20px 24px;
@@ -46,7 +46,7 @@
     .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
     .rule { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; text-align: center; border: 2px solid transparent; border-image: url('assets/sprites/ui/panel_stone.svg') 16 fill / 24px / 0 stretch; }
     .rule .ico { width: 64px; height: 64px; }
-    .keys { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
+    .keys { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr)); gap: 8px; }
     .keys kbd { display: inline-block; min-width: 40px; padding: 0 8px; margin-right: 10px; text-align: center; font-family: inherit; background: var(--ink-3); box-shadow: 0 0 0 2px var(--stone), 0 4px 0 var(--ink); }
     details summary { cursor: pointer; color: var(--cyan); }
     footer { margin-top: 64px; text-align: center; color: var(--mist); }
@@ -55,9 +55,15 @@
     .wiki-rank { list-style: none; display: flex; flex-direction: column; gap: 6px; max-width: 560px; }
     .wiki-rank li { display: flex; gap: 12px; align-items: center; padding: 6px 12px; background: var(--ink-2); box-shadow: 0 0 0 2px var(--ink-3); }
     .wiki-rank b { color: var(--gold); font-weight: normal; margin-left: auto; }
+    .rules > * { min-width: 0; }
     @media (max-width: 700px) {
+      .wrap { padding-inline: 14px; }
       header h1 { font-size: 40px; line-height: 48px; }
+      h2 { font-size: 26px; line-height: 32px; }
       .rules { grid-template-columns: 1fr; }
+      .rule { gap: 8px; padding: 12px; }
+      .rule .ico { width: 48px; height: 48px; }
+      .card { padding: 16px 18px; }
     }
   </style>
 </head>

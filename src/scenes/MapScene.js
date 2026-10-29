@@ -6,7 +6,8 @@ import { GW, GH, PX } from '../core/Renderer.js';
 import { ACTS, levelById } from '../config/levels.js';
 import { ENDLESS } from '../config/runs.js';
 import { Fighter } from '../world/Fighter.js';
-import { difficultyOf, isLevelOpen, isRewardUnlocked, nextReward, totalStars } from '../domain/campaign.js';
+import { difficultyOf, isLevelOpen, isRewardUnlocked, nextCost, nextReward, totalStars } from '../domain/campaign.js';
+import { UPGRADES } from '../config/upgrades.js';
 import { $, h, icon, show } from '../ui/dom.js';
 
 /** Posições dos locais em cada página do mapa; a fase bônus fica no alto, à esquerda. */
@@ -47,12 +48,15 @@ export class MapScene extends Scene {
 
   music() { return 'mapa'; }
 
-  enter({ focus } = {}) {
+  /** @param {{ focus?: number, workshop?: boolean }} params  workshop: voltou de uma fase, a Oficina já abre */
+  enter({ focus, workshop = false } = {}) {
     const p = this.profile;
     this.focus = focus ?? Math.min(p.unlocked, ACTS.at(-1).levels.at(-1));
     this.act = this.#actOf(this.focus).id;
     this.#makeHunter();
     this.#render();
+    // só se ainda houver melhoria para comprar
+    if (workshop && UPGRADES.some(up => nextCost(p, up.id) != null)) setTimeout(() => { if (this.game.scene === this) this.ui.campaign.openWorkshop(); }, 350);
   }
 
   #actOf(levelId) { return ACTS.find(a => a.levels.includes(levelId)) ?? ACTS[0]; }

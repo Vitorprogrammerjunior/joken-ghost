@@ -297,7 +297,8 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .build-card { gap: 8px; }
 .build-slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 100%; }
 .build-slot { display: flex; align-items: baseline; justify-content: center; gap: 8px; padding: 4px; border: 2px solid transparent; border-image: url('../assets/sprites/ui/slot.svg') 16 fill / 16px / 0 stretch; background: none; color: var(--white); font: inherit; cursor: pointer; overflow: hidden; }
-.build-slot b { font-weight: normal; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.build-slot b { font-weight: normal; color: var(--gold); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.build-slot small { white-space: nowrap; }
 .build-slot small { font-size: 14px; color: var(--fog); }
 .build-slot.empty b { color: var(--stone); }
 .build-slot.current { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
@@ -312,6 +313,14 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .build-char.current { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
 .build-actions { flex-wrap: wrap; justify-content: center; }
 .pcard.too-costly { opacity: 0.4; }
+/* no editor a descrição fica numa linha fixa (o balão cobria as outras cartas) */
+.build-card .pcard-tip { display: none !important; }
+.build-card .card-grid.deck-collection { padding-top: 4px; margin-top: 0; gap: 8px; }
+.build-row { display: flex; align-items: stretch; gap: 14px; width: 100%; }
+.build-row .deck-slots { flex: none; }
+.build-info { flex: 1; min-width: 0; margin: 0; padding: 8px 14px; color: var(--fog); background: var(--ink-2); box-shadow: inset 0 0 0 2px var(--stone); line-height: 1.25; }
+.build-info b { font-weight: normal; color: var(--gold); }
+.build-card .pcard.inspect, .build-card button.pcard:hover { filter: drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 4px var(--gold)); }
 .pcard-cost {
   position: absolute;
   right: calc(2 * var(--u));

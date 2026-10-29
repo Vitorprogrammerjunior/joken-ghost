@@ -68,6 +68,26 @@ async function setup({ env = ENV, now = () => Date.now() } = {}) {
   return { store, post, login, deleted, base: () => base, close: () => new Promise(r => server.close(r)) };
 }
 
+test('login que caiu numa conta vazia passa para o convidado que tem o progresso', async () => {
+  const t = await setup();
+  try {
+    // 1) navegador novo, sem nada: o login cria uma conta vazia
+    const empty = await t.login('google', { code: 'vitor' });
+    assert.equal(empty.outcome, 'created');
+    // 2) no navegador de sempre, o convidado tem o progresso: o login vai para ele
+    const guest = await t.store.create('Vitor');
+    Object.assign(guest.player, { trophies: 300, wins: 12 });
+    await t.store.save(guest.player);
+    const r = await t.login('google', { token: guest.token, code: 'vitor' });
+    assert.equal(r.outcome, 'linked');
+    assert.equal(r.account.id, guest.player.id);
+    assert.equal(await t.store.getById(empty.account.id), null, 'a conta vazia some');
+    assert.equal(await t.store.getByToken(empty.token), null, 'a sessão do navegador novo termina');
+    // 3) de volta no navegador novo: agora entra na conta com o progresso
+    assert.equal((await t.login('google', { code: 'vitor' })).account.id, guest.player.id);
+  } finally { await t.close(); }
+});
+
 test('provedores: só os configurados; o login de teste nunca liga em produção', () => {
   assert.deepEqual(Object.keys(enabledProviders({})), []);
   assert.deepEqual(Object.keys(enabledProviders({ GOOGLE_CLIENT_ID: 'x' })), [], 'sem a chave secreta não liga');
@@ -112,6 +132,12 @@ test('login liga a conta de convidado e mantém o progresso', async () => {
     assert.equal(switched.outcome, 'existing');
     assert.equal(switched.account.id, guest.player.id);
     assert.ok(await t.store.getByToken(other.token), 'o convidado do outro aparelho continua existindo');
+
+    // convidado com progresso num aparelho que já tinha uma conta com progresso: fica separado e avisa
+    const played = await t.store.create('Jogador');
+    Object.assign(played.player, { wins: 3 });
+    await t.store.save(played.player);
+    assert.equal((await t.login('google', { token: played.token })).outcome, 'existing_guest_left');
 
     // liga o Discord à mesma conta
     const discord = await t.login('discord', { token: r.token, code: 'ana' });

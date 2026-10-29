@@ -202,6 +202,7 @@
 }
 .field:focus { border-image-source: url('../assets/sprites/ui/slot_active.svg'); }
 .field::placeholder { color: var(--stone); }
+.field-error { align-self: flex-start; color: var(--red, #e05050); font-size: 18px; }
 
 /* ─── chips ─── */
 .chip {

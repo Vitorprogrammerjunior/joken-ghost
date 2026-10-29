@@ -27,6 +27,8 @@ const SEARCH_NOTES = {
 };
 
 export class LobbyScene extends Scene {
+  get portrait() { return true; }
+
   /** @param {import('../net/MultiplayerClient.js').MultiplayerClient} net */
   constructor(game, ui, net) {
     super(game, 'screen-lobby');

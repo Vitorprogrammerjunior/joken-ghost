@@ -94,6 +94,15 @@ async function exercise(store) {
   assert.deepEqual(await store.listSaves(a.player.id), []);
   assert.equal((await store.dailyRank('2026-10-26', a.player.id)).rank, null);
   assert.equal(await store.count(), 1);
+
+  // nomes: conta nova com nome de outro ganha números no fim; a conferência ignora maiúsculas e acentos
+  const n1 = await store.create('Vítor Gamer');
+  assert.equal(n1.player.nickname, 'Vítor Gamer');
+  assert.equal(await store.nicknameTaken('vitor gamer'), true);
+  assert.equal(await store.nicknameTaken('VITOR GAMER', n1.player.id), false, 'o próprio nome não conta');
+  const n2 = await store.create('vitor gamer');
+  assert.match(n2.player.nickname, /^vitor gamer\d{4}$/);
+  assert.ok(n2.player.nickname.length <= 16);
 }
 
 test('JsonStore guarda contas e sobrevive a reinício', async () => {

@@ -61,4 +61,7 @@ export class Scene {
   onKey(_e) { return false; }
   /** Ponteiro em coordenadas do jogo: type = 'down' | 'move'. */
   onPointer(_type, _x, _y) {}
+
+  /** A cena sabe se arrumar com a tela em pé (menu e Arena). As outras pedem para girar. */
+  get portrait() { return false; }
 }

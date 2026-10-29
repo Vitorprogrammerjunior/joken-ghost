@@ -112,12 +112,33 @@ function authRoutes(store, { env = process.env, fetch = globalThis.fetch, now = 
     }));
   });
 
+  /** A conta tem algo a perder? (partidas, troféus, Ecto, taças ou campanha na nuvem) */
+  async function hasProgress(p) {
+    if (p.wins + p.losses > 0 || p.trophies > 0 || (p.ecto ?? 0) > 0 || (p.cups ?? 0) > 0) return true;
+    return (await store.listSaves(p.id)).some(s => s.data);
+  }
+
   /** Descobre a conta para este login (ver o passo 3 lá em cima). */
   async function resolveAccount(intent, subject) {
     const { provider } = intent;
     const linked = await store.findIdentity(provider, subject);
-    if (linked) return { player: linked, outcome: 'existing' };
     const guest = intent.token ? await store.getByToken(intent.token) : null;
+    if (linked) {
+      if (!guest || guest.id === linked.id) return { player: linked, outcome: 'existing' };
+      const guestIsGuest = (await store.identitiesOf(guest.id)).length === 0;
+      // o login foi ligado antes a uma conta vazia (ex.: num navegador novo) e o progresso está neste
+      // convidado: o login passa para o convidado e a conta vazia some
+      if (guestIsGuest && await hasProgress(guest) && !await hasProgress(linked)
+        && (await store.identitiesOf(linked.id)).length === 1) {
+        await store.deletePlayer(linked.id);
+        if (await store.linkIdentity(guest.id, provider, subject)) {
+          await store.revokeGuestToken(guest.id);
+          return { player: guest, outcome: 'linked' };
+        }
+      }
+      // as duas têm progresso: entra na conta do login e o convidado deste aparelho fica separado
+      return { player: linked, outcome: guestIsGuest && await hasProgress(guest) ? 'existing_guest_left' : 'existing' };
+    }
     if (guest) {
       const had = await store.identitiesOf(guest.id);
       if (!had.includes(provider) && await store.linkIdentity(guest.id, provider, subject)) {

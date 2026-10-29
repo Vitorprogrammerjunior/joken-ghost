@@ -117,7 +117,7 @@ class Hub {
 
     on('hello', (d) => this.#hello(socket, d));
     // perfil
-    on('set_nickname', as((s, d) => { s.player.nickname = cleanNickname(d.nickname); return this.#saveAndSync(s); }));
+    on('set_nickname', as((s, d) => this.#setNickname(s, d.nickname)));
     on('select_character', as((s, d) => this.#selectCharacter(s, d.id)));
     on('set_deck', as((s, d) => this.#setDeck(s, d.cards)));
     on('save_build', as((s, d) => this.#saveBuild(s, d)));
@@ -277,6 +277,17 @@ class Hub {
   /** Resultado de uma ação { ok, reason }: salva ou avisa o erro. */
   #apply(s, result) {
     if (!result.ok) return s.socket.emit('error_msg', { message: result.reason });
+    return this.#saveAndSync(s);
+  }
+
+  /** Nome novo: não pode ser igual ao de outro caçador (nomes repetidos de antes continuam valendo). */
+  async #setNickname(s, raw) {
+    const nick = cleanNickname(raw);
+    if (nick === s.player.nickname) return this.#saveAndSync(s);
+    if (await this.store.nicknameTaken(nick, s.player.id)) {
+      return s.socket.emit('error_msg', { message: `O nome "${nick}" já é de outro caçador. Escolha outro.`, field: 'nickname' });
+    }
+    s.player.nickname = nick;
     return this.#saveAndSync(s);
   }
 

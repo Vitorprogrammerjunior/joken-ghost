@@ -367,6 +367,21 @@ test('sala privada por código e reconexão com o mesmo token', async () => {
   } finally { await close(); }
 });
 
+test('nome: não pode pegar o nome de outro caçador', async () => {
+  const { client, close } = await setup();
+  try {
+    const a = await client('Vitor');
+    const b = await client('Amigo');
+    b.c.emit('set_nickname', { nickname: 'vítor' });
+    const err = await waitFor(b.c, 'error_msg', (e) => e.field === 'nickname');
+    assert.match(err.message, /já é de outro caçador/);
+    a.c.emit('set_nickname', { nickname: 'VITOR' });
+    assert.equal((await waitFor(a.c, 'profile', (p) => p.nickname === 'VITOR')).nickname, 'VITOR', 'mudar só as maiúsculas do próprio nome pode');
+    b.c.emit('set_nickname', { nickname: 'Amiga' });
+    assert.equal((await waitFor(b.c, 'profile', (p) => p.nickname === 'Amiga')).nickname, 'Amiga');
+  } finally { await close(); }
+});
+
 test('build, loja de cosméticos e missões', async () => {
   const { client, close, store } = await setup();
   try {

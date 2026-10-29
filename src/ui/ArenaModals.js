@@ -1,6 +1,6 @@
 // Janelas da arena multiplayer: caçadores, ranking, desafio recebido e perfil.
 // (O deck fica em DeckModal.js; modos, missões e loja em ArenaShop.js.)
-import { $, h, icon } from './dom.js';
+import { $, h, icon, show } from './dom.js';
 import { spriteCanvas } from './SpriteCanvas.js';
 import { avatarEl } from './Avatar.js';
 import { LEAGUE_NAMES, leagueIcon } from '../config/multiplayer.js';
@@ -23,10 +23,27 @@ export class ArenaModals {
 
     $('challenge-yes').addEventListener('click', () => this.#answer(true));
     $('challenge-no').addEventListener('click', () => this.#answer(false));
+    // o servidor confere se o nome é livre: a janela só fecha quando ele aceita
     $('profile-save').addEventListener('click', () => {
-      net.setNickname($('profile-nick').value);
-      net.rememberNickname($('profile-nick').value);
+      const nick = $('profile-nick').value.trim();
+      if (!nick || nick === net.profile?.nickname) { modals.close('modal-profile'); return; }
+      this.nickPending = nick;
+      show($('profile-nick-error'), false);
+      net.setNickname(nick);
+    });
+    $('profile-nick').addEventListener('input', () => show($('profile-nick-error'), false));
+    net.on('profile', (p) => {
+      if (!this.nickPending || p.nickname.toLowerCase() !== this.nickPending.toLowerCase()) return;
+      this.nickPending = null;
+      net.rememberNickname(p.nickname);
       modals.close('modal-profile');
+      this.#toast(`Agora você é ${p.nickname}!`);
+    });
+    net.on('error_msg', (e) => {
+      if (e.field !== 'nickname' || !this.nickPending) return;
+      this.nickPending = null;
+      $('profile-nick-error').textContent = e.message;
+      show($('profile-nick-error'), true);
     });
     $('profile-copy').addEventListener('click', () => {
       navigator.clipboard?.writeText($('profile-code').value).then(() => this.#toast('Código copiado. Guarde em segredo!'));
@@ -112,6 +129,8 @@ export class ArenaModals {
   // ─── perfil ───────────────────────────────────────────────────
   openProfile() {
     $('profile-nick').value = this.net.profile?.nickname ?? '';
+    this.nickPending = null;
+    show($('profile-nick-error'), false);
     // com login, a conta entra pelo Google/Discord: o código (agora uma sessão deste aparelho) não aparece
     const logged = this.net.loggedIn;
     $('profile-code').value = logged ? '' : this.net.accountCode;

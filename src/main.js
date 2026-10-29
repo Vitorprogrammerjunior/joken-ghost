@@ -94,6 +94,7 @@ const LOGIN_MESSAGES = {
   added: 'Login ligado à sua conta.',
   created: 'Conta criada! Seu progresso agora fica salvo na nuvem.',
   existing: 'Bem-vindo de volta! Você entrou na sua conta.',
+  existing_guest_left: 'Você entrou na sua conta. O progresso de convidado deste navegador ficou separado (as duas tinham progresso).',
 };
 
 /** Ao abrir o jogo: termina o login (se voltou do Google/Discord) e sincroniza a campanha. */

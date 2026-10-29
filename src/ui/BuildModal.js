@@ -34,6 +34,7 @@ export class BuildModal {
   open() {
     const p = this.net.profile;
     this.#load(p.activeBuild ?? Math.max(0, this.#saved.findIndex(b => !b)));
+    $('build-info').textContent = 'Passe o mouse (ou toque uma vez) numa carta para ler o que ela faz. Clique para pôr ou tirar.';
     this.modals.open('modal-cards');
   }
 
@@ -70,6 +71,17 @@ export class BuildModal {
     this.#render();
   }
 
+  /** Descrição da carta na linha fixa (mouse em cima, foco do teclado ou o primeiro toque). */
+  #describe(el, card) {
+    const show = () => {
+      const label = { comum: 'comum', raro: 'rara', epico: 'épica', lendario: 'lendária' }[card.rarity] ?? '';
+      $('build-info').replaceChildren(h('b', {}, card.name), ` (${label}, ${card.cost} pt${card.cost === 1 ? '' : 's'}): ${card.desc}`);
+    };
+    el.addEventListener('pointerenter', show);
+    el.addEventListener('focus', show);
+    return el;
+  }
+
   #render() {
     const { size, budget } = this.#rules;
     const cost = this.#cost();
@@ -84,10 +96,10 @@ export class BuildModal {
     }, spriteCanvas(this.game.assets, `char/${c.id}/side/idle`, { size: 40 }), h('b', {}, c.name), h('small', {}, c.passive))));
     $('deck-slots').replaceChildren(...Array.from({ length: size }, (_, i) => {
       const id = this.draft.cards[i];
-      return id ? cardEl(this.#card(id), { size: 'sm', onPick: () => this.#toggle(id) }) : h('div', { class: 'deck-slot-empty' });
+      return id ? this.#describe(cardEl(this.#card(id), { size: 'sm', onPick: () => this.#toggle(id) }), this.#card(id)) : h('div', { class: 'deck-slot-empty' });
     }));
     $('cards-grid').replaceChildren(...this.#catalog.cards.map((c) => {
-      const el = cardEl(c, { size: 'sm', onPick: () => this.#toggle(c.id) });
+      const el = this.#describe(cardEl(c, { size: 'sm', onPick: () => this.#toggle(c.id) }), c);
       el.classList.toggle('in-deck', this.draft.cards.includes(c.id));
       el.classList.toggle('too-costly', !this.draft.cards.includes(c.id) && !!this.#blocked(c.id));
       return el;

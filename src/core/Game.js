@@ -71,6 +71,7 @@ export class Game {
   /** A trilha da cena começa antes de ela montar a tela: um erro ao montar não deixa a música antiga tocando. */
   #enter(name, params) {
     this.scene = this.scenes[name];
+    this.viewport.setPortraitAllowed(!!this.scene.portrait);
     const track = this.scene.music(params);
     if (track) this.audio.playMusic(track);
     this.scene._enter(params);

@@ -38,7 +38,7 @@ class CampaignMode {
   get offer() { return null; }
   get relics() { return []; }
   get retryParams() { return { levelId: this.level.id }; }
-  get quitTo() { return ['map', { focus: this.level.id }]; }
+  get quitTo() { return ['map', { focus: this.level.id, workshop: true }]; }
   get retryQuestion() { return 'Recomeçar a fase do início?'; }
 
   attack(weaponId, uid) { return this.battle.attack(weaponId, uid); }
@@ -64,7 +64,7 @@ class CampaignMode {
     if (next) actions.push({ label: 'PRÓXIMA FASE', icon: 'icon/jogar', primary: true, go: ['story', { levelId: next.id }] });
     if (won && lvl.ending) actions.push({ label: ENDINGS[lvl.ending].button, icon: 'icon/trofeu', primary: true, go: ['story', { ending: lvl.ending }] });
     if (!won) actions.push({ label: 'TENTAR DE NOVO', icon: 'icon/repetir', primary: true, go: ['battle', { levelId: lvl.id }] });
-    actions.push({ label: 'MAPA', icon: 'icon/casa', go: ['map', { focus: lvl.id }] });
+    actions.push({ label: 'MAPA', icon: 'icon/casa', go: ['map', { focus: lvl.id, workshop: true }] });
 
     return {
       won, stars, scenery: lvl.scenery,

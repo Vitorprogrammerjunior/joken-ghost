@@ -1,0 +1,109 @@
+/* ═══════════════════════════════════════════════════════════
+   Celular em pé: menu, Arena e as janelas deles (src/core/Viewport.js).
+   A tela vira 540 de largura e a altura da tela; tudo empilha numa coluna.
+   ═══════════════════════════════════════════════════════════ */
+
+/* o fundo desenhado (1280x720) cobre a tela em pé, centralizado */
+body.ui-portrait #game-canvas { left: 50%; width: auto; height: 100%; aspect-ratio: 16 / 9; transform: translateX(-50%); }
+body.ui-portrait { --corner-reserve: 76px; }
+
+/* ─── janelas ─── */
+body.ui-portrait .modal { padding: 12px; }
+body.ui-portrait .modal-card,
+body.ui-portrait .modal-wide,
+body.ui-portrait .modal-sm,
+body.ui-portrait .account-card,
+body.ui-portrait .overlay-card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  max-height: 100%;
+  padding: 30px 26px;
+  gap: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+body.ui-portrait .modal-title { font-size: 28px; line-height: 36px; text-align: center; }
+body.ui-portrait .row { flex-wrap: wrap; gap: 10px; }
+body.ui-portrait .confirm-text { max-width: 100%; }
+body.ui-portrait #toasts { top: 84px; width: calc(100% - 24px); }
+body.ui-portrait .toast { max-width: 100%; padding: 8px 16px; }
+body.ui-portrait .now-playing { max-width: calc(100% - 24px); }
+
+/* larguras fixas das janelas viram a largura da tela */
+body.ui-portrait .opt-group,
+body.ui-portrait .save-list,
+body.ui-portrait .mission-list,
+body.ui-portrait .avatar-layout,
+body.ui-portrait .atelie-layout,
+body.ui-portrait .bracket { width: 100%; max-width: 100%; }
+body.ui-portrait .opt { grid-template-columns: minmax(0, 1fr) 150px 48px; gap: 10px; }
+body.ui-portrait .modes-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+body.ui-portrait .char-grid { grid-template-columns: minmax(0, 1fr); }
+body.ui-portrait .shop-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.ui-portrait .avatar-layout,
+body.ui-portrait .atelie-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; justify-items: center; }
+body.ui-portrait .pick-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+body.ui-portrait .pick-grid-frames { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body.ui-portrait .rank-list { max-height: none; }
+body.ui-portrait .rank-row,
+body.ui-portrait #daily-list .rank-row { grid-template-columns: 40px 40px minmax(0, 1fr) 24px 64px; gap: 8px; padding: 6px 10px; }
+body.ui-portrait .rank-row .rank-wins { display: none; }
+body.ui-portrait .tour-card,
+body.ui-portrait .king-card { min-width: 0; }
+body.ui-portrait .bracket-col { min-width: 0; }
+
+/* ─── editor de builds ─── */
+body.ui-portrait .build-slots { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+body.ui-portrait .build-slot { flex-direction: column; align-items: center; gap: 0; }
+body.ui-portrait .build-head { flex-direction: column; align-items: stretch; gap: 8px; }
+body.ui-portrait .build-head .field { flex: none; }
+body.ui-portrait .build-budget { width: 100%; }
+body.ui-portrait .build-chars { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+body.ui-portrait .build-row { flex-direction: column; gap: 8px; }
+body.ui-portrait .build-row .deck-slots { gap: 6px; }
+body.ui-portrait .build-card .card-grid.deck-collection { flex: none; overflow: visible; gap: 6px; }
+body.ui-portrait .build-info { min-height: 64px; }
+
+/* ─── menu ─── */
+body.ui-portrait #screen-menu { justify-content: center; padding: 0 24px 96px; gap: 40px; }
+body.ui-portrait .logo-title { font-size: 64px; line-height: 64px; letter-spacing: 2px; }
+body.ui-portrait .logo-sub { font-size: 28px; line-height: 36px; }
+body.ui-portrait #screen-menu .menu { width: 100%; max-width: 440px; gap: 12px; }
+body.ui-portrait #screen-menu .menu .btn { min-height: 64px; }
+body.ui-portrait .menu-foot { bottom: 32px; padding: 0 24px; text-align: center; }
+
+/* ─── Arena ─── */
+body.ui-portrait #screen-lobby .topbar { top: 14px; left: 14px; gap: 10px; }
+body.ui-portrait #screen-lobby .screen-title { font-size: 22px; line-height: 28px; letter-spacing: 0; text-align: center; }
+body.ui-portrait #screen-lobby .online-pill { padding: 6px 10px; white-space: nowrap; }
+body.ui-portrait .lobby-grid {
+  top: 84px;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(160px, 1fr);
+  gap: 14px;
+  overflow: hidden auto;
+  pointer-events: auto;
+}
+/* perfil em duas colunas: avatar à esquerda, números à direita */
+body.ui-portrait .lobby-profile {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-items: start;
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 2px;
+  padding: 18px 18px;
+  text-align: left;
+}
+body.ui-portrait .lb-avatar-btn { grid-row: 1 / 8; align-self: center; }
+body.ui-portrait .lb-avatar-btn .avatar { width: 112px !important; height: 112px !important; }
+body.ui-portrait .lp-name { padding: 0; font-size: 22px; line-height: 28px; }
+body.ui-portrait .lp-trophies { font-size: 26px; line-height: 32px; }
+body.ui-portrait .lp-next { margin-top: 4px; grid-column: 1 / -1; justify-self: center; text-align: center; }
+body.ui-portrait .lobby-actions { padding: 0; gap: 10px; }
+body.ui-portrait .lobby-tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+body.ui-portrait .lobby-online { padding: 20px 16px; min-height: 160px; }

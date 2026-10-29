@@ -21,6 +21,22 @@ function cleanNickname(raw) {
   return nick.length >= 2 ? nick : `Caçador${Math.floor(1000 + Math.random() * 9000)}`;
 }
 
+/** Mesmo nome sem diferença de maiúsculas, acentos ou espaços nas pontas ("Vitor" = "vítor"). */
+const nickKey = (nick) => String(nick).normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
+
+/**
+ * Nome livre para uma conta nova: o pedido, ou ele com números no fim se alguém já usa.
+ * (Nomes repetidos de antes desta regra continuam valendo.)
+ */
+async function freeNickname(store, nick) {
+  if (!await store.nicknameTaken(nick)) return nick;
+  for (let i = 0; i < 20; i++) {
+    const candidate = `${nick.slice(0, 12)}${Math.floor(1000 + Math.random() * 9000)}`;
+    if (!await store.nicknameTaken(candidate)) return candidate;
+  }
+  return `${nick.slice(0, 8)}${Date.now().toString(36).slice(-8)}`;
+}
+
 /** Campos salvos de cada jogador. Os de JSON_FIELDS são listas/objetos. */
 const FIELDS = [
   'id', 'nickname', 'trophies', 'best', 'wins', 'losses', 'character',
@@ -111,10 +127,18 @@ class JsonStore {
   async create(nickname) {
     const token = newToken();
     const p = { ...blankPlayer(nickname), tokenHash: hashToken(token) };
+    p.nickname = await freeNickname(this, p.nickname);
     this.players.set(p.id, p);
     this.byToken.set(p.tokenHash, p.id);
     this.#persist();
     return { player: strip(p), token };
+  }
+
+  /** Alguém (fora `exceptId`) já usa esse nome? */
+  async nicknameTaken(nickname, exceptId = null) {
+    const key = nickKey(nickname);
+    for (const p of this.players.values()) if (p.id !== exceptId && nickKey(p.nickname) === key) return true;
+    return false;
   }
 
   async getByToken(token) {
@@ -280,10 +304,14 @@ class PgStore {
       ['deck', "TEXT"], ['ecto', 'INTEGER NOT NULL DEFAULT 0'], ['cosmetics', "TEXT NOT NULL DEFAULT '[]'"],
       ['equipped', "TEXT NOT NULL DEFAULT '{\"frame\":null}'"], ['cups', 'INTEGER NOT NULL DEFAULT 0'],
       ['season', 'INTEGER NOT NULL DEFAULT 0'], ['season_best', 'INTEGER NOT NULL DEFAULT 0'], ['missions', 'TEXT'],
-      ['avatar', 'TEXT'], ['builds', 'TEXT'],
+      ['avatar', 'TEXT'], ['builds', 'TEXT'], ['nick_key', 'TEXT'],
     ]) {
       await this.pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS ${col} ${type}`);
     }
+    // nome normalizado para conferir nomes repetidos (contas de antes ganham o seu aqui)
+    await this.pool.query('CREATE INDEX IF NOT EXISTS players_nick_key ON players (nick_key)');
+    const { rows: noKey } = await this.pool.query('SELECT id, nickname FROM players WHERE nick_key IS NULL');
+    for (const r of noKey) await this.pool.query('UPDATE players SET nick_key = $2 WHERE id = $1', [r.id, nickKey(r.nickname)]);
     await this.pool.query('CREATE INDEX IF NOT EXISTS players_rank ON players (trophies DESC, wins DESC)');
     await this.pool.query(`
       CREATE TABLE IF NOT EXISTS daily_scores (
@@ -339,11 +367,17 @@ class PgStore {
   async create(nickname) {
     const token = newToken();
     const p = blankPlayer(nickname);
+    p.nickname = await freeNickname(this, p.nickname);
     await this.pool.query(
-      'INSERT INTO players (id, token_hash, nickname, trophies, best, wins, losses, character) VALUES ($1,$2,$3,0,0,0,0,$4)',
-      [p.id, hashToken(token), p.nickname, p.character],
+      'INSERT INTO players (id, token_hash, nickname, trophies, best, wins, losses, character, nick_key) VALUES ($1,$2,$3,0,0,0,0,$4,$5)',
+      [p.id, hashToken(token), p.nickname, p.character, nickKey(p.nickname)],
     );
     return { player: p, token };
+  }
+
+  async nicknameTaken(nickname, exceptId = null) {
+    const { rows } = await this.pool.query('SELECT 1 FROM players WHERE nick_key = $1 AND id <> $2 LIMIT 1', [nickKey(nickname), exceptId ?? '']);
+    return rows.length > 0;
   }
 
   async getByToken(token) {
@@ -364,11 +398,11 @@ class PgStore {
     const json = (v) => (v == null ? null : JSON.stringify(v));
     await this.pool.query(
       `UPDATE players SET nickname=$2, trophies=$3, best=$4, wins=$5, losses=$6, character=$7,
-        deck=$8, ecto=$9, cosmetics=$10, equipped=$11, cups=$12, season=$13, season_best=$14, missions=$15, avatar=$16, builds=$17, updated_at=NOW()
+        deck=$8, ecto=$9, cosmetics=$10, equipped=$11, cups=$12, season=$13, season_best=$14, missions=$15, avatar=$16, builds=$17, nick_key=$18, updated_at=NOW()
        WHERE id=$1`,
       [p.id, p.nickname, p.trophies, p.best, p.wins, p.losses, p.character,
         json(p.deck), p.ecto, json(p.cosmetics ?? []), json(p.equipped ?? { frame: null }), p.cups, p.season, p.seasonBest, json(p.missions),
-        json(p.avatar), json(p.builds)],
+        json(p.avatar), json(p.builds), nickKey(p.nickname)],
     );
   }
 
@@ -512,4 +546,4 @@ async function createStore(env = process.env) {
   return new JsonStore(env.DATA_FILE || path.join(__dirname, '..', 'data', 'players.json')).init();
 }
 
-module.exports = { createStore, JsonStore, PgStore, cleanNickname, hashToken, blankPlayer };
+module.exports = { createStore, JsonStore, PgStore, cleanNickname, nickKey, hashToken, blankPlayer };

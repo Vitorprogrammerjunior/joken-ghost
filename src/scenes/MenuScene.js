@@ -7,6 +7,8 @@ import { $ } from '../ui/dom.js';
 
 /** Tela inicial: floresta animada com fantasmas passeando. */
 export class MenuScene extends Scene {
+  get portrait() { return true; }
+
   constructor(game, ui) {
     super(game, 'screen-menu');
     this.ui = ui;
@@ -33,9 +35,11 @@ export class MenuScene extends Scene {
   }
 
   play() {
-    // em celular, tenta tela cheia ao começar
+    // em celular, tenta tela cheia ao começar e trava deitado (Android; no iPhone o aviso de girar continua)
     if (matchMedia('(pointer: coarse)').matches && !document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.().catch(() => {});
+      document.documentElement.requestFullscreen?.()
+        .then(() => screen.orientation?.lock?.('landscape'))
+        .catch(() => {});
     }
     // continua o último arquivo usado, senão abre a escolha de arquivo
     if (this.game.profile) this.game.go('map');

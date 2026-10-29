@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="styles/screens.css">
   <link rel="stylesheet" href="styles/battle.css">
   <link rel="stylesheet" href="styles/multiplayer.css">
+  <link rel="stylesheet" href="styles/portrait.css">
 </head>
 <body>
 
@@ -420,8 +421,11 @@
             <div class="build-budget"><span id="deck-rules"></span><div class="hpbar"><div class="hpbar-fill" id="build-budget-fill"></div></div></div>
           </div>
           <div class="build-chars" id="build-chars"></div>
-          <p class="deck-label">CARTAS <small>todas abertas · cada carta gasta pontos · passe o mouse para ler</small></p>
-          <div class="deck-slots" id="deck-slots"></div>
+          <p class="deck-label">CARTAS <small>todas abertas · cada carta gasta pontos</small></p>
+          <div class="build-row">
+            <div class="deck-slots" id="deck-slots"></div>
+            <p class="build-info" id="build-info" aria-live="polite"></p>
+          </div>
           <div class="card-grid deck-collection" id="cards-grid"></div>
           <div class="row build-actions">
             <button class="btn btn-sm btn-primary" id="build-save">SALVAR E USAR</button>
@@ -549,6 +553,7 @@
           <h2 class="modal-title">PERFIL</h2>
           <label class="field-label" for="profile-nick">APELIDO</label>
           <input class="field" id="profile-nick" type="text" maxlength="16" autocomplete="off">
+          <p class="field-error hidden" id="profile-nick-error" role="alert"></p>
           <button class="btn btn-primary btn-sm" id="profile-save">SALVAR APELIDO</button>
           <div class="profile-guest" id="profile-guest">
             <label class="field-label" for="profile-code">CÓDIGO DA CONTA <small>(use para jogar em outro aparelho; não compartilhe!)</small></label>
