@@ -149,7 +149,8 @@ Servidor → cliente: `welcome {token, tokenRejected, account, profile, catalog}
   O mesmo par só vale troféus 3 vezes por hora.
 - Casual, 2x2 e Chefe Cooperativo esperam os caçadores de que precisam (2, 4 e 2).
 - Ranqueada: se o jogador está sozinho na fila, depois de 18–30s (6–10s nas 3 primeiras partidas da conta)
-  um adversário automático completa a partida. Só até 1600 troféus e no máximo 5 por hora por jogador.
+  um adversário automático completa a partida. Se outra pessoa estiver na fila, a partida é com ela.
+  Por enquanto sem limites (`maxTrophies` e `perHour` em `null`); dá para ligar um teto de troféus e um máximo por hora.
   Ele não é anunciado: nome genérico novo a cada partida, troféus, caçador, uma build pronta e avatar do mesmo nível,
   tempo de pensar de gente; não é salvo, não aparece no ranking nem na lista de online. Vale troféus.
   A dificuldade (`src/bots/policy.js`) sobe com os troféus e acompanha a fase do jogador (alivia em

@@ -19,12 +19,14 @@ const RULES = {
   reconnectGraceMs: 15000,
   // Ranqueada com pouca gente: um adversário controlado pelo servidor completa a partida.
   // Ele não é anunciado; a dificuldade acompanha o nível do jogador (src/bots/).
+  // Quem está na fila sempre cai com outra pessoa se houver; o bot só entra quando não há ninguém.
+  // Os limites (null = sem limite) ficam desligados enquanto o jogo tem pouca gente.
   rankedBot: {
-    maxTrophies: 1600,              // acima disso a ranqueada é só entre jogadores
+    maxTrophies: null,              // acima disso a ranqueada seria só entre jogadores (ex.: 1600)
     waitMs: [18000, 30000],         // espera (sorteada) antes de completar com bot
     newPlayerWaitMs: [6000, 10000], // contas novas esperam menos nas primeiras partidas
     newPlayerMatches: 3,
-    perHour: 5,                     // partidas contra bot por jogador, por hora
+    perHour: null,                  // partidas contra bot por jogador, por hora (ex.: 5)
     cardThinkMs: [900, 3800],       // tempo de "pensar" (parece uma pessoa)
     weaponThinkMs: [1300, 5600],
   },

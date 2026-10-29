@@ -32,9 +32,10 @@ test('dificuldade: sobe com os troféus e acompanha a fase do jogador', () => {
   }
 });
 
-test('quando a ranqueada completa com bot', () => {
+test('quando a ranqueada completa com bot (com os limites ligados)', () => {
   let now = 0;
-  const policy = new BotPolicy({ rules: RULES.rankedBot, now: () => now, rng: () => 0.5 });
+  const rules = { ...RULES.rankedBot, maxTrophies: 1600, perHour: 5 };
+  const policy = new BotPolicy({ rules, now: () => now, rng: () => 0.5 });
   const veteran = { id: 'v', trophies: 500, wins: 20, losses: 15 };
   const rookie = { id: 'n', trophies: 0, wins: 0, losses: 0 };
   assert.ok(policy.waitFor(rookie) < policy.waitFor(veteran), 'conta nova espera menos');
@@ -42,12 +43,18 @@ test('quando a ranqueada completa com bot', () => {
   assert.equal(policy.canFill(veteran, { waitedMs: waitFor - 1, waitFor, othersWaiting: false }), false);
   assert.equal(policy.canFill(veteran, { waitedMs: waitFor, waitFor, othersWaiting: true }), false, 'tem gente na fila');
   assert.equal(policy.canFill(veteran, { waitedMs: waitFor, waitFor, othersWaiting: false }), true);
-  const pro = { ...veteran, id: 'p', trophies: RULES.rankedBot.maxTrophies + 1 };
+  const pro = { ...veteran, id: 'p', trophies: rules.maxTrophies + 1 };
   assert.equal(policy.canFill(pro, { waitedMs: 1e9, waitFor, othersWaiting: false }), false, 'topo é só gente');
-  for (let i = 0; i < RULES.rankedBot.perHour; i++) policy.noteBotMatch('v');
+  for (let i = 0; i < rules.perHour; i++) policy.noteBotMatch('v');
   assert.equal(policy.canFill(veteran, { waitedMs: waitFor, waitFor, othersWaiting: false }), false, 'limite por hora');
   now += 61 * 60 * 1000;
   assert.equal(policy.canFill(veteran, { waitedMs: waitFor, waitFor, othersWaiting: false }), true, 'a janela de 1h passou');
+
+  // agora (pouca gente): sem limites, o bot completa sempre que não há outra pessoa na fila
+  const open = new BotPolicy({ rules: RULES.rankedBot, now: () => now, rng: () => 0.5 });
+  for (let i = 0; i < 30; i++) open.noteBotMatch('v');
+  assert.equal(open.canFill({ ...veteran, trophies: 5000 }, { waitedMs: waitFor, waitFor, othersWaiting: false }), true);
+  assert.equal(open.canFill(veteran, { waitedMs: waitFor, waitFor, othersWaiting: true }), false, 'com outra pessoa na fila, cai com ela');
 });
 
 test('disfarce: parece um jogador comum do mesmo nível', () => {

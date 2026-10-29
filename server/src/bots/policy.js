@@ -1,9 +1,9 @@
 'use strict';
 // Quando a ranqueada completa a partida com um bot, e quão forte ele joga.
 //
-// Completa só se: ninguém mais está na fila, o jogador já esperou o tempo dele (sorteado ao entrar;
-// menor nas primeiras partidas de uma conta nova), ele está abaixo do teto de troféus e ainda não
-// passou do limite de partidas contra bot na última hora.
+// Completa só se: ninguém mais está na fila e o jogador já esperou o tempo dele (sorteado ao entrar;
+// menor nas primeiras partidas de uma conta nova). Os limites opcionais (teto de troféus e partidas
+// contra bot na última hora) só valem se estiverem ligados nas regras.
 //
 // A dificuldade (0..1) vem dos troféus e se ajusta à fase do jogador, como nos jogos grandes:
 // em sequência de derrotas o bot alivia, em sequência de vitórias ele aperta.
@@ -50,8 +50,9 @@ class BotPolicy {
 
   canFill(player, { waitedMs, waitFor, othersWaiting }) {
     if (othersWaiting || waitedMs < waitFor) return false;
-    if (player.trophies > this.rules.maxTrophies) return false;
-    return this.#recentBotMatches(player.id) < this.rules.perHour;
+    const { maxTrophies, perHour } = this.rules;
+    if (maxTrophies != null && player.trophies > maxTrophies) return false;
+    return perHour == null || this.#recentBotMatches(player.id) < perHour;
   }
 
   noteBotMatch(playerId) {

@@ -172,13 +172,13 @@ test('ranqueada sozinho: um adversário completa a partida sem se revelar e vale
   } finally { await close(); }
 });
 
-test('ranqueada no topo: sem bot, só jogadores', async () => {
-  const { client, close, store } = await setup({ rules: BOT_FAST });
+test('ranqueada no topo (com o teto ligado): sem bot, só jogadores', async () => {
+  const { client, close, store } = await setup({ rules: { ...BOT_FAST, rankedBot: { ...BOT_FAST.rankedBot, maxTrophies: 1600 } } });
   try {
     const a = await client('Lenda');
     const p = await store.getByToken(a.welcome.token);
     a.c.close();
-    p.trophies = RULES.rankedBot.maxTrophies + 100; p.best = p.trophies; p.wins = 30;
+    p.trophies = 1700; p.best = p.trophies; p.wins = 30;
     await store.save(p);
     const b = await client('Lenda', a.welcome.token);
     b.c.emit('queue_join', { mode: 'ranked' });
