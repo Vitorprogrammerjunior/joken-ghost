@@ -1,6 +1,7 @@
 // Duelo entre caçadores (1x1 ou 2x2), na perspectiva estilo Pokémon. Também serve para assistir.
 // O servidor decide tudo; esta cena mostra as fases e anima o resultado de cada rodada.
-// Cada rodada: "RODADA N" -> cartas -> as cartas jogadas viram na tela de todos -> armas -> resultado.
+// Cada rodada: "RODADA N" -> cartas -> as cartas jogadas viram na tela de todos -> poderes -> resultado.
+// Os poderes são as "armas" do servidor com outra roupagem (config/weapons.js).
 // Quem joga vê o próprio lado embaixo (de costas); o espectador vê o lado 0 embaixo.
 import { Scene } from '../core/Scene.js';
 import { GW, GH, hpColor } from '../core/Renderer.js';
@@ -8,7 +9,7 @@ import { Ease } from '../core/Tween.js';
 import { BattleStage, LAYOUT } from '../world/BattleStage.js';
 import { Fighter } from '../world/Fighter.js';
 import { Effects } from '../world/Effects.js';
-import { WEAPONS, WEAPON_LIST } from '../config/weapons.js';
+import { POWERS, POWER_LIST } from '../config/weapons.js';
 import { leagueIcon, emoteIcon, LEAGUE_NAMES, MODES } from '../config/multiplayer.js';
 import { avatarEl } from '../ui/Avatar.js';
 import { cardEl, flipIn } from '../ui/Card.js';
@@ -39,9 +40,13 @@ const VS_TAGS = { room: 'Sala privada', challenge: 'Desafio', tournament: 'Torne
 const VS_HOLD_MS = 3000;
 /** Quanto dura a carta quebrando ou brilhando no fim da rodada (igual ao CSS de .shard e .played-card.won). */
 const VERDICT_MS = 1400;
+/** Quanto as cartas levam para aparecer e virar na tela grande (#flipCards). */
+const FLIP_MS = 1300;
+/** Quanto as cartas banidas levam para sair da tela (igual ao CSS de .rv-item.gone). */
+const BANS_LEAVE_MS = 420;
 /** Quanto dura o voo das cartas da tela grande até o lado das caixas de vida (igual ao CSS de .rv-flip.flying). */
 const REVEAL_FLY_MS = 640;
-/** Cartas de arma: o nome aparece quando vencem com aquela arma. */
+/** Cartas de poder: o nome aparece quando vencem com aquele poder. */
 const WEAPON_CARDS = { estaca_prata: 'estaca', aspirador_turbo: 'aspirador', cruz_flamejante: 'cruz' };
 
 export class DuelScene extends Scene {
@@ -114,8 +119,9 @@ export class DuelScene extends Scene {
     this.vision = null;
     this.emotes = [];
     this.roundAnim = null;
+    this.banShow = null;
     this.revealed = 0;        // rodada cujas cartas já viraram na tela grande
-    this.forbidMark = null;   // Provocação: a arma proibida em cima de quem recebeu
+    this.forbidMark = null;   // Provocação: o poder proibido em cima de quem recebeu
     this.charged = new Set(); // carta lendária na mesa: o caçador brilha até o golpe
     this.sparkT = 0;
     this.screenFlash = null;
@@ -284,10 +290,10 @@ export class DuelScene extends Scene {
     }
   }
 
-  /** Últimas armas do adversário de pista (ler o padrão dele é a habilidade do duelo). */
+  /** Últimos poderes do adversário de pista (ler o padrão dele é a habilidade do duelo). */
   #renderHistory() {
     const seat = this.#laneOpp(this.#anchor);
-    $('duel-opp-history').replaceChildren(...this.history[seat].slice(-5).map(w => icon(WEAPONS[w].icon, 'ico ico-xs')));
+    $('duel-opp-history').replaceChildren(...this.history[seat].slice(-5).map(w => icon(POWERS[w].icon, 'ico ico-xs')));
   }
 
   #spectators(n) {
@@ -333,13 +339,42 @@ export class DuelScene extends Scene {
     this.#retire($('duel-hand'));
     this.endsAt = 0;
     const name = (id) => this.#card(id)?.name ?? '?';
+    this.#bansReveal(banned);
     if (this.spectator) {
       this.#say(this.m.fighters.map(f => `${f.nickname} perdeu ${name(banned[f.seat])}`).join(' · '));
       return;
     }
     const opp = this.#laneOpp(this.m.you);
     this.#say(`Você tirou ${name(banned[opp])} de ${this.#name(opp)}. Você perdeu ${name(banned[this.m.you])}.`);
-    this.#banner('CARTAS BANIDAS!', 1400);
+  }
+
+  /**
+   * As duas cartas banidas viram grandes na tela de todos, levam o carimbo e saem
+   * (o servidor espera `bansShowMs` antes da 1ª rodada).
+   */
+  async #bansReveal(banned) {
+    const token = this.banShow = {};
+    const still = () => this.banShow === token && this.game.scene === this;
+    const items = this.#seatsByLayout(banned).map((seat) => this.#revealItem(seat, this.#card(banned[seat]),
+      seat === this.m.you ? 'VOCÊ PERDEU' : `${this.#name(seat).toUpperCase()} PERDEU`, 'banned'));
+    if (!items.length) return;
+    const box = this.#openReveal(items, 'CARTAS BANIDAS!');
+    if (!await this.#flipCards(items, still)) return;
+    for (const i of items) {
+      i.el.classList.add('shown', 'stamped');
+      i.el.append(h('span', { class: 'rv-stamp' }, 'BANIDA'));
+    }
+    box.classList.add('lit');
+    retrigger(box, 'shake');
+    this.game.audio.play('hit');
+
+    await this.wait(Math.max(400, this.catalog.rules.bansShowMs - FLIP_MS - BANS_LEAVE_MS - 60));
+    if (!still()) return;
+    box.classList.add('leaving');
+    for (const i of items) i.el.classList.add('gone');
+    this.game.audio.play('swing');
+    await this.wait(BANS_LEAVE_MS);
+    if (still()) box.classList.add('hidden');
   }
 
   /** "RODADA N" atravessa a tela; a morte súbita, a última e as extras têm aviso próprio. */
@@ -348,6 +383,8 @@ export class DuelScene extends Scene {
     this.endsAt = 0;
     this.forbidMark = null;
     this.charged.clear();
+    this.banShow = null;
+    show($('duel-reveal'), false);
     this.#retire($('duel-hand'));
     this.#retire($('duel-opp-card'));
     this.#retire($('duel-my-card'));
@@ -422,26 +459,26 @@ export class DuelScene extends Scene {
       this.#showPlayed('duel-opp-card', d.cards[opp], true);
     }
     if (this.spectator) {
-      this.#say('Os caçadores escolhem as armas...');
+      this.#say('Os caçadores escolhem os poderes...');
       $('duel-actions').replaceChildren();
       return;
     }
     const oppCard = d.cards[opp] && this.#card(d.cards[opp]);
     const hurry = d.endsIn < this.catalog.rules.weaponPhaseMs ? ` Rápido: você tem só ${Math.round(d.endsIn / 1000)}s!` : '';
-    const forbid = d.forbidden ? ` A Provocação proibiu ${WEAPONS[d.forbidden].name}.` : '';
-    this.#say((oppCard ? `${this.#name(opp)} jogou ${oppCard.name}! Escolha sua arma.` : 'Escolha sua arma: pedra, papel ou tesoura!') + forbid + hurry);
-    $('duel-actions').replaceChildren(...WEAPON_LIST.map(w => h('button', {
+    const forbid = d.forbidden ? ` A Provocação proibiu ${POWERS[d.forbidden].name}.` : '';
+    this.#say((oppCard ? `${this.#name(opp)} jogou ${oppCard.name}! Escolha seu poder.` : 'Escolha seu poder!') + forbid + hurry);
+    $('duel-actions').replaceChildren(...POWER_LIST.map(w => h('button', {
       class: `btn btn-action${w.id === d.forbidden ? ' forbidden' : ''}`,
       dataset: { weapon: w.id },
       disabled: w.id === d.forbidden,
-      title: w.id === d.forbidden ? 'Provocação: você não pode repetir esta arma' : '',
+      title: w.id === d.forbidden ? 'Provocação: você não pode repetir este poder' : `Vence ${w.beats.name}`,
       onclick: () => this.#pickWeapon(w.id),
-    }, icon(w.icon, 'ico'), w.id === d.forbidden ? 'PROIBIDA' : `${w.name} [${w.key}]`)));
+    }, icon(w.icon, 'ico'), w.id === d.forbidden ? 'PROIBIDO' : `${w.name} [${w.key}]`, h('small', { class: 'power-beats' }, `vence ${w.beats.name}`))));
   }
 
   /**
    * Cartas na mesa: as jogadas aparecem grandes e viram devagar, ao mesmo tempo para todos
-   * (o servidor espera `endsIn` antes das armas). Depois de virar, cada carta mostra o que faz;
+   * (o servidor espera `endsIn` antes dos poderes). Depois de virar, cada carta mostra o que faz;
    * a lendária vira "movimento especial" e o caçador dela fica brilhando até o golpe.
    * No fim, a sua carta voa para o lado da sua vida e a do adversário para o lado do perfil dele.
    */
@@ -454,59 +491,34 @@ export class DuelScene extends Scene {
     this.#retire($('duel-hand'));
     $('duel-actions').replaceChildren();
     const rules = this.catalog.rules;
-    const side = (seat) => this.m.fighters[seat].side;
-    // o seu lado à esquerda (como na arena), o adversário à direita
-    const seats = this.m.fighters.map(f => f.seat).filter(s => d.cards[s])
-      .sort((x, y) => (side(y) === this.mySide) - (side(x) === this.mySide) || this.m.fighters[x].lane - this.m.fighters[y].lane);
-    const items = seats.map((seat) => {
+    const items = this.#seatsByLayout(d.cards).map((seat) => {
       const card = this.#card(d.cards[seat]);
-      const legend = card.rarity === 'lendario';
-      const front = cardEl(card, { size: 'xl' });
-      front.classList.add('rv-front');
-      const flip = h('div', { class: 'rv-flip' }, cardEl(card, { size: 'xl', faceDown: true }), front);
-      const el = h('div', { class: `rv-item${side(seat) !== this.mySide ? ' opp' : ''}${legend ? ' legend' : ''}` },
-        legend ? h('div', { class: 'rv-rays' }) : null,
-        h('span', { class: 'rv-who' }, seat === this.m.you ? 'VOCÊ JOGOU' : `${this.#name(seat).toUpperCase()} JOGOU`),
-        flip,
-        h('p', { class: 'rv-desc' }, card.desc));
-      return { seat, card, el, flip, legend };
+      return this.#revealItem(seat, card, seat === this.m.you ? 'VOCÊ JOGOU' : `${this.#name(seat).toUpperCase()} JOGOU`, card.rarity === 'lendario' ? 'legend' : '');
     });
-    const box = $('duel-reveal');
-    $('rv-row').replaceChildren(...items.map(i => i.el));
-    box.className = 'card-reveal';
+    const box = this.#openReveal(items, 'MOVIMENTO ESPECIAL!');
     this.#say(`Cartas na mesa! ${items.map(i => `${i.seat === this.m.you ? 'Você' : this.#name(i.seat)}: ${i.card.name}`).join(' · ')}`);
-    this.game.audio.play('swing');
     const still = () => this.revealed === round && this.game.scene === this;
-
-    await this.wait(380);
-    if (!still()) return;
-    for (const i of items) i.flip.classList.add('open');
-    this.game.audio.play('swing');
-    await this.wait(460);
-    if (!still()) return;
-    this.game.audio.play('select');
-    await this.wait(460);
-    if (!still()) return;
+    if (!await this.#flipCards(items, still)) return;
     for (const i of items) i.el.classList.add('shown');
 
-    // o que a carta já faz antes das armas
+    // o que a carta já faz antes dos poderes
     for (const i of items) {
       const target = this.#laneOpp(i.seat);
       const who = target === this.m.you ? 'Você' : this.#name(target);
       if (i.card.id === 'provocacao') {
         const w = d.forbidden?.[target];
         i.el.append(w
-          ? h('div', { class: 'rv-effect' }, h('span', { class: 'rv-lock' }, icon(WEAPONS[w].icon, 'ico')), `${who} não pode usar ${WEAPONS[w].name}!`)
-          : h('div', { class: 'rv-effect good' }, 'Ainda não há arma para proibir.'));
+          ? h('div', { class: 'rv-effect' }, h('span', { class: 'rv-lock' }, icon(POWERS[w].icon, 'ico')), `${who} não pode usar ${POWERS[w].name}!`)
+          : h('div', { class: 'rv-effect good' }, 'Ainda não há poder para proibir.'));
         if (w) { this.forbidMark = { seat: target, weapon: w }; this.game.audio.play('block'); }
       } else if (i.card.id === 'visao') {
-        i.el.append(h('div', { class: 'rv-effect' }, icon('icon/perk_visao', 'ico'), `${who} tem só ${String(rules.visionWeaponMs / 1000).replace('.', ',')}s para a arma!`));
+        i.el.append(h('div', { class: 'rv-effect' }, icon('icon/perk_visao', 'ico'), `${who} tem só ${String(rules.visionWeaponMs / 1000).replace('.', ',')}s para o poder!`));
         this.game.audio.play('super');
       } else if (i.card.id === 'disfarce' && d.cards[target] === 'visao') {
-        i.el.append(h('div', { class: 'rv-effect good' }, icon('icon/perk_disfarce', 'ico'), 'A Visão vai ver uma arma falsa!'));
+        i.el.append(h('div', { class: 'rv-effect good' }, icon('icon/perk_disfarce', 'ico'), 'A Visão vai ver um poder falso!'));
       }
     }
-    const legends = items.filter(i => i.legend);
+    const legends = items.filter(i => i.card.rarity === 'lendario');
     if (legends.length) {
       for (const i of legends) this.charged.add(i.seat);
       box.classList.add('lit');
@@ -520,7 +532,7 @@ export class DuelScene extends Scene {
       }
     }
 
-    await this.wait(Math.max(400, d.endsIn - 1300 - REVEAL_FLY_MS - 60));
+    await this.wait(Math.max(400, d.endsIn - FLIP_MS - REVEAL_FLY_MS - 60));
     if (!still()) return;
 
     // as cartas de pista voam até o lugar delas; as outras (2x2) somem
@@ -551,6 +563,48 @@ export class DuelScene extends Scene {
     this.game.audio.play('hover');
   }
 
+  /** Assentos com carta em `bySeat`: o seu lado à esquerda (como na arena), o adversário à direita. */
+  #seatsByLayout(bySeat) {
+    const f = this.m.fighters;
+    return f.map(x => x.seat).filter(s => bySeat[s])
+      .sort((x, y) => (f[y].side === this.mySide) - (f[x].side === this.mySide) || f[x].lane - f[y].lane);
+  }
+
+  /** Uma carta grande (com verso e frente) para a tela de revelação. */
+  #revealItem(seat, card, label, cls) {
+    const front = cardEl(card, { size: 'xl' });
+    front.classList.add('rv-front');
+    const flip = h('div', { class: 'rv-flip' }, cardEl(card, { size: 'xl', faceDown: true }), front);
+    const el = h('div', { class: `rv-item${this.m.fighters[seat].side !== this.mySide ? ' opp' : ''} ${cls}` },
+      cls === 'legend' ? h('div', { class: 'rv-rays' }) : null,
+      h('span', { class: 'rv-who' }, label),
+      flip,
+      h('p', { class: 'rv-desc' }, card.desc));
+    return { seat, card, el, flip };
+  }
+
+  #openReveal(items, title) {
+    const box = $('duel-reveal');
+    $('rv-title').textContent = title;
+    $('rv-row').replaceChildren(...items.map(i => i.el));
+    box.className = 'card-reveal';
+    this.game.audio.play('swing');
+    return box;
+  }
+
+  /** Vira as cartas devagar (FLIP_MS). Retorna false se a revelação foi cancelada no meio. */
+  async #flipCards(items, still) {
+    await this.wait(380);
+    if (!still()) return false;
+    for (const i of items) i.flip.classList.add('open');
+    this.game.audio.play('swing');
+    await this.wait(460);
+    if (!still()) return false;
+    this.game.audio.play('select');
+    await this.wait(460);
+    return still();
+  }
+
   #showPlayed(id, cardId, flip = false) {
     const box = $(id);
     box.classList.remove('out', 'waiting', 'landed', 'won', 'broken');
@@ -568,23 +622,23 @@ export class DuelScene extends Scene {
     this.net.pickWeapon(weapon);
     $('duel-actions').querySelectorAll('button').forEach(b => { b.disabled = true; b.classList.toggle('active', b.dataset.weapon === weapon); });
     this.game.audio.play('select');
-    this.#say(`Você escolheu ${WEAPONS[weapon].name}. Esperando os outros...`);
+    this.#say(`Você escolheu ${POWERS[weapon].name}. Esperando os outros...`);
   }
 
   #seatReady({ seat, phase }) {
     if (seat === this.m.you) return;
-    this.#say(`${this.#name(seat)} já escolheu ${{ ban: 'o que banir', card: 'a carta' }[phase] ?? 'a arma'}.`);
+    this.#say(`${this.#name(seat)} já escolheu ${{ ban: 'o que banir', card: 'a carta' }[phase] ?? 'o poder'}.`);
   }
 
   #vision({ weapon, seat }) {
     this.vision = { weapon, seat };
     this.game.audio.play('super');
-    this.#say(`VISÃO: ${this.#name(seat)} escolheu ${WEAPONS[weapon].name}!`);
+    this.#say(`VISÃO: ${this.#name(seat)} escolheu ${POWERS[weapon].name}!`);
   }
 
   #seatStatus({ seat, connected, graceMs, away }) {
     const who = this.#name(seat);
-    if (away) this.#say(`${who} não voltou: o lugar fica parado, repetindo a última arma.`);
+    if (away) this.#say(`${who} não voltou: o lugar fica parado, repetindo o último poder.`);
     else if (connected) this.#say(`${who} voltou!`);
     else this.#say(`${who} caiu... esperando ${Math.round((graceMs ?? 15000) / 1000)}s para voltar.`);
   }
@@ -629,7 +683,7 @@ export class DuelScene extends Scene {
     this.reveal = { weapons: d.fighters.map(f => f.weapon), t: 0 };
     this.game.audio.play('go');
     const me = this.#anchor, opp = this.#laneOpp(me);
-    this.#say(`${this.spectator ? this.#name(me) : 'Você'}: ${WEAPONS[d.fighters[me].weapon].name} × ${this.#name(opp)}: ${WEAPONS[d.fighters[opp].weapon].name}`);
+    this.#say(`${this.spectator ? this.#name(me) : 'Você'}: ${POWERS[d.fighters[me].weapon].name} × ${this.#name(opp)}: ${POWERS[d.fighters[opp].weapon].name}`);
     await this.wait(700);
 
     // Escudo Sagrado: o lado fica protegido antes dos golpes
@@ -724,7 +778,7 @@ export class DuelScene extends Scene {
     const card = d.fighters[att].card;
     const weapon = d.fighters[att].weapon;
     const res = d.fighters[defSeat];
-    const fx = WEAPONS[weapon].fx;
+    const fx = POWERS[weapon].fx;
     const judgement = card === 'juizo';
 
     // Juízo Final: o movimento especial escurece a arena antes do golpe triplo
@@ -901,7 +955,7 @@ export class DuelScene extends Scene {
 
   // ═══════════════════════ loop ═══════════════════════
   onKey(e) {
-    const w = WEAPON_LIST.find(x => e.code === `Digit${x.key}` || e.code === `Numpad${x.key}`);
+    const w = POWER_LIST.find(x => e.code === `Digit${x.key}` || e.code === `Numpad${x.key}`);
     if (w && $('duel-actions').querySelector(`[data-weapon="${w.id}"]:not(:disabled)`)) { this.#pickWeapon(w.id); return true; }
     return false;
   }
@@ -949,21 +1003,21 @@ export class DuelScene extends Scene {
       const k = Ease.outBack(Math.min(1, this.reveal.t / 220));
       this.reveal.weapons.forEach((w, seat) => {
         const a = this.actors.get(seat);
-        r.sprite(WEAPONS[w].icon, 0, a.center.x, a.center.y - 150, { scale: 1, sx: k, sy: k });
+        r.sprite(POWERS[w].icon, 0, a.center.x, a.center.y - 150, { scale: 1, sx: k, sy: k });
       });
     }
     const bob = Math.sin(this.time / 180) * 4;
-    // Provocação: a arma proibida, riscada, em cima de quem recebeu
+    // Provocação: o poder proibido, riscado, em cima de quem recebeu
     if (this.forbidMark) {
       const a = this.actors.get(this.forbidMark.seat);
       const x = a.center.x, y = a.center.y - 150 + bob;
-      r.sprite(WEAPONS[this.forbidMark.weapon].icon, 0, x, y, { scale: 1, alpha: 0.85 });
+      r.sprite(POWERS[this.forbidMark.weapon].icon, 0, x, y, { scale: 1, alpha: 0.85 });
       r.sprite('icon/fechar', 0, x, y, { scale: 1.1, tint: '#d23a3a', alpha: 0.7 });
     }
     if (this.vision) {
       const a = this.actors.get(this.vision.seat);
       r.sprite('icon/perk_visao', 0, a.center.x - 70, a.center.y - 140 + bob, { scale: 1 });
-      r.sprite(WEAPONS[this.vision.weapon].icon, 0, a.center.x, a.center.y - 140 + bob, { scale: 1 });
+      r.sprite(POWERS[this.vision.weapon].icon, 0, a.center.x, a.center.y - 140 + bob, { scale: 1 });
     }
     for (const e of this.emotes) {
       const a = this.actors.get(e.seat);

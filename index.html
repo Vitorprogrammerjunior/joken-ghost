@@ -249,7 +249,7 @@
         <div class="status-box enemy-box duel-opp" id="duel-opp-box">
           <div class="sb-head"><span class="sb-name" id="duel-opp-name">OPONENTE</span><span class="sb-trophies"><img class="ico ico-xs" id="duel-opp-league" src="assets/sprites/icons/liga_bronze.svg" alt=""><span id="duel-opp-trophies">0</span></span></div>
           <div class="sb-hp"><b>HP</b><div class="hpbar"><div class="hpbar-fill" id="duel-opp-hp"></div></div></div>
-          <div class="sb-foot"><span class="duel-history" id="duel-opp-history" title="Últimas armas do adversário"></span><span id="duel-opp-hp-text">100/100</span></div>
+          <div class="sb-foot"><span class="duel-history" id="duel-opp-history" title="Últimos poderes do adversário"></span><span id="duel-opp-hp-text">100/100</span></div>
         </div>
         <div class="hud-top-right">
           <div class="duel-spect hidden" id="duel-spect" title="Espectadores"><img class="ico ico-sm" src="assets/sprites/icons/assistir.svg" alt=""><span id="duel-spect-n">0</span></div>
@@ -275,9 +275,9 @@
         </div>
         <!-- "RODADA N" no começo de cada rodada -->
         <div class="round-intro hidden" id="duel-round-intro" aria-hidden="true"><b id="ri-title"></b><span id="ri-sub"></span></div>
-        <!-- cartas na mesa: as jogadas viram devagar na tela de todos ao mesmo tempo -->
+        <!-- cartas na mesa (jogadas ou banidas): viram devagar na tela de todos ao mesmo tempo -->
         <div class="card-reveal hidden" id="duel-reveal" aria-hidden="true">
-          <p class="rv-special">MOVIMENTO ESPECIAL!</p>
+          <p class="rv-special" id="rv-title"></p>
           <div class="rv-row" id="rv-row"></div>
         </div>
 

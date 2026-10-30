@@ -237,6 +237,7 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .duel-actions { grid-template-columns: 1fr; width: 360px; align-content: center; }
 .duel-actions:has(> :nth-child(2)) { grid-template-columns: 1fr 1fr 1fr; width: 560px; }
 .duel-actions .btn-action { flex-direction: column; gap: 4px; padding: 8px 6px 10px; }
+.power-beats { font-size: 12px; line-height: 14px; color: var(--fog); }
 
 .dr-trophies { display: flex; align-items: center; gap: 12px; font-size: 48px; line-height: 56px; color: var(--gold); text-shadow: var(--outline); }
 .dr-trophies b { font-weight: normal; }
@@ -305,7 +306,7 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 /* tudo que não é a carta sai junto com o voo dela */
 .card-reveal.leaving .rv-item .rv-who, .card-reveal.leaving .rv-item .rv-desc, .card-reveal.leaving .rv-item .rv-effect, .card-reveal.leaving .rv-special { opacity: 0; transition: opacity 0.3s ease; animation: none; }
 .card-reveal.leaving.lit .rv-item.legend .rv-rays { opacity: 0; }
-.rv-item.gone { opacity: 0; transform: scale(0.6); transition: opacity 0.3s, transform 0.3s ease-in; animation: none; }
+.rv-item.gone { animation: rv-gone 0.4s ease-in both; }
 .rv-row { position: relative; display: flex; align-items: flex-start; gap: 80px; }
 .rv-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 380px; text-shadow: var(--outline); animation: rv-drop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
 .rv-item + .rv-item { animation-delay: 0.08s; }
@@ -333,6 +334,12 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .card-reveal.lit .rv-item.legend .rv-rays { opacity: 1; transform: scale(1); animation: rv-spin 9s linear infinite; }
 .card-reveal.lit .rv-item.legend .rv-front { filter: drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 14px var(--gold)); }
 .card-reveal.shake .rv-row { animation: vs-shake 0.32s steps(4); }
+/* carta banida: leva o carimbo e fica apagada */
+.rv-item.stamped .rv-front { filter: grayscale(0.85) brightness(0.7); transition: filter 0.25s; }
+.rv-stamp { position: absolute; left: 50%; top: 190px; padding: 6px 18px 8px; font-size: 48px; line-height: 52px; color: var(--red-2); background: rgba(14, 11, 22, 0.8); box-shadow: 0 0 0 4px var(--red), 0 0 0 8px var(--ink); text-shadow: var(--outline); transform: translate(-50%, -50%) rotate(-12deg); animation: rv-ban-stamp 0.32s steps(5) both; }
+.card-reveal.leaving .rv-stamp { opacity: 0; transition: opacity 0.3s ease; animation: none; }
+@keyframes rv-gone { to { transform: translateY(50px) scale(0.6); opacity: 0; } }
+@keyframes rv-ban-stamp { from { transform: translate(-50%, -50%) rotate(-12deg) scale(2.4); opacity: 0; } }
 @keyframes rv-drop { from { transform: translateY(-80px) scale(0.6); opacity: 0; } }
 @keyframes rv-spin { to { transform: rotate(360deg); } }
 @keyframes rv-lock { 0% { transform: scale(2.2); opacity: 0; } 60% { transform: scale(0.9); opacity: 1; } }

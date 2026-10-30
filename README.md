@@ -20,7 +20,7 @@ Reino das Sombras até **Morgana**, a Rainha Banshee.
 **Arena dos Caçadores** (multiplayer online)
 - Ranqueada (troféus), Casual, 2x2, Chefe Cooperativo, Torneio Relâmpago (4 a 8 caçadores) e Rei da Arena
 - Só jogadores de verdade (sem bots); dá para assistir as partidas de quem está online
-- Deck de 8 cartas (16 cartas, limite por raridade), 6 caçadores, histórico das armas do adversário
+- Deck de 8 cartas (16 cartas, limite por raridade), 6 caçadores, histórico dos poderes do adversário
 - Avatar com o rosto de um caçador ou desenhado no **Ateliê** (editor de pixel art 16x16), com moldura
 - Missões diárias, Ecto, loja de molduras e expressões, temporadas mensais com recompensas
 

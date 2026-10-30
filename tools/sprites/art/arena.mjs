@@ -2,31 +2,29 @@
 // Os ícones usam o estilo de volume (lib/volume.mjs); as molduras são interface e ficam em 64x64.
 import { Grid } from '../lib/grid.mjs';
 import { mat } from '../lib/volume.mjs';
-import { desenhaEstaca, desenhaAspirador, desenhaCruz, visao, raios, faisca } from './icons.mjs';
+import { desenhaPossessao, desenhaAssombracao, desenhaMaldicao, visao, raios, faisca } from './icons.mjs';
 import {
-  icone, OURO, PRATA, METAL, FERRO, MADEIRA, BRANCO, OSSO, ECTO, VERMELHO, LARANJA, AMARELO, VERDE, ROXO, LILAS, PELE,
+  icone, OURO, PRATA, METAL, FERRO, MADEIRA, BRANCO, OSSO, ECTO, VERMELHO, LARANJA, AMARELO, VERDE, ROXO, LILAS, PELE, CIANO,
 } from './materiais.mjs';
 
 // ─── cartas novas ─────────────────────────────────────────────
-const estacaPrata = () => icone((m) => {
-  m.backdrop((g) => raios(g, 16, 16, 15, 'b5', 12));
-  desenhaEstaca(m, { haste: PRATA, ponta: { ...PRATA, tones: ['t3', 't4', 't5', 'w', 'w'] }, anel: OURO, veio: 't3', luz: 'w' });
-  m.overlay((g) => { faisca(g, 26, 9); faisca(g, 6, 7, 'b5'); });
+// as três cartas de poder: o mesmo desenho do poder, mais forte (as ids vêm de quando eram cartas de arma)
+const possessaoProfunda = () => icone((m) => {
+  m.backdrop((g) => raios(g, 16, 16, 15, 'r2', 12));
+  desenhaPossessao(m, { mao: VERMELHO, dedos: 'r1' });
+  m.overlay((g) => { faisca(g, 26, 8, 'o4'); faisca(g, 6, 9, 'r4'); });
 });
 
-const aspiradorTurbo = () => icone((m) => {
-  m.backdrop((g) => { for (const y of [6, 12, 18, 24]) g.line(1, y, 4, y, 'v5'); raios(g, 26, 7, 4, 'v5', 8); });
-  desenhaAspirador(m, { visor: 'v5', brilho: 'w' });
-  m.overlay((g) => { faisca(g, 29, 4, 'v6'); faisca(g, 24, 2, 'v5'); });
+const assombracaoVoraz = () => icone((m) => {
+  m.backdrop((g) => raios(g, 16, 16, 15, 'c3', 12));
+  desenhaAssombracao(m, { aro: CIANO });
+  m.overlay((g) => { faisca(g, 27, 5); faisca(g, 4, 25, 'c4'); });
 });
 
-const cruzFlamejante = () => icone((m) => {
-  // labaredas separadas (cada uma com volume), a de fora laranja e o miolo amarelo
-  for (const [x, h, w] of [[6, 16, 5], [26, 16, 5], [11, 22, 5], [21, 22, 5]]) {
-    m.part(LARANJA, 'sphere', (p) => p.poly([[x - w, 31], [x + w, 31], [x + 1, 31 - h]], 'x'), { light: 1 });
-    m.part(AMARELO, 'sphere', (p) => p.poly([[x - 2, 31], [x + 2, 31], [x + 1, 31 - h * 0.55]], 'x'), { edge: false });
-  }
-  desenhaCruz(m);
+const maldicaoAntiga = () => icone((m) => {
+  m.backdrop((g) => raios(g, 16, 16, 15, 'y3', 12));
+  desenhaMaldicao(m, { chama: OURO });
+  m.overlay((g) => { faisca(g, 28, 7); faisca(g, 4, 6, 'y4'); });
 });
 
 const provocacao = () => icone((m) => {
@@ -164,7 +162,7 @@ function frame([edge, light, dark, gem], { spikes = false, ghost = false } = {})
 
 export function arenaIconSheets() {
   return {
-    perk_estaca_prata: estacaPrata(), perk_aspirador_turbo: aspiradorTurbo(), perk_cruz_flamejante: cruzFlamejante(),
+    perk_estaca_prata: possessaoProfunda(), perk_aspirador_turbo: assombracaoVoraz(), perk_cruz_flamejante: maldicaoAntiga(),
     perk_provocacao: provocacao(), perk_disfarce: disfarce(),
     emote_risada: emoteRisada(), emote_gg: emoteGg(), emote_susto: emoteSusto(),
     emote_raiva: emoteRaiva(), emote_coracao: emoteCoracao(), emote_caveira: emoteCaveira(),

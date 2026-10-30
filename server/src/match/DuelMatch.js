@@ -8,7 +8,6 @@ const { leagueOf, deckOf, cardById } = require('../catalog');
 const { publicLook } = require('../cosmetics');
 const { Match } = require('./Match');
 
-const BANS_SHOW_MS = 2600;  // tempo para ver o que cada um baniu antes da 1ª rodada
 
 class DuelMatch extends Match {
   /**
@@ -68,7 +67,7 @@ class DuelMatch extends Match {
     this.banned = duelRules.applyBans(this.duel);
     this.duel.phase = 'idle';
     this.toAll('bans', { banned: this.banned });
-    this.later(BANS_SHOW_MS, () => this.#roundIntro());
+    this.later(this.rules.bansShowMs, () => this.#roundIntro());
   }
 
   /** "RODADA N" na tela de todos; as cartas vêm depois. */

@@ -22,7 +22,7 @@ export function faisca(g, x, y, c = 'w') {
 // ═══════════════════════ armas do Caçador ═══════════════════════
 // As armas são "desenhos" que recebem o Model: as cartas da Arena reaproveitam com outro material.
 
-/** Estaca de madeira (ou de outro material, na carta Estaca de Prata). */
+/** Estaca de madeira (ou de outro material). */
 export function desenhaEstaca(m, { haste = MADEIRA, ponta = MADEIRA_CLARA, anel = FERRO, veio = 'm3', luz = 'm6' } = {}) {
   m.part(haste, 'cylinder', (p) => p.stroke(5, 26, 17, 14, 5, 'x'));
   m.part(ponta, 'cylinder', (p) => p.poly([[14, 11], [21, 18], [29, 2]], 'x'));
@@ -61,28 +61,31 @@ export const cruz = () => icone((m) => {
 });
 
 // ═══════════════════════ golpes dos monstros ═══════════════════════
-const possessao = () => icone((m) => {
-  m.part(SOMBRA, 'hcylinder', (p) => p.ellipse(16, 27, 12, 3, 'x'));
-  m.part(LILAS, 'cylinder', (p) => {
+// Também são os poderes dos duelos: as cartas da Arena reaproveitam com outro material.
+export function desenhaPossessao(m, { mao = LILAS, sombra = SOMBRA, dedos = 'p2' } = {}) {
+  m.part(sombra, 'hcylinder', (p) => p.ellipse(16, 27, 12, 3, 'x'));
+  m.part(mao, 'cylinder', (p) => {
     p.rect(9, 13, 13, 14, 'x');
     for (const [x, h] of [[9, 9], [12, 11], [15, 12], [18, 11]]) p.rect(x, 13 - h + 4, 3, h, 'x');
     p.stroke(21, 19, 26, 13, 3, 'x');   // polegar
   });
-  m.paint((g) => { for (const x of [12, 15, 18]) g.line(x, 9, x, 13, 'p2'); });
-});
+  m.paint((g) => { for (const x of [12, 15, 18]) g.line(x, 9, x, 13, dedos); });
+}
+const possessao = () => icone((m) => desenhaPossessao(m));
 
-const assombracao = () => icone((m) => {
-  m.part(AZUL, 'flat', (p) => { p.ring(16, 16, 14, 2, 'x'); p.ring(16, 16, 10, 1, 'x'); }, { edge: false });
-  m.part(ECTO, 'sphere', (p) => {
+export function desenhaAssombracao(m, { aro = AZUL, corpo = ECTO } = {}) {
+  m.part(aro, 'flat', (p) => { p.ring(16, 16, 14, 2, 'x'); p.ring(16, 16, 10, 1, 'x'); }, { edge: false });
+  m.part(corpo, 'sphere', (p) => {
     p.ellipse(16, 14, 6, 6, 'x');
     p.rect(10, 14, 13, 6, 'x');
     p.poly([[10, 19], [23, 19], [21, 23], [18, 21], [16, 24], [13, 21], [11, 23]], 'x');
   });
   m.paint((g) => { g.rect(13, 12, 2, 3, 'k'); g.rect(18, 12, 2, 3, 'k'); g.ellipse(16, 18, 1, 1, 'k2'); });
-});
+}
+const assombracao = () => icone((m) => desenhaAssombracao(m));
 
-const maldicao = () => icone((m) => {
-  m.part(ROXO, 'cylinder', (p) => {
+export function desenhaMaldicao(m, { chama = ROXO } = {}) {
+  m.part(chama, 'cylinder', (p) => {
     p.poly([[5, 28], [27, 28], [26, 12], [22, 18], [20, 6], [16, 14], [12, 5], [10, 17], [6, 11]], 'x');
   });
   m.part(OSSO, 'sphere', (p) => { p.ellipse(16, 17, 7, 6, 'x'); p.rect(12, 21, 9, 5, 'x'); });
@@ -92,7 +95,8 @@ const maldicao = () => icone((m) => {
     g.set(16, 20, 'k2');
     for (const x of [13, 15, 17, 19]) g.set(x, 24, 'q1');
   });
-});
+}
+const maldicao = () => icone((m) => desenhaMaldicao(m));
 
 // ═══════════════════════ itens ═══════════════════════
 /** Frasco redondo com líquido; `r` é o raio do bulbo. */

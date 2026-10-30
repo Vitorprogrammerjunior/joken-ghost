@@ -33,3 +33,10 @@ export const ENEMY_MOVES = {
   papel: { move: 'papel', name: 'Assombração', icon: 'icon/assombracao', fx: 'fx/assombracao' },
   tesoura: { move: 'tesoura', name: 'Maldição', icon: 'icon/maldicao', fx: 'fx/maldicao' },
 };
+
+/**
+ * Poderes espectrais dos duelos: caçador contra caçador usa a força dos fantasmas, não as armas.
+ * São as mesmas três jogadas, com as ids que o servidor usa para as armas.
+ */
+export const POWERS = Object.fromEntries(WEAPON_LIST.map(w => [w.id, { ...ENEMY_MOVES[w.move], id: w.id, key: w.key, beats: ENEMY_MOVES[BEATS[w.move]] }]));
+export const POWER_LIST = Object.values(POWERS);

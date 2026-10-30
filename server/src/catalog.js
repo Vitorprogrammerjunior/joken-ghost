@@ -10,6 +10,7 @@ const RULES = {
   duoHpScale: 0.75,        // 2x2: a vida somada da dupla vale 75% (a partida não fica longa demais)
   handSize: 3,
   banPhaseMs: 15000,       // 1x1: antes da 1ª rodada cada um vê a build do outro e bane 1 carta dela
+  bansShowMs: 3400,        // as duas cartas banidas viram na tela de todos antes da 1ª rodada
   introMs: 4800,           // entrada "VS" do cliente (os dois ficam uns 3s na tela) antes da 1ª fase
   roundIntroMs: 2000,      // "RODADA N" na tela antes das cartas
   cardPhaseMs: 7000,
@@ -40,23 +41,23 @@ const RULES = {
 /**
  * Todas as cartas e caçadores ficam abertos para todo mundo: quem ganha é quem monta e joga melhor.
  * `cost`: pontos que a carta gasta do orçamento da build (é aqui que se equilibra uma carta forte demais).
- * `weapon`: carta de arma (bônus se vencer com ela).
+ * `weapon`: carta de poder (bônus se vencer com ele; a id é a mesma da arma, veja WEAPONS).
  */
 const CARDS = [
   { id: 'escudo', name: 'Escudo', rarity: 'comum', cost: 1, desc: 'Se você perder a rodada, não toma dano.' },
   { id: 'cura', name: 'Bálsamo', rarity: 'comum', cost: 1, desc: 'Recupera 15 de vida no início da rodada.' },
   { id: 'golpe_duplo', name: 'Golpe Duplo', rarity: 'comum', cost: 1, desc: 'Se você vencer a rodada, causa dano dobrado.' },
   { id: 'sorte', name: 'Trevo da Sorte', rarity: 'raro', cost: 2, desc: 'Se vencer, causa +10 de dano. Se empatar, recupera 10 de vida.' },
-  { id: 'estaca_prata', name: 'Estaca de Prata', rarity: 'raro', cost: 2, weapon: 'estaca', desc: 'Se vencer com a Estaca, causa +15 de dano.' },
+  { id: 'estaca_prata', name: 'Possessão Profunda', rarity: 'raro', cost: 2, weapon: 'estaca', desc: 'Se vencer com a Possessão, causa +15 de dano.' },
   { id: 'empate_forte', name: 'Empate Forte', rarity: 'raro', cost: 2, desc: 'Se empatar, o oponente toma 15 de dano.' },
-  { id: 'aspirador_turbo', name: 'Aspirador Turbo', rarity: 'raro', cost: 2, weapon: 'aspirador', desc: 'Se vencer com o Aspirador, causa +15 de dano.' },
+  { id: 'aspirador_turbo', name: 'Assombração Voraz', rarity: 'raro', cost: 2, weapon: 'aspirador', desc: 'Se vencer com a Assombração, causa +15 de dano.' },
   { id: 'espinhos', name: 'Espinhos', rarity: 'raro', cost: 2, desc: 'Se perder, devolve 12 de dano ao oponente.' },
-  { id: 'cruz_flamejante', name: 'Cruz Flamejante', rarity: 'raro', cost: 2, weapon: 'cruz', desc: 'Se vencer com a Cruz, causa +15 de dano.' },
-  { id: 'provocacao', name: 'Provocação', rarity: 'raro', cost: 2, desc: 'O oponente não pode repetir a arma da rodada anterior.' },
+  { id: 'cruz_flamejante', name: 'Maldição Antiga', rarity: 'raro', cost: 2, weapon: 'cruz', desc: 'Se vencer com a Maldição, causa +15 de dano.' },
+  { id: 'provocacao', name: 'Provocação', rarity: 'raro', cost: 2, desc: 'O oponente não pode repetir o poder da rodada anterior.' },
   { id: 'vampirismo', name: 'Vampirismo', rarity: 'epico', cost: 3, desc: 'Se vencer, recupera metade do dano que causou.' },
-  { id: 'disfarce', name: 'Disfarce', rarity: 'epico', cost: 3, desc: 'A Visão do oponente vê uma arma falsa. Se vencer, +10 de dano.' },
+  { id: 'disfarce', name: 'Disfarce', rarity: 'epico', cost: 3, desc: 'A Visão do oponente vê um poder falso. Se vencer, +10 de dano.' },
   { id: 'furia', name: 'Fúria', rarity: 'epico', cost: 3, desc: 'Se vencer com menos da metade da vida, causa +20 de dano.' },
-  { id: 'visao', name: 'Visão', rarity: 'epico', cost: 3, desc: 'O oponente tem metade do tempo para escolher a arma, e você vê qual foi.' },
+  { id: 'visao', name: 'Visão', rarity: 'epico', cost: 3, desc: 'O oponente tem metade do tempo para escolher o poder, e você vê qual foi.' },
   { id: 'escudo_sagrado', name: 'Escudo Sagrado', rarity: 'lendario', cost: 4, desc: 'Você não toma dano nesta rodada e recupera 10 de vida.' },
   { id: 'juizo', name: 'Juízo Final', rarity: 'lendario', cost: 4, desc: 'Se vencer, dano triplo. Se perder, toma +10 de dano.' },
 ];
@@ -82,9 +83,9 @@ const PRESET_DECKS = [
 
 const CHARACTERS = [
   { id: 'cacador', name: 'Caçador', passive: 'Equilibrado: sem ponto fraco.' },
-  { id: 'luna', name: 'Dra. Luna', weapon: 'aspirador', passive: 'Aspirador causa +5 de dano.' },
-  { id: 'bento', name: 'Padre Bento', weapon: 'cruz', passive: 'Cruz causa +5 de dano.' },
-  { id: 'helga', name: 'Van Helga', weapon: 'estaca', passive: 'Estaca causa +5 de dano.' },
+  { id: 'luna', name: 'Dra. Luna', weapon: 'aspirador', passive: 'Assombração (Aspirador contra chefes) causa +5 de dano.' },
+  { id: 'bento', name: 'Padre Bento', weapon: 'cruz', passive: 'Maldição (Cruz contra chefes) causa +5 de dano.' },
+  { id: 'helga', name: 'Van Helga', weapon: 'estaca', passive: 'Possessão (Estaca contra chefes) causa +5 de dano.' },
   { id: 'ze', name: 'Mestre Zé', hp: 120, passive: 'Começa com 120 de vida.' },
   { id: 'sombra', name: 'Sombra', dodgeFirst: true, passive: 'Desvia do primeiro golpe que levaria na partida.' },
 ];
@@ -98,7 +99,11 @@ const LEAGUES = [
 ];
 
 const WEAPONS = ['estaca', 'aspirador', 'cruz'];
-/** estaca (pedra) vence cruz (tesoura); aspirador (papel) vence estaca; cruz vence aspirador. */
+/**
+ * Nos duelos os caçadores usam poderes espectrais e no Chefe Cooperativo as armas da campanha:
+ * muda só o que o cliente mostra. estaca = Possessão, aspirador = Assombração, cruz = Maldição.
+ * estaca (pedra) vence cruz (tesoura); aspirador (papel) vence estaca; cruz vence aspirador.
+ */
 const BEATS = { estaca: 'cruz', aspirador: 'estaca', cruz: 'aspirador' };
 /** Arma -> jogada do jokenpô (para usar a IA dos chefes da campanha no Chefe Cooperativo). */
 const WEAPON_MOVE = { estaca: 'pedra', aspirador: 'papel', cruz: 'tesoura' };

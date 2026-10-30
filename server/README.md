@@ -138,9 +138,11 @@ Servidor → cliente: `welcome {token, tokenRejected, account, profile, catalog}
   a salva (ou escolhida) por último é a que vai para as partidas. Builds antigas que não cabem usam a padrão.
 - 1x1 (Ranqueada, Casual, sala e desafio): antes da 1ª rodada cada um vê a build do outro e bane 1 carta dela (15s;
   sem escolher, sai a mais cara).
-- Rodada: escolhe uma carta da mão (7s, opcional) → as cartas são reveladas → escolhe a arma (7s;
-  quem enfrenta a Visão tem 3,5s). Tempo esgotado repete a arma da rodada anterior.
-- Vencer o jokenpô causa 20 de dano (+5 com a arma preferida do personagem). Da rodada 8 em diante o dano dobra.
+- Rodada: escolhe uma carta da mão (7s, opcional) → as cartas são reveladas → escolhe o poder (7s;
+  quem enfrenta a Visão tem 3,5s). Tempo esgotado repete o poder da rodada anterior.
+- Nos duelos o jogador vê poderes (Possessão, Assombração, Maldição) e no Chefe Cooperativo vê as armas, mas o
+  protocolo usa as mesmas ids nos dois: `estaca`, `aspirador` e `cruz`.
+- Vencer o jokenpô causa 20 de dano (+5 com o poder preferido do personagem). Da rodada 8 em diante o dano dobra.
   Depois da rodada 15 vence quem tiver mais vida (empatados, segue até alguém passar na frente).
 - Cada carta só pode ser usada uma vez por partida. Sem sorteio de dano: Trevo da Sorte é fixo e a Sombra desvia
   só do primeiro golpe.
@@ -158,6 +160,6 @@ Servidor → cliente: `welcome {token, tokenRejected, account, profile, catalog}
   (`src/bots/BotBrain.js`), mas só aproveita parte das rodadas, então dá para vencê-lo.
 - Torneio: começa com 8 inscritos ou, 45s depois do 1º, com pelo menos 4 (com 5 a 7, alguns passam direto da 1ª fase).
 - Quem cair tem 15s para reconectar antes de perder por abandono. No 2x2 o parceiro segue: o lugar de quem caiu
-  fica parado (sem carta, repetindo a última arma) e o time só perde por abandono se os dois saírem.
+  fica parado (sem carta, repetindo o último poder) e o time só perde por abandono se os dois saírem.
 - Temporada: todo dia 1º (Brasília), troféus acima de 1000 perdem metade do excedente e cada jogador
   ganha Ecto (e uma moldura a partir da Prata) pela melhor liga da temporada.

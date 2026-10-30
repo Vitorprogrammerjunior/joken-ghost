@@ -10,9 +10,9 @@ const PER_DAY = 3;
 const MISSIONS = [
   { id: 'jogar', text: 'Jogue 3 partidas', n: 3, reward: 20, event: 'match' },
   { id: 'vencer', text: 'Vença 2 partidas', n: 2, reward: 30, event: 'win' },
-  { id: 'estaca', text: 'Vença 6 rodadas com a Estaca', n: 6, reward: 25, event: 'round_win', weapon: 'estaca' },
-  { id: 'aspirador', text: 'Vença 6 rodadas com o Aspirador', n: 6, reward: 25, event: 'round_win', weapon: 'aspirador' },
-  { id: 'cruz', text: 'Vença 6 rodadas com a Cruz', n: 6, reward: 25, event: 'round_win', weapon: 'cruz' },
+  { id: 'estaca', text: 'Vença 6 rodadas com a Possessão', n: 6, reward: 25, event: 'round_win', weapon: 'estaca' },
+  { id: 'aspirador', text: 'Vença 6 rodadas com a Assombração', n: 6, reward: 25, event: 'round_win', weapon: 'aspirador' },
+  { id: 'cruz', text: 'Vença 6 rodadas com a Maldição', n: 6, reward: 25, event: 'round_win', weapon: 'cruz' },
   { id: 'cartas', text: 'Use 8 cartas', n: 8, reward: 20, event: 'card' },
   { id: 'empates', text: 'Empate 5 rodadas', n: 5, reward: 20, event: 'draw' },
   { id: 'desafio', text: 'Jogue o Desafio do Dia', n: 1, reward: 25, event: 'daily' },
