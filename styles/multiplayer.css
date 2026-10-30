@@ -171,8 +171,18 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .sb-trophies { display: flex; align-items: center; gap: 4px; color: var(--gold); }
 .duel-round { padding: 8px 14px; color: var(--gold); background: var(--ink-2); box-shadow: 0 0 0 2px var(--stone); text-shadow: var(--outline); }
 .played-card { position: absolute; z-index: 3; animation: pop 0.3s ease-out both; }
-.played-card.opp { top: 150px; left: 620px; }
-.played-card.me { top: 330px; right: 470px; }
+/* a carta da rodada fica ao lado da caixa de vida de quem jogou */
+.played-card.opp { top: 16px; left: 468px; }
+.played-card.me { top: 452px; right: 456px; }
+.played-card.opp .pcard-tip { top: calc(100% + 12px); bottom: auto; }
+.played-card.waiting { visibility: hidden; animation: none; }
+.played-card.landed { animation: none; }
+.played-card.landed .pcard { animation: played-land 0.25s ease-out; }
+.played-card.out { animation: played-out 0.3s ease-in both; }
+.duel-hand.out { animation: hand-out 0.3s ease-in both; }
+@keyframes played-land { from { transform: scale(1.25); } }
+@keyframes played-out { to { transform: scale(0.5); opacity: 0; } }
+@keyframes hand-out { to { translate: 0 80px; opacity: 0; } }
 
 .duel-hand {
   position: absolute;
@@ -233,6 +243,70 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .vs-intro.shake .vs-side { animation: vs-shake 0.32s steps(4); }
 .vs-intro.leaving .vs-band, .vs-intro.leaving .vs-avatar, .vs-intro.leaving .vs-char, .vs-intro.leaving .vs-league, .vs-intro.leaving .vs-center { opacity: 0; transition: opacity 0.35s steps(4); }
 .duel-hud-wait { visibility: hidden; }
+/* ─── "RODADA N" ─── */
+.round-intro {
+  position: absolute;
+  top: 220px;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 0 22px;
+  background: rgba(14, 11, 22, 0.86);
+  box-shadow: 0 -4px 0 var(--gold), 0 4px 0 var(--gold), 0 -8px 0 var(--ink), 0 8px 0 var(--ink);
+  text-shadow: var(--outline), 0 6px 0 var(--ink);
+  pointer-events: none;
+  animation: ri-band var(--ri-ms, 2s) ease both;
+}
+.round-intro b { font-weight: normal; font-size: 88px; line-height: 92px; color: var(--gold); white-space: nowrap; animation: ri-word var(--ri-ms, 2s) cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.round-intro span { font-size: 24px; line-height: 28px; color: var(--white); animation: slide-up 0.3s steps(4) 0.35s both; }
+.round-intro span:empty { display: none; }
+.round-intro.danger { box-shadow: 0 -4px 0 var(--red), 0 4px 0 var(--red), 0 -8px 0 var(--ink), 0 8px 0 var(--ink); }
+.round-intro.danger b { color: var(--red-2); }
+.round-intro.danger span { color: var(--gold); }
+@keyframes ri-band { 0% { transform: scaleY(0); } 10%, 88% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(0.2); opacity: 0; } }
+@keyframes ri-word { 0% { transform: translateX(-120px) scale(1.4); opacity: 0; } 16% { transform: none; opacity: 1; } 84% { transform: translateX(16px); opacity: 1; } 100% { transform: translateX(140px); opacity: 0; } }
+
+/* ─── cartas na mesa: viram devagar, e a lendária vira movimento especial ─── */
+.pcard-xl { --u: 5px; }
+.card-reveal { position: absolute; inset: 0; z-index: 25; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; overflow: hidden; background: rgba(14, 11, 22, 0.74); pointer-events: none; animation: fade-in 0.25s ease both; }
+.card-reveal.leaving { background: transparent; transition: background 0.5s ease; }
+.card-reveal.leaving .rv-who, .card-reveal.leaving .rv-desc, .card-reveal.leaving .rv-effect, .card-reveal.leaving .rv-special { opacity: 0; transition: opacity 0.3s ease; animation: none; }
+.card-reveal.leaving.lit .rv-item.legend .rv-rays { opacity: 0; }
+.rv-item.gone { opacity: 0; transform: scale(0.6); transition: opacity 0.3s, transform 0.3s ease-in; animation: none; }
+.rv-row { position: relative; display: flex; align-items: flex-start; gap: 80px; }
+.rv-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; width: 380px; text-shadow: var(--outline); animation: rv-drop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.rv-item + .rv-item { animation-delay: 0.08s; }
+.rv-who { font-size: 24px; line-height: 28px; color: var(--white); white-space: nowrap; }
+.rv-item.opp .rv-who { color: var(--red-2); }
+/* sem filter no .rv-flip: ele achata o 3D e a carta mostra o verso depois de virar */
+.rv-flip { position: relative; width: calc(46 * 5px); height: calc(62 * 5px); transform-style: preserve-3d; transition: transform 0.9s cubic-bezier(0.45, 0, 0.2, 1); }
+.rv-flip.open { transform: rotateY(180deg); }
+.rv-flip.flying { transition: transform 0.62s cubic-bezier(0.5, 0, 0.2, 1); }
+.rv-flip .pcard { position: absolute; inset: 0; backface-visibility: hidden; transition: none; }
+.rv-flip .rv-front { transform: rotateY(180deg); }
+.rv-desc { min-height: 48px; font-size: 18px; line-height: 24px; color: var(--fog); text-align: center; opacity: 0; transition: opacity 0.3s; }
+.rv-item.shown .rv-desc { opacity: 1; }
+.rv-effect { display: flex; align-items: center; gap: 12px; padding: 6px 14px; font-size: 18px; line-height: 22px; color: var(--white); background: var(--ink-2); box-shadow: 0 0 0 2px var(--red), 0 0 0 4px var(--ink); animation: pop 0.3s ease-out both; }
+.rv-effect.good { box-shadow: 0 0 0 2px var(--cyan), 0 0 0 4px var(--ink); }
+.rv-effect .ico { width: 48px; height: 48px; }
+.rv-lock { position: relative; display: inline-flex; animation: rv-lock 0.5s steps(5) both; }
+.rv-lock::after { content: ''; position: absolute; inset: -6px; background: linear-gradient(45deg, transparent 42%, var(--red) 42% 58%, transparent 58%), linear-gradient(-45deg, transparent 42%, var(--red) 42% 58%, transparent 58%); animation: rv-stamp 0.3s steps(3) 0.25s both; }
+.rv-rays { position: absolute; left: 50%; top: 190px; z-index: -1; width: 1200px; height: 1200px; margin: -600px 0 0 -600px; background: repeating-conic-gradient(rgba(246, 213, 72, 0.22) 0 9deg, transparent 9deg 18deg); border-radius: 50%; opacity: 0; transform: scale(0.3); transition: opacity 0.4s, transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+.rv-rays::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, rgba(246, 213, 72, 0.35), transparent 30%); }
+.rv-special { position: absolute; top: 34px; font-size: 64px; line-height: 72px; color: var(--gold); white-space: nowrap; text-shadow: var(--outline), 0 6px 0 var(--red), 0 10px 0 var(--ink); visibility: hidden; }
+.card-reveal.lit .rv-special { visibility: visible; animation: vs-slam 0.5s steps(6) both; }
+.card-reveal.lit .rv-item.legend .rv-rays { opacity: 1; transform: scale(1); animation: rv-spin 9s linear infinite; }
+.card-reveal.lit .rv-item.legend .rv-front { filter: drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 14px var(--gold)); }
+.card-reveal.shake .rv-row { animation: vs-shake 0.32s steps(4); }
+@keyframes rv-drop { from { transform: translateY(-80px) scale(0.6); opacity: 0; } }
+@keyframes rv-spin { to { transform: rotate(360deg); } }
+@keyframes rv-lock { 0% { transform: scale(2.2); opacity: 0; } 60% { transform: scale(0.9); opacity: 1; } }
+@keyframes rv-stamp { from { transform: scale(2); opacity: 0; } }
+
 .duel-hud-arrive { animation: pop 0.3s ease-out both; }
 @keyframes vs-in-left { from { transform: translateX(-110%); } }
 @keyframes vs-in-right { from { transform: translateX(110%); } }

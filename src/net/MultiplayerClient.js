@@ -11,7 +11,7 @@ const SERVER_EVENTS = [
   'welcome', 'profile', 'lobby', 'ranking', 'queue_state', 'season_reward',
   'challenge_received', 'challenge_sent', 'challenge_declined', 'room_created',
   'tournament_state', 'king_state',
-  'match_start', 'match_resume', 'ban_phase', 'ban_locked', 'bans', 'card_phase', 'weapon_phase', 'card_locked', 'weapon_locked',
+  'match_start', 'match_resume', 'ban_phase', 'ban_locked', 'bans', 'round_intro', 'card_phase', 'cards_reveal', 'weapon_phase', 'card_locked', 'weapon_locked',
   'seat_ready', 'vision', 'seat_status', 'spectators', 'emote', 'round_result',
   'raid_phase', 'raid_result', 'match_end', 'error_msg',
 ];

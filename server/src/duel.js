@@ -5,7 +5,7 @@
 // compartilhada. Os caçadores se enfrentam em "pistas": o 1º de um lado contra o
 // 1º do outro, e assim por diante. No 1x1, antes da 1ª rodada, cada um vê a build
 // do outro e bane uma carta dela. Cada rodada: (1) todos escolhem uma carta
-// (opcional), (2) as cartas são reveladas e todos escolhem a arma, (3) cada pista
+// (opcional), (2) as cartas são reveladas, (3) todos escolhem a arma, (4) cada pista
 // resolve o seu jokenpô e o dano vai para a vida do lado.
 const { RULES, WEAPONS, BEATS, characterById, cardById } = require('./catalog');
 
@@ -124,14 +124,21 @@ function pickCard(duel, i, cardId) {
   return true;
 }
 
-/** Revela as cartas e aplica a Provocação (proíbe repetir a última arma). */
-function startWeaponPhase(duel) {
-  duel.phase = 'weapon';
+/** Fecha as cartas (quem não escolheu passa), revela e aplica a Provocação (proíbe repetir a última arma). */
+function revealCards(duel) {
+  duel.phase = 'cards';
   duel.fighters.forEach((f, i) => {
     f.cardLocked = true;
     const op = duel.fighters[laneOpponent(duel, i)];
     f.forbidden = op.card === 'provocacao' ? f.history.at(-1) ?? null : null;
   });
+  return duel;
+}
+
+/** Começa a escolha das armas (revelando as cartas, se ainda não foram). */
+function startWeaponPhase(duel) {
+  if (duel.phase === 'card') revealCards(duel);
+  duel.phase = 'weapon';
   return duel;
 }
 
@@ -265,6 +272,6 @@ function resolveRound(duel) {
 }
 
 module.exports = {
-  createDuel, startBanPhase, pickBan, autoBan, applyBans, startRound, pickCard, startWeaponPhase, weaponTime, pickWeapon, autoWeapon, visionOf,
+  createDuel, startBanPhase, pickBan, autoBan, applyBans, startRound, pickCard, revealCards, startWeaponPhase, weaponTime, pickWeapon, autoWeapon, visionOf,
   resolveRound, bothLocked, laneOpponent, cardById,
 };

@@ -128,7 +128,7 @@ Cliente → servidor: `hello {token?, nickname?}`, `set_nickname`, `select_chara
 Servidor → cliente: `welcome {token, tokenRejected, account, profile, catalog}`, `profile`, `lobby`, `ranking`, `queue_state`,
 `season_reward`, `challenge_received`, `challenge_sent`, `challenge_declined`, `room_created`,
 `tournament_state`, `king_state`, `match_start` (também para espectadores, com `you: null`), `match_resume`,
-`ban_phase {endsIn, deck}`, `ban_locked`, `bans {banned}`, `card_phase`, `weapon_phase`, `card_locked`, `weapon_locked`, `seat_ready`, `vision`, `seat_status`,
+`ban_phase {endsIn, deck}`, `ban_locked`, `bans {banned}`, `round_intro {round, sudden, final, extra}`, `card_phase`, `cards_reveal {cards, special, endsIn, forbidden}`, `weapon_phase`, `card_locked`, `weapon_locked`, `seat_ready`, `vision`, `seat_status`,
 `spectators`, `emote`, `round_result`, `raid_phase`, `raid_result`, `match_end`, `error_msg`.
 
 ## Regras principais (`src/catalog.js`)

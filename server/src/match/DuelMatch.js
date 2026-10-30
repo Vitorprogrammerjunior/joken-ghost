@@ -1,13 +1,13 @@
 'use strict';
 // Duelo entre caçadores (1x1 ou 2x2) sobre as regras de src/duel.js.
 // Com `bans`, antes da 1ª rodada cada um vê a build do outro e bane uma carta.
-// Fases de cada rodada: cartas -> armas (com tempo por assento por causa da Visão) -> resultado.
+// Fases de cada rodada: "RODADA N" -> cartas -> cartas na mesa (todos veem virar) -> armas
+// (com tempo por assento por causa da Visão) -> resultado. As pausas dão tempo às animações do cliente.
 const duelRules = require('../duel');
-const { leagueOf, deckOf } = require('../catalog');
+const { leagueOf, deckOf, cardById } = require('../catalog');
 const { publicLook } = require('../cosmetics');
 const { Match } = require('./Match');
 
-const START_DELAY_MS = 3400; // a entrada "VS" do cliente dura uns 2,6s
 const BANS_SHOW_MS = 2600;  // tempo para ver o que cada um baniu antes da 1ª rodada
 
 class DuelMatch extends Match {
@@ -41,7 +41,7 @@ class DuelMatch extends Match {
   start() {
     this.seats.forEach((_, i) => this.send(i, 'match_start', this.view(i)));
     this.toSpectators('match_start', this.view(null));
-    this.later(START_DELAY_MS, () => (this.bans ? this.#banPhase() : this.#cardPhase()));
+    this.later(this.rules.introMs, () => (this.bans ? this.#banPhase() : this.#roundIntro()));
   }
 
   // ═══════════════════════ fases ═══════════════════════
@@ -68,7 +68,16 @@ class DuelMatch extends Match {
     this.banned = duelRules.applyBans(this.duel);
     this.duel.phase = 'idle';
     this.toAll('bans', { banned: this.banned });
-    this.later(BANS_SHOW_MS, () => this.#cardPhase());
+    this.later(BANS_SHOW_MS, () => this.#roundIntro());
+  }
+
+  /** "RODADA N" na tela de todos; as cartas vêm depois. */
+  #roundIntro() {
+    const r = this.rules;
+    const round = this.duel.round + 1;
+    this.endsAt = 0;
+    this.toAll('round_intro', { round, sudden: round >= r.suddenDeathRound, final: round === r.maxRounds, extra: round > r.maxRounds });
+    this.#setPhaseTimers([this.later(r.roundIntroMs, () => this.#cardPhase())]);
   }
 
   #cardPhase() {
@@ -80,8 +89,8 @@ class DuelMatch extends Match {
     });
     this.toSpectators('card_phase', { ...common, hand: [] });
     for (const i of this.away) duelRules.pickCard(d, i, null);
-    if (duelRules.bothLocked(d, 'cardLocked')) return this.#weaponPhase();
-    this.#setPhaseTimers([this.later(this.rules.cardPhaseMs, () => this.#weaponPhase()), ...this.#botCards()]);
+    if (duelRules.bothLocked(d, 'cardLocked')) return this.#revealCards();
+    this.#setPhaseTimers([this.later(this.rules.cardPhaseMs, () => this.#revealCards()), ...this.#botCards()]);
   }
 
   /** Assentos de bot escolhem a carta depois de "pensar". */
@@ -110,6 +119,24 @@ class DuelMatch extends Match {
         this.#lockWeapon(i, seat.brain.chooseWeapon({ ownHistory: f.history, oppHistory: opp.history, forbidden: f.forbidden }));
       })];
     });
+  }
+
+  /**
+   * Cartas na mesa: todos veem as jogadas virando ao mesmo tempo antes de escolher a arma.
+   * Com carta lendária é um movimento especial, com mais tempo. Sem nenhuma carta, segue direto.
+   */
+  #revealCards() {
+    const d = this.duel;
+    if (d.phase !== 'card') return;
+    this.#setPhaseTimers([]);
+    duelRules.revealCards(d);
+    const cards = d.fighters.map(f => f.card);
+    if (!cards.some(Boolean)) return this.#weaponPhase();
+    const special = cards.some(id => cardById(id)?.rarity === 'lendario');
+    const ms = special ? this.rules.specialRevealMs : this.rules.cardRevealMs;
+    this.endsAt = this.now() + ms;
+    this.toAll('cards_reveal', { round: d.round, cards, special, endsIn: ms, forbidden: d.fighters.map(f => f.forbidden) });
+    this.#setPhaseTimers([this.later(ms, () => this.#weaponPhase())]);
   }
 
   #weaponPhase() {
@@ -155,7 +182,7 @@ class DuelMatch extends Match {
     this.#botReactions(r);
     this.toAll('round_result', { ...r, history: this.duel.fighters.map(f => f.history) });
     if (r.winner != null) this.later(this.rules.revealMs, () => this.finish({ winnerSide: r.winner, reason: r.reason }));
-    else this.later(this.rules.revealMs, () => this.#cardPhase());
+    else this.later(this.rules.revealMs, () => this.#roundIntro());
   }
 
   /** Bots reagem com uma expressão de vez em quando (rodada vencida, fim de jogo...). */
@@ -178,7 +205,7 @@ class DuelMatch extends Match {
     if (!duelRules.pickCard(d, i, cardId)) return;
     this.send(i, 'card_locked', { cardId });
     this.toAll('seat_ready', { seat: i, phase: 'card' });
-    if (duelRules.bothLocked(d, 'cardLocked')) this.#weaponPhase();
+    if (duelRules.bothLocked(d, 'cardLocked')) this.#revealCards();
   }
 
   pickWeapon(i, weapon) { this.#lockWeapon(i, weapon); }
@@ -250,7 +277,7 @@ class DuelMatch extends Match {
       phase: d.phase,
       endsIn: Math.max(0, (i != null && d.phase === 'weapon' ? this.deadlines[i] : this.endsAt) - this.now()),
       hand: me && d.phase === 'card' ? me.hand : [],
-      cards: d.phase === 'weapon' ? d.fighters.map(f => f.card) : null,
+      cards: d.phase === 'weapon' || d.phase === 'cards' ? d.fighters.map(f => f.card) : null,
       cardLocked: !!me?.cardLocked,
       bans: this.bans,
       banLocked: !!me?.banLocked,

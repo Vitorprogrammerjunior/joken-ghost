@@ -10,10 +10,14 @@ const RULES = {
   duoHpScale: 0.75,        // 2x2: a vida somada da dupla vale 75% (a partida não fica longa demais)
   handSize: 3,
   banPhaseMs: 15000,       // 1x1: antes da 1ª rodada cada um vê a build do outro e bane 1 carta dela
+  introMs: 4800,           // entrada "VS" do cliente (os dois ficam uns 3s na tela) antes da 1ª fase
+  roundIntroMs: 2000,      // "RODADA N" na tela antes das cartas
   cardPhaseMs: 7000,
+  cardRevealMs: 3400,      // as cartas jogadas viram na tela de todos antes das armas
+  specialRevealMs: 4600,   // ... mais tempo quando tem carta lendária (movimento especial)
   weaponPhaseMs: 7000,
   visionWeaponMs: 3500,    // quem enfrenta a Visão tem metade do tempo para escolher a arma
-  revealMs: 3000,
+  revealMs: 3400,
   suddenDeathRound: 8,     // a partir daqui o dano dobra
   maxRounds: 15,           // depois desta rodada vence quem tiver mais vida (empate: segue até alguém passar na frente)
   reconnectGraceMs: 15000,
