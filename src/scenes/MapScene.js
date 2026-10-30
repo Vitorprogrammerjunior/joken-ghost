@@ -160,6 +160,7 @@ export class MapScene extends Scene {
   }
 
   render(r) {
+    if (!this.profile) return; // saiu da conta com o mapa aberto: o fade para o menu ainda desenha uns quadros
     const ctx = r.ctx;
     const [top, mid, ground] = SKIES[this.act] ?? SKIES[1];
     const g = ctx.createLinearGradient(0, 0, 0, GH);

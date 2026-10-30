@@ -7,7 +7,7 @@ const { leagueOf, deckOf } = require('../catalog');
 const { publicLook } = require('../cosmetics');
 const { Match } = require('./Match');
 
-const START_DELAY_MS = 2200;
+const START_DELAY_MS = 3400; // a entrada "VS" do cliente dura uns 2,6s
 const BANS_SHOW_MS = 2600;  // tempo para ver o que cada um baniu antes da 1ª rodada
 
 class DuelMatch extends Match {

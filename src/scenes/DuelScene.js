@@ -8,7 +8,8 @@ import { BattleStage, LAYOUT } from '../world/BattleStage.js';
 import { Fighter } from '../world/Fighter.js';
 import { Effects } from '../world/Effects.js';
 import { WEAPONS, WEAPON_LIST } from '../config/weapons.js';
-import { leagueIcon, emoteIcon } from '../config/multiplayer.js';
+import { leagueIcon, emoteIcon, LEAGUE_NAMES, MODES } from '../config/multiplayer.js';
+import { avatarEl } from '../ui/Avatar.js';
 import { cardEl, flipIn } from '../ui/Card.js';
 import { spriteCanvas } from '../ui/SpriteCanvas.js';
 import { $, h, icon, show, retrigger } from '../ui/dom.js';
@@ -31,6 +32,8 @@ const SPOTS = {
   top: { 1: [LAYOUT.boss], 2: [{ x: 840, y: 364 }, { x: 1030, y: 370 }] },
 };
 const EMOTE_MS = 2600;
+/** Etiqueta da entrada "VS" para os modos que não estão em MODES. */
+const VS_TAGS = { room: 'Sala privada', challenge: 'Desafio', tournament: 'Torneio Relâmpago', king: 'Rei da Arena' };
 
 export class DuelScene extends Scene {
   /** @param {import('../net/MultiplayerClient.js').MultiplayerClient} net */
@@ -104,11 +107,14 @@ export class DuelScene extends Scene {
     this.endsAt = 0;
     this.total = 1;
     this.banPicked = false;
+    // uma entrada "VS" que não terminou (troca de partida no torneio, reconexão) não fica na tela
+    show($('duel-vs'), false);
+    for (const b of [$('duel-opp-box'), $('duel-me-box')]) b.classList.remove('duel-hud-wait');
 
     const top = match.fighters.filter(f => f.side !== this.mySide);
     const bottom = match.fighters.filter(f => f.side === this.mySide);
     $('duel-opp-name').textContent = top.map(f => this.#name(f.seat)).join(' & ').toUpperCase();
-    $('duel-me-name').textContent = (this.spectator ? bottom.map(f => this.#name(f.seat)).join(' & ') : bottom.map(f => (f.seat === match.you ? 'VOCÊ' : this.#name(f.seat))).join(' & ')).toUpperCase();
+    $('duel-me-name').textContent = bottom.map(f => this.#name(f.seat)).join(' & ').toUpperCase();
     $('duel-opp-trophies').textContent = top[0].trophies;
     $('duel-opp-league').src = icon(leagueIcon(top[0].league)).src;
     $('duel-mute-ico').src = icon(this.game.options.muted ? 'icon/som_off' : 'icon/som_on').src;
@@ -148,10 +154,60 @@ export class DuelScene extends Scene {
   }
 
   async #intro() {
-    for (const a of this.actors.values()) { a.ox = a.bottom ? -500 : 500; this.tweens.to(a, { ox: 0 }, 800, Ease.outCubic); }
+    for (const a of this.actors.values()) a.ox = a.bottom ? -500 : 500;
     const opp = this.spectator ? 'Os caçadores vão duelar!' : `${this.m.fighters.filter(f => f.side !== this.mySide).map(f => this.#name(f.seat)).join(' e ')} quer duelar!`;
     this.#say(this.spectator ? `Você está assistindo. ${opp}` : opp);
-    await this.#banner(this.m.fighters.length > 2 ? 'DUELO 2x2!' : 'DUELO!', 1200, 'danger');
+    await this.#versus();
+    for (const a of this.actors.values()) this.tweens.to(a, { ox: 0 }, 800, Ease.outCubic);
+  }
+
+  /**
+   * Entrada "VS": o adversário entra por cima, você por baixo, o VS bate no meio e os nomes
+   * deslizam até as caixas de vida. As caixas só aparecem quando o nome chega nelas.
+   */
+  async #versus() {
+    const match = this.m;
+    const boxes = [$('duel-opp-box'), $('duel-me-box')];
+    const targets = [$('duel-opp-name'), $('duel-me-name')];
+    const sides = [match.fighters.filter(f => f.side !== this.mySide), match.fighters.filter(f => f.side === this.mySide)];
+    const plates = sides.map((list, k) => {
+      const char = this.catalog.characters.find(c => c.id === list[0].character);
+      const name = h('b', { class: 'vs-name' }, targets[k].textContent);
+      const el = k === 0 ? $('vs-top') : $('vs-bottom');
+      el.replaceChildren(
+        h('div', { class: 'vs-band' }),
+        ...list.map(f => h('div', { class: 'vs-avatar' }, avatarEl(this.game.assets, f, { size: list.length > 1 ? 128 : 176 }))),
+        h('div', { class: 'vs-plate' }, name,
+          h('span', { class: 'vs-char' }, list.map(f => this.catalog.characters.find(c => c.id === f.character)?.name ?? char?.name).join(' & ')),
+          h('span', { class: 'vs-league' }, icon(leagueIcon(list[0].league), 'ico'), `${LEAGUE_NAMES[list[0].league] ?? ''} · ${list[0].trophies}`, icon('icon/trofeu', 'ico ico-sm'))));
+      return name;
+    });
+    const kind = match.kind === 'ranked' ? 'Ranqueada' : MODES[match.kind]?.name ?? VS_TAGS[match.kind] ?? 'Duelo';
+    $('vs-tag').textContent = (match.fighters.length > 2 ? `${kind} · 2x2` : kind).toUpperCase();
+
+    const vs = $('duel-vs');
+    for (const b of boxes) b.classList.add('duel-hud-wait');
+    vs.className = 'vs-intro';
+    this.game.audio.play('phase');
+    await this.wait(480);
+    this.game.audio.play('hit');
+    retrigger(vs, 'shake');
+    await this.wait(1500);
+    if (this.m !== match) return;
+
+    // os nomes vão para as caixas de vida
+    vs.classList.add('leaving');
+    const k = this.game.viewport.scale;
+    plates.forEach((name, i) => {
+      const s = name.getBoundingClientRect();
+      const t = targets[i].getBoundingClientRect();
+      name.classList.add('flying');
+      name.style.transform = `translate(${(t.left - s.left) / k}px, ${(t.top - s.top) / k}px) scale(${t.height / s.height})`;
+    });
+    this.game.audio.play('swing');
+    await this.wait(620);
+    vs.classList.add('hidden');
+    for (const b of boxes) { b.classList.remove('duel-hud-wait'); retrigger(b, 'duel-hud-arrive'); }
   }
 
   async #banner(text, ms, cls = '') {
