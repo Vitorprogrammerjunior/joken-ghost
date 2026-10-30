@@ -180,6 +180,34 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .played-card.landed .pcard { animation: played-land 0.25s ease-out; }
 .played-card.out { animation: played-out 0.3s ease-in both; }
 .duel-hand.out { animation: hand-out 0.3s ease-in both; }
+/* fim da rodada: a carta que deu certo brilha em amarelo e a que falhou racha e cai em dois pedaços */
+.played-card.won { animation: none; }
+.played-card.won .pcard { animation: card-shine 1.4s ease-in-out both; }
+.played-card.broken { width: 69px; height: 93px; animation: none; }
+.played-card .shard { position: absolute; inset: 0; animation: 1.4s ease-in both; pointer-events: none; }
+.played-card .shard-a { clip-path: polygon(0 0, 58% 0, 46% 18%, 60% 34%, 44% 52%, 58% 70%, 42% 86%, 52% 100%, 0 100%); animation-name: shard-left; }
+.played-card .shard-b { clip-path: polygon(58% 0, 100% 0, 100% 100%, 52% 100%, 42% 86%, 58% 70%, 44% 52%, 60% 34%, 46% 18%); animation-name: shard-right; }
+@keyframes card-shine {
+  0% { transform: none; filter: none; }
+  35% { transform: scale(1.18); filter: brightness(1.25) drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 12px var(--gold)); }
+  100% { transform: scale(1.06); filter: drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 7px var(--gold)); }
+}
+@keyframes shard-left {
+  0% { transform: none; filter: none; }
+  10% { transform: translateX(-2px); filter: brightness(1.5); }
+  20% { transform: translateX(2px); filter: brightness(0.8); }
+  30% { transform: translateX(-2px); filter: grayscale(0.7); }
+  40% { transform: none; filter: grayscale(0.7); opacity: 1; }
+  100% { transform: translate(-30px, 80px) rotate(-18deg); filter: grayscale(1); opacity: 0; }
+}
+@keyframes shard-right {
+  0% { transform: none; filter: none; }
+  10% { transform: translateX(-2px); filter: brightness(1.5); }
+  20% { transform: translateX(2px); filter: brightness(0.8); }
+  30% { transform: translateX(-2px); filter: grayscale(0.7); }
+  40% { transform: none; filter: grayscale(0.7); opacity: 1; }
+  100% { transform: translate(30px, 86px) rotate(16deg); filter: grayscale(1); opacity: 0; }
+}
 @keyframes played-land { from { transform: scale(1.25); } }
 @keyframes played-out { to { transform: scale(0.5); opacity: 0; } }
 @keyframes hand-out { to { translate: 0 80px; opacity: 0; } }
@@ -274,7 +302,8 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .pcard-xl { --u: 5px; }
 .card-reveal { position: absolute; inset: 0; z-index: 25; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; overflow: hidden; background: rgba(14, 11, 22, 0.74); pointer-events: none; animation: fade-in 0.25s ease both; }
 .card-reveal.leaving { background: transparent; transition: background 0.5s ease; }
-.card-reveal.leaving .rv-who, .card-reveal.leaving .rv-desc, .card-reveal.leaving .rv-effect, .card-reveal.leaving .rv-special { opacity: 0; transition: opacity 0.3s ease; animation: none; }
+/* tudo que não é a carta sai junto com o voo dela */
+.card-reveal.leaving .rv-item .rv-who, .card-reveal.leaving .rv-item .rv-desc, .card-reveal.leaving .rv-item .rv-effect, .card-reveal.leaving .rv-special { opacity: 0; transition: opacity 0.3s ease; animation: none; }
 .card-reveal.leaving.lit .rv-item.legend .rv-rays { opacity: 0; }
 .rv-item.gone { opacity: 0; transform: scale(0.6); transition: opacity 0.3s, transform 0.3s ease-in; animation: none; }
 .rv-row { position: relative; display: flex; align-items: flex-start; gap: 80px; }
@@ -288,6 +317,8 @@ button.pcard:hover:not(:disabled), button.pcard:focus-visible { transform: trans
 .rv-flip.flying { transition: transform 0.62s cubic-bezier(0.5, 0, 0.2, 1); }
 .rv-flip .pcard { position: absolute; inset: 0; backface-visibility: hidden; transition: none; }
 .rv-flip .rv-front { transform: rotateY(180deg); }
+.rv-flip .pcard { text-shadow: none; }
+.rv-flip .pcard-name { font-size: 24px; line-height: 24px; }
 .rv-desc { min-height: 48px; font-size: 18px; line-height: 24px; color: var(--fog); text-align: center; opacity: 0; transition: opacity 0.3s; }
 .rv-item.shown .rv-desc { opacity: 1; }
 .rv-effect { display: flex; align-items: center; gap: 12px; padding: 6px 14px; font-size: 18px; line-height: 22px; color: var(--white); background: var(--ink-2); box-shadow: 0 0 0 2px var(--red), 0 0 0 4px var(--ink); animation: pop 0.3s ease-out both; }

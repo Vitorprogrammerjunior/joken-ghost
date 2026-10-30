@@ -28,6 +28,51 @@ test('jokenpô: estaca vence cruz e o perdedor toma dano base', () => {
   assert.equal(hp(d, 0), RULES.baseHp);
 });
 
+test('resultado diz se a carta de cada um deu certo', () => {
+  // venceu e acertou: deu certo; o Escudo de quem perdeu segurou o golpe: as duas situações
+  let r = round(duo(), ['golpe_duplo', 'aspirador'], [null, 'estaca']);
+  assert.equal(r.fighters[0].cardOk, true);
+  assert.equal(r.fighters[1].cardOk, false);
+
+  r = round(duo(), ['golpe_duplo', 'aspirador'], ['escudo', 'estaca']);
+  assert.equal(r.fighters[0].cardOk, false, 'o golpe foi bloqueado');
+  assert.equal(r.fighters[1].cardOk, true, 'o escudo segurou');
+
+  // Escudo de quem venceu não fez nada; carta de arma com a arma errada também não
+  r = round(duo(), ['escudo', 'aspirador'], ['estaca_prata', 'estaca']);
+  assert.equal(r.fighters[0].cardOk, false);
+  assert.equal(r.fighters[1].cardOk, false);
+  r = round(duo(), ['cruz_flamejante', 'aspirador'], [null, 'estaca']);
+  assert.equal(r.fighters[0].cardOk, false);
+  r = round(duo(), ['estaca_prata', 'estaca'], [null, 'cruz']);
+  assert.equal(r.fighters[0].cardOk, true);
+
+  // empate: Golpe Duplo falha, Empate Forte funciona
+  r = round(duo(), ['golpe_duplo', 'cruz'], ['empate_forte', 'cruz']);
+  assert.equal(r.fighters[0].cardOk, false);
+  assert.equal(r.fighters[1].cardOk, true);
+
+  // Espinhos só funciona perdendo; Bálsamo sem vida para curar falha
+  r = round(duo(), [null, 'aspirador'], ['espinhos', 'estaca']);
+  assert.equal(r.fighters[1].cardOk, true);
+  r = round(duo(), ['cura', 'aspirador'], [null, 'estaca']);
+  assert.equal(r.fighters[0].cardOk, false);
+
+  // quem não jogou carta não tem o que quebrar
+  r = round(duo(), [null, 'aspirador'], [null, 'estaca']);
+  assert.equal(r.fighters[0].cardOk, false);
+  assert.equal(r.fighters[0].card, null);
+});
+
+test('resultado: Provocação vale quando proíbe alguma arma', () => {
+  const d = duo();
+  let r = round(d, ['provocacao', 'aspirador'], [null, 'estaca']);
+  assert.equal(r.fighters[0].cardOk, false, 'ainda não havia arma para proibir');
+  d.fighters[0].used = [];
+  r = round(d, ['provocacao', 'cruz'], [null, 'cruz']);
+  assert.equal(r.fighters[0].cardOk, true);
+});
+
 test('cartas: golpe duplo, escudo, espinhos e vampirismo', () => {
   let d = duo();
   round(d, ['golpe_duplo', 'aspirador'], [null, 'estaca']);

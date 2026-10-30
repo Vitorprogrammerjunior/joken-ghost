@@ -181,8 +181,10 @@ class DuelMatch extends Match {
     this.onRound(this, r);
     this.#botReactions(r);
     this.toAll('round_result', { ...r, history: this.duel.fighters.map(f => f.history) });
-    if (r.winner != null) this.later(this.rules.revealMs, () => this.finish({ winnerSide: r.winner, reason: r.reason }));
-    else this.later(this.rules.revealMs, () => this.#roundIntro());
+    const special = r.fighters.some(f => cardById(f.card)?.rarity === 'lendario');
+    const ms = this.rules.revealMs + (special ? this.rules.specialResultMs : 0);
+    if (r.winner != null) this.later(ms, () => this.finish({ winnerSide: r.winner, reason: r.reason }));
+    else this.later(ms, () => this.#roundIntro());
   }
 
   /** Bots reagem com uma expressão de vez em quando (rodada vencida, fim de jogo...). */

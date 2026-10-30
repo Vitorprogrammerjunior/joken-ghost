@@ -13,7 +13,7 @@ const { Hub } = require('../src/hub');
 const { loadShared } = require('../src/shared');
 const { RULES } = require('../src/catalog');
 
-const FAST = { ...RULES, introMs: 60, roundIntroMs: 20, banPhaseMs: 150, cardPhaseMs: 250, cardRevealMs: 30, specialRevealMs: 30, weaponPhaseMs: 250, visionWeaponMs: 150, revealMs: 30, reconnectGraceMs: 1500 };
+const FAST = { ...RULES, introMs: 60, roundIntroMs: 20, banPhaseMs: 150, cardPhaseMs: 250, cardRevealMs: 30, specialRevealMs: 30, weaponPhaseMs: 250, visionWeaponMs: 150, revealMs: 30, specialResultMs: 10, reconnectGraceMs: 1500 };
 const RAID_FAST = { weaponMs: 250, revealMs: 30 };
 
 async function setup(opts = {}) {

@@ -37,6 +37,8 @@ const EMOTE_MS = 2600;
 const VS_TAGS = { room: 'Sala privada', challenge: 'Desafio', tournament: 'Torneio Relâmpago', king: 'Rei da Arena' };
 /** Quanto tempo os dois ficam na entrada "VS" depois do VS bater. */
 const VS_HOLD_MS = 3000;
+/** Quanto dura a carta quebrando ou brilhando no fim da rodada (igual ao CSS de .shard e .played-card.won). */
+const VERDICT_MS = 1400;
 /** Quanto dura o voo das cartas da tela grande até o lado das caixas de vida (igual ao CSS de .rv-flip.flying). */
 const REVEAL_FLY_MS = 640;
 /** Cartas de arma: o nome aparece quando vencem com aquela arma. */
@@ -125,7 +127,7 @@ export class DuelScene extends Scene {
     show($('duel-round-intro'), false);
     show($('duel-reveal'), false);
     for (const b of [$('duel-opp-box'), $('duel-me-box')]) b.classList.remove('duel-hud-wait');
-    for (const el of [$('duel-hand'), $('duel-opp-card'), $('duel-my-card')]) el.classList.remove('out', 'waiting', 'landed');
+    for (const el of [$('duel-hand'), $('duel-opp-card'), $('duel-my-card')]) el.classList.remove('out', 'waiting', 'landed', 'won', 'broken');
 
     const top = match.fighters.filter(f => f.side !== this.mySide);
     const bottom = match.fighters.filter(f => f.side === this.mySide);
@@ -551,7 +553,7 @@ export class DuelScene extends Scene {
 
   #showPlayed(id, cardId, flip = false) {
     const box = $(id);
-    box.classList.remove('out', 'waiting', 'landed');
+    box.classList.remove('out', 'waiting', 'landed', 'won', 'broken');
     if (!cardId) { show(box, false); return; }
     const card = this.#card(cardId);
     const el = cardEl(card, { size: 'sm', faceDown: flip });
@@ -616,7 +618,6 @@ export class DuelScene extends Scene {
     for (const slot of [$('duel-opp-card'), $('duel-my-card')]) if (slot.classList.contains('waiting')) slot.classList.replace('waiting', 'landed');
     this.vision = null;
     this.history = d.history;
-    const hpBefore = [...this.hp];
     for (const word of ['JO', 'KEN', 'PÔ!']) {
       this.game.audio.play('beat');
       this.jokenWord = word;
@@ -643,7 +644,7 @@ export class DuelScene extends Scene {
 
     // cada pista: quem venceu ataca quem perdeu (a minha pista por último, para a mensagem ficar)
     const lanes = [...d.lanes].sort((x, y) => (x.a === me || x.b === me) - (y.a === me || y.b === me));
-    for (const lane of lanes) await this.#animateLane(lane, d, lane.a === me || lane.b === me, hpBefore);
+    for (const lane of lanes) await this.#animateLane(lane, d, lane.a === me || lane.b === me);
 
     // números: dano, cura, espinhos, sorte
     d.fighters.forEach((res, seat) => {
@@ -658,9 +659,42 @@ export class DuelScene extends Scene {
     this.#syncHp();
     this.#renderHistory();
     this.charged.clear();
-    await this.wait(900);
+    this.#cardVerdict(d);
+    await this.wait(VERDICT_MS);
     this.reveal = null;
     if (d.winner != null && d.reason === 'tempo') await this.#drainToZero(d.winner);
+  }
+
+  /** A carta que falhou se quebra e a que deu certo brilha, ao mesmo tempo e devagar. */
+  #cardVerdict(d) {
+    const me = this.#anchor;
+    let broke = false, shone = false;
+    for (const [seat, slot] of [[me, $('duel-my-card')], [this.#laneOpp(me), $('duel-opp-card')]]) {
+      const res = d.fighters[seat];
+      if (!res.card || !slot.firstElementChild || slot.classList.contains('hidden')) continue;
+      const r = slot.getBoundingClientRect();
+      const c = this.game.viewport.toGame((r.left + r.right) / 2, (r.top + r.bottom) / 2);
+      slot.classList.remove('landed');
+      if (res.cardOk) {
+        slot.classList.add('won');
+        this.particles.burst(c.x, c.y, { count: 14, speed: 90, gravity: -40, life: 1100, colors: ['#fff3a6', '#f6d548'] });
+        shone = true;
+      } else {
+        const card = this.#card(res.card);
+        slot.replaceChildren(...['a', 'b'].map((part) => {
+          const half = cardEl(card, { size: 'sm' });
+          half.classList.add('shard', `shard-${part}`);
+          return half;
+        }));
+        slot.classList.add('broken');
+        this.wait(VERDICT_MS * 0.4).then(() => {
+          if (slot.classList.contains('broken')) this.particles.burst(c.x, c.y, { count: 16, speed: 130, life: 800, colors: ['#9b98ab', '#c9c7d4', '#5a5668'] });
+        });
+        broke = true;
+      }
+    }
+    if (shone) this.game.audio.play('coin');
+    if (broke) this.game.audio.play('poof');
   }
 
   /** Nome de uma carta (ou aviso) em cima do caçador. */
@@ -669,7 +703,7 @@ export class DuelScene extends Scene {
     this.effects.text(text, c.x, c.y - 170, { color, size, life: 1300, rise: 40 });
   }
 
-  async #animateLane(lane, d, mine, hpBefore) {
+  async #animateLane(lane, d, mine) {
     const A = this.actors.get(lane.a), B = this.actors.get(lane.b);
     if (lane.outcome === 'draw') {
       const mid = { x: (A.center.x + B.center.x) / 2, y: (A.center.y + B.center.y) / 2 };
@@ -726,16 +760,16 @@ export class DuelScene extends Scene {
     }
 
     // o que a carta de cada um fez no golpe
-    const side = this.m.fighters[att].side;
     const callout = {
       golpe_duplo: ['GOLPE DUPLO!', '#f6d548'],
       disfarce: ['DISFARCE +10', '#c08cff'],
       sorte: null, // o "SORTE!" já sai com o dano
-      furia: hpBefore[side] < this.max[side] / 2 ? ['FÚRIA!', '#ff7563'] : null,
+      furia: d.fighters[att].fury ? ['FÚRIA!', '#ff7563'] : null,
       vampirismo: ['VAMPIRISMO!', '#ff7563'],
     }[card] ?? (WEAPON_CARDS[card] === weapon ? [this.#card(card).name.toUpperCase(), '#f6d548'] : null);
-    if (callout && !judgement) this.#callout(att, callout[0], callout[1]);
-    if (card === 'furia' && callout) this.particles.burst(attacker.center.x, attacker.center.y, { count: 20, colors: ['#ff7563', '#d23a3a'] });
+    const landed = res.damage > 0 && !res.blocked && !res.dodged;
+    if (callout && !judgement && landed) this.#callout(att, callout[0], callout[1]);
+    if (card === 'furia' && callout && landed) this.particles.burst(attacker.center.x, attacker.center.y, { count: 20, colors: ['#ff7563', '#d23a3a'] });
     if (card === 'vampirismo' && res.damage) {
       this.effects.projectile('fx/proj_orb', c, attacker.center, { ms: 420, scale: 3, arc: 60 }).then(() => this.effects.play('fx/heal', attacker.center.x, attacker.center.y, { scale: 3 }));
     }
@@ -746,7 +780,8 @@ export class DuelScene extends Scene {
       this.#callout(defSeat, 'ESPINHOS!', '#a8e070');
       this.#strike(att, d.fighters[att], 'fx/hit');
     }
-    if (mine) this.#say(att === this.m.you ? 'Você acertou o golpe!' : defSeat === this.m.you ? `${this.#name(att)} acertou você!` : `${this.#name(att)} acertou ${this.#name(defSeat)}!`);
+    if (mine && !landed) this.#say(res.dodged ? `${this.#name(defSeat)} desviou do golpe!` : `${this.#name(defSeat)} bloqueou o golpe!`);
+    else if (mine) this.#say(att === this.m.you ? 'Você acertou o golpe!' : defSeat === this.m.you ? `${this.#name(att)} acertou você!` : `${this.#name(att)} acertou ${this.#name(defSeat)}!`);
   }
 
   /** Um golpe extra (Espinhos, Empate Forte) no caçador do assento. */

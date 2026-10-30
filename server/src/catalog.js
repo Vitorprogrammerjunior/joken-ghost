@@ -17,7 +17,8 @@ const RULES = {
   specialRevealMs: 4600,   // ... mais tempo quando tem carta lendária (movimento especial)
   weaponPhaseMs: 7000,
   visionWeaponMs: 3500,    // quem enfrenta a Visão tem metade do tempo para escolher a arma
-  revealMs: 3400,
+  revealMs: 4000,          // golpes + a carta que falhou quebrando e a que deu certo brilhando
+  specialResultMs: 1200,   // ... a mais quando tem carta lendária (o golpe especial demora)
   suddenDeathRound: 8,     // a partir daqui o dano dobra
   maxRounds: 15,           // depois desta rodada vence quem tiver mais vida (empate: segue até alguém passar na frente)
   reconnectGraceMs: 15000,

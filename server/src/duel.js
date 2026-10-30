@@ -178,6 +178,29 @@ function visionOf(duel, i) {
 const bothLocked = (duel, key) => duel.fighters.every(f => f[key]);
 
 /**
+ * A carta do lutador i fez efeito nesta rodada? `result` é o dele na pista: won, lost ou draw.
+ * O cliente quebra a que falhou e destaca a que deu certo.
+ */
+function cardWorked(duel, i, op, result, res) {
+  const f = duel.fighters[i];
+  const foe = duel.fighters[op];
+  const hit = result === 'won' && res[op].damage > 0 && !res[op].blocked && !res[op].dodged;
+  switch (f.card) {
+    case 'escudo': return res[i].blocked;
+    case 'cura': return res[i].healed > 0;
+    case 'escudo_sagrado': return res[i].blocked || res[i].healed > 0;
+    case 'empate_forte': return result === 'draw' && (res[op].damage > 0 || res[op].blocked);
+    case 'espinhos': return res[op].thorns > 0;
+    case 'provocacao': return foe.forbidden != null;
+    case 'sorte': return hit || res[i].healed > 0;
+    case 'visao': return result === 'won';
+    case 'disfarce': return hit || foe.card === 'visao';
+    case 'furia': return hit && res[i].fury;
+    default: return hit && (cardById(f.card)?.weapon ?? f.weapon) === f.weapon;
+  }
+}
+
+/**
  * Resolve a rodada. Quem não escolheu arma repete a anterior.
  * Retorna o que aconteceu com cada lutador, o resultado de cada pista e a vida dos lados.
  */
@@ -242,7 +265,7 @@ function resolveRound(duel) {
     if (W.card === 'juizo') dmg *= 3;
     if (W.card === 'disfarce') dmg += 10;
     if (W.card === 'sorte') { dmg += 10; res[w].lucky = true; }
-    if (W.card === 'furia' && sides[W.side].hp < sides[W.side].maxHp / 2) dmg += 20;
+    if (W.card === 'furia' && sides[W.side].hp < sides[W.side].maxHp / 2) { dmg += 20; res[w].fury = true; }
     dmg *= sudden;
     if (L.card === 'escudo') { dmg = 0; res[l].blocked = true; }
     const lChar = characterById(L.character);
@@ -252,6 +275,12 @@ function resolveRound(duel) {
     if (W.card === 'vampirismo') heal(w, Math.floor(dealt / 2));
     if (L.card === 'espinhos') res[w].thorns = hurt(w, 12 * sudden);
   });
+
+  for (const { a, b, outcome } of lanes) {
+    const [ra, rb] = outcome === 'draw' ? ['draw', 'draw'] : outcome === 'a' ? ['won', 'lost'] : ['lost', 'won'];
+    res[a].cardOk = !!fighters[a].card && !!cardWorked(duel, a, b, ra, res);
+    res[b].cardOk = !!fighters[b].card && !!cardWorked(duel, b, a, rb, res);
+  }
 
   // fim da partida? (nocaute, ou mais vida depois da última rodada)
   const dead = sides.map(s => s.hp <= 0);
